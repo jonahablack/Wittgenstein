@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: wittgenstein-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        fromDatabase:
+          name: openai-key
+          property: connectionString
+    healthCheckPath: /health

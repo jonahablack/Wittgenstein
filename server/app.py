@@ -67,7 +67,12 @@ def download():
         return jsonify({"error": "File not found"}), 404
     return send_file(path, as_attachment=True)
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy", "service": "wittgenstein-backend"})
+
 if __name__ == '__main__':
-    app.run(port=3000, debug=True)
+    port = int(os.environ.get('PORT', 3000))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
 

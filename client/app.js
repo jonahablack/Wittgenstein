@@ -15,8 +15,10 @@ function App() {
     const formData = new FormData();
     formData.append('file', file);
 
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
     try {
-      const response = await fetch('http://localhost:3000/upload', {
+      const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -39,8 +41,10 @@ function App() {
     setError(null);
     setFormatType(type);
 
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
     try {
-      const response = await fetch('http://localhost:3000/formalize', {
+      const response = await fetch(`${API_URL}/formalize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -131,7 +135,7 @@ function App() {
           {formalizationData.output_pdf_path && (
             <div style={{margin: '10px 0'}}>
               <a 
-                href={`http://localhost:3000/download?path=${encodeURIComponent(formalizationData.output_pdf_path)}`} 
+                href={`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/download?path=${encodeURIComponent(formalizationData.output_pdf_path)}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{

@@ -15,7 +15,7 @@ function App() {
     const formData = new FormData();
     formData.append('file', file);
 
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+    const API_URL = '' // process.env.REACT_APP_API_URL || 'http://localhost:3000'; <---- for dev purposes
 
     try {
       const response = await fetch(`${API_URL}/upload`, {
@@ -133,7 +133,7 @@ function App() {
           {formalizationData.output_pdf_path && (
             <div style={{margin: '10px 0'}}>
               <a 
-                href={`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/download?path=${encodeURIComponent(formalizationData.output_pdf_path)}`} 
+                href={`/download?path=${encodeURIComponent(formalizationData.output_pdf_path)}`} // {`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/download?path=${encodeURIComponent(formalizationData.output_pdf_path)}`} <------ for dev purposes
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{

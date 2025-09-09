@@ -88,7 +88,6 @@ client/webpack-stats.json
 *.pem
 secrets.json
 config.json
-server/api_call.py
 
 # Jupyter Notebook
 .ipynb_checkpoints

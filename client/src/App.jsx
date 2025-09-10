@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import FileUpload from './fileupload';
+import FileUpload from './FileUpload';
 
 function App() {
   const [fileUrl, setFileUrl] = useState(null);
@@ -176,3 +176,4 @@ function App() {
 }
 
 export default App;
+

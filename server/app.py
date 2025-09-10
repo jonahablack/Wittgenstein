@@ -100,7 +100,7 @@ def formalize():
 def files(filename):
     return send_from_directory(OUTPUT_DIR, filename, as_attachment=True)
 
-# (Optional) keep /download but look in both uploads and outputs
+
 @app.get("/download")
 def download():
     path = request.args.get("path")
@@ -113,8 +113,26 @@ def download():
         candidate = os.path.join(base, os.path.basename(path))
         if os.path.exists(candidate):
             return send_file(candidate, as_attachment=True)
-    return jsonify({"error": "File n
+    return jsonify({"error": "File not found"}), 404
 
+@app.get("/health")
+def health():
+    return jsonify({"status": "healthy", "service": "wittgenstein-backend"})
 
+# debug
+@app.get("/__debug")
+def __debug():
+    idx = os.path.join(CLIENT_DIR, "index.html")
+    assets = os.path.join(CLIENT_DIR, "assets")
+    return jsonify({
+        "CLIENT_DIR": CLIENT_DIR,
+        "UPLOAD_DIR": UPLOAD_DIR,
+        "OUTPUT_DIR": OUTPUT_DIR,
+        "exists_index": os.path.exists(idx),
+        "exists_assets_dir": os.path.isdir(assets),
+        "uploads_count": len(os.listdir(UPLOAD_DIR)) if os.path.isdir(UPLOAD_DIR) else None,
+        "outputs_count": len(os.listdir(OUTPUT_DIR)) if os.path.isdir(OUTPUT_DIR) else None,
+    })
 
-
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 3000)), debug=False)

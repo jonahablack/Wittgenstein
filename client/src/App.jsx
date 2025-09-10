@@ -47,7 +47,7 @@ export default function App() {
   return (
     <div style={{margin: 40, fontFamily: 'Arial, sans-serif'}}>
       <h1>Wittgenstein</h1>
-      <p>Upload a PDF or EPUB file to extract and formalize philosophical claims.</p>
+      <p>Upload a PDF or EPUB file to extract and formalize claims.</p>
 
       <FileUpload onFileUpload={onFileUpload} />
 

@@ -80,10 +80,14 @@ export default function App() {
         <div style={{marginTop: 20}}>
           <h3>Formalization Results</h3>
           <p>Found {formalizationData.axioms?.length || 0} formalized claims</p>
-          {formalizationData.output_pdf_path && (
+          {(formalizationData.download_url || formalizationData.output_pdf_path) && (
             <div style={{margin: '10px 0'}}>
               <a
-                href={`/download?path=${encodeURIComponent(formalizationData.output_pdf_path)}`}
+                href={
+                  formalizationData.download_url
+                    ? formalizationData.download_url                    // ✅ preferred: served from /files/...
+                    : `/download?path=${encodeURIComponent(formalizationData.output_pdf_path)}` // fallback
+                }
                 target="_blank" rel="noopener noreferrer"
                 style={{display: 'inline-block', padding: '10px 20px', background: '#dc3545', color: '#fff', textDecoration: 'none', borderRadius: 4}}
               >📄 Download Result PDF</a>

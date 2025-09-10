@@ -70,7 +70,7 @@ function App() {
   return (
     <div style={{margin: '40px', fontFamily: 'Arial, sans-serif', color: '#111', background: '#fff'}}>
       <h1>Wittgenstein</h1>
-      <p>Upload a PDF or EPUB file to extract and formalize philosophical claims.</p>
+      <p>Upload a PDF or EPUB file to extract and formalize claims.</p>
       
       <FileUpload onFileUpload={onFileUpload} />
       
@@ -154,7 +154,7 @@ function App() {
           {formalizationData.axioms && formalizationData.axioms.length > 0 && (
             <div style={{marginTop: '20px'}}>
               <h4>Sample Claims:</h4>
-              <div style={{maxHeight: '400px', overflowY: 'auto', border: '1px solid #ddd', padding: '10px', backgroundColor: '#f9f9f9'}}>
+              <div style={{maxHeight: '400px', overflowY: 'auto', border: '1px solid #ddd', padding: '10px', backgroundColor: '#f9f9f9', textColor: '#000'}}>
                 {formalizationData.axioms.slice(0, 5).map((axiom, index) => (
                   <div key={index} style={{marginBottom: '15px', padding: '10px', backgroundColor: 'white', borderRadius: '4px'}}>
                     <strong>English:</strong> {axiom.english}<br/>

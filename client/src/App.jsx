@@ -1,5 +1,5 @@
 // client/src/App.jsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import FileUpload from './FileUpload.jsx';
 import ClaimCard from './ClaimCard.jsx';
 import AboutModal from './AboutModal.jsx';
@@ -29,6 +29,7 @@ export default function App() {
   const [tierFilter, setTierFilter] = useState('All');
   const [decisions, setDecisions] = useState({});
   const [showAbout, setShowAbout] = useState(false);
+  const formalizeAbortRef = useRef(null);
 
   const refreshDecisions = async () => {
     try {
@@ -43,6 +44,12 @@ export default function App() {
   };
 
   const onFileUpload = async (file) => {
+    // A wrong-file upload while a formalization is still in flight is exactly
+    // the case this guards against: without this, a stale response for the
+    // old file could still land after the new one starts and clobber it.
+    formalizeAbortRef.current?.abort();
+    setIsProcessing(false);
+
     setError(null);
     setFormalizationData(null);
     setResultsByType({});
@@ -84,12 +91,15 @@ export default function App() {
       return;
     }
 
+    const controller = new AbortController();
+    formalizeAbortRef.current = controller;
     setIsProcessing(true);
     try {
       const res = await fetch('/formalize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId, formatType: type, useParallel: true, maxWorkers: 5 }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (data.error) {
@@ -100,11 +110,26 @@ export default function App() {
         setTierFilter('All');
         await refreshDecisions();
       }
-    } catch {
-      setError('Formalization failed. Please try again.');
+    } catch (err) {
+      // AbortError means handleCancel already set its own message -- don't
+      // stomp on it with a generic failure message.
+      if (err.name !== 'AbortError') {
+        setError('Formalization failed. Please try again.');
+      }
     } finally {
       setIsProcessing(false);
+      formalizeAbortRef.current = null;
     }
+  };
+
+  const handleCancel = () => {
+    formalizeAbortRef.current?.abort();
+    setIsProcessing(false);
+    setFormalizeType(null);
+    setError(
+      'Cancelled. Note: the server may briefly keep working on the request '
+      + 'that was already sent, but its result will be ignored.'
+    );
   };
 
   const handleDecide = async (claimId, decision) => {
@@ -216,10 +241,23 @@ export default function App() {
 
       {isProcessing && (
         <div style={{ margin: '20px 0', padding: 20, background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: 6 }}>
-          <p style={{ margin: 0 }}>Processing file, it may take a few minutes...</p>
-          <p style={{ fontSize: 14, color: '#666', marginTop: 5, marginBottom: 0 }}>
-            Extracting claims from segments in parallel, then formalizing in batches.
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <div>
+              <p style={{ margin: 0 }}>Processing file, it may take a few minutes...</p>
+              <p style={{ fontSize: 14, color: '#666', marginTop: 5, marginBottom: 0 }}>
+                Extracting claims from segments in parallel, then formalizing in batches.
+              </p>
+            </div>
+            <button
+              onClick={handleCancel}
+              style={{
+                padding: '6px 14px', fontSize: 13, borderRadius: 6, cursor: 'pointer',
+                border: '1px solid #dc3545', background: '#fff', color: '#dc3545', whiteSpace: 'nowrap',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 

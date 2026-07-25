@@ -6,6 +6,53 @@ import aiohttp
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from api_call import generate_response
 
+def _empty_result(seg_idx):
+    return {"segment_index": seg_idx, "claims": []}
+
+
+def _build_claim_extraction_prompt(seg_idx, sentence):
+    """Single source of truth for this prompt -- process_single_segment and
+    extract_claims_sequential used to each keep their own copy, which is
+    exactly how the two paths could silently drift out of sync.
+
+    Kept deliberately narrow (one yes/no decision, verbatim extraction) so
+    the same sentence gets classified the same way run to run: the previous
+    version asked the model to sort each sentence into one of four buckets
+    (claims/arguments/examples/decorative), none of which but "claims" was
+    ever read downstream (main.py only consumes item["claims"]) -- so a
+    genuine claim landing in "arguments" or "examples" instead of "claims"
+    on a given run silently dropped it from the pipeline with no error,
+    which is the most likely cause of "sometimes isn't catching all the
+    claims" and inconsistent claim counts between runs on the same
+    document. Reducing this to a single decision, plus verbatim (not
+    paraphrased) extraction, removes both axes of that variability.
+    """
+    return f"""
+    You are identifying checkable factual/normative assertions in a single
+    sentence of source text, for downstream formalization into logic.
+
+    This segment is exactly one sentence. Decide: does it assert something
+    that could in principle be true or false (a claim), as opposed to being
+    a transition, rhetorical flourish, or purely illustrative aside with no
+    independent assertion of its own?
+
+    If yes, extract the claim(s) it contains, reproduced VERBATIM from the
+    source sentence -- do not paraphrase, summarize, or rewrite. Most
+    sentences contain exactly one claim; only split into multiple claims if
+    the sentence conjoins two clearly independent assertions (e.g. joined by
+    "and"/"but"). If the sentence asserts nothing checkable, return an empty
+    list.
+
+    Output strict JSON with exactly these keys: "segment_index", "claims"
+    (a list of strings, verbatim from the source, possibly empty).
+    Return only valid JSON. Do not include Markdown code fences or
+    additional text.
+
+    Segment index: {seg_idx}
+    Segment text: "{sentence}"
+    """
+
+
 def extract_json_from_response(response_content):
     try:
         clean_content = re.sub(r'```json|```', '', response_content).strip()
@@ -46,13 +93,7 @@ def parse_combined_responses(filename="all_responses.txt"):
         json_match = re.search(r'{.*}', clean_segment, re.DOTALL)
         if not json_match:
             print("Skipping: No valid JSON found in a segment.")
-            parsed_data.append({
-                "segment_index": None,
-                "claims": [],
-                "arguments": [],
-                "examples": [],
-                "decorative": []
-            })
+            parsed_data.append(_empty_result(None))
             continue
 
         try:
@@ -60,46 +101,21 @@ def parse_combined_responses(filename="all_responses.txt"):
             parsed_data.append(data)
         except json.JSONDecodeError as e:
             print(f"Skipping JSON decoding error: {e}")
-            parsed_data.append({
-                "segment_index": None,
-                "claims": [],
-                "arguments": [],
-                "examples": [],
-                "decorative": []
-            })
+            parsed_data.append(_empty_result(None))
 
     return parsed_data
 
 def process_single_segment(segment_data):
     """Process a single segment and return the result"""
     seg_idx, sentence = segment_data
-    
-    prompt = f"""
-    You are an assistant specialized in philosophy and logic.
-    You will receive a segment of a philosophical text along with a segment index.
-    Identify:
-    1. Core philosophical claims or axioms.
-    2. Supporting arguments.
-    3. Illustrative examples.
-    4. Decorative or rhetorical language.
 
-    Output a JSON with keys: "segment_index", "claims", "arguments", "examples", "decorative".
+    prompt = _build_claim_extraction_prompt(seg_idx, sentence)
 
-    Segment index: {seg_idx}
-    Segment text: "{sentence}"
-    """
-    
     response = generate_response(prompt)
     if not response or not hasattr(response, "content"):
         print(f"Failed to get response for segment {seg_idx}, using empty data")
-        return {
-            "segment_index": seg_idx,
-            "claims": [],
-            "arguments": [],
-            "examples": [],
-            "decorative": []
-        }
-    
+        return _empty_result(seg_idx)
+
     # Parse the response content
     try:
         clean_content = re.sub(r'```json|```', '', response.content).strip()
@@ -110,22 +126,10 @@ def process_single_segment(segment_data):
             return json.loads(json_match.group(0))
         else:
             print(f"No valid JSON found for segment {seg_idx}")
-            return {
-                "segment_index": seg_idx,
-                "claims": [],
-                "arguments": [],
-                "examples": [],
-                "decorative": []
-            }
+            return _empty_result(seg_idx)
     except json.JSONDecodeError as e:
         print(f"JSON decoding error for segment {seg_idx}: {e}")
-        return {
-            "segment_index": seg_idx,
-            "claims": [],
-            "arguments": [],
-            "examples": [],
-            "decorative": []
-        }
+        return _empty_result(seg_idx)
 
 def extract_claims(segments, output_file="all_responses.txt", max_workers=5):
     import time
@@ -164,13 +168,7 @@ def extract_claims(segments, output_file="all_responses.txt", max_workers=5):
             except Exception as e:
                 print(f"Error processing segment {segment[0]}: {e}")
                 # Add empty result for failed segment
-                results.append({
-                    "segment_index": segment[0],
-                    "claims": [],
-                    "arguments": [],
-                    "examples": [],
-                    "decorative": []
-                })
+                results.append(_empty_result(segment[0]))
                 completed += 1
     
     # Sort results by segment index to maintain order
@@ -196,32 +194,13 @@ def extract_claims_sequential(segments, output_file="all_responses.txt"):
     
     for i, (seg_idx, sentence) in enumerate(segments):
         print(f"Processing segment {i+1}/{total_segments} (index {seg_idx})")
-        
-        prompt = f"""
-        You are an assistant specialized in philosophy and logic.
-        You will receive a segment of a philosophical text along with a segment index.
-        Identify:
-        1. Core philosophical claims or axioms.
-        2. Supporting arguments.
-        3. Illustrative examples.
-        4. Decorative or rhetorical language.
 
-        Output a JSON with keys: "segment_index", "claims", "arguments", "examples", "decorative".
+        prompt = _build_claim_extraction_prompt(seg_idx, sentence)
 
-        Segment index: {seg_idx}
-        Segment text: "{sentence}"
-        """
-        
         response = generate_response(prompt)
         if not response or not hasattr(response, "content"):
             print(f"Failed to get response for segment {seg_idx}, using empty data")
-            append_response_to_file(json.dumps({
-                "segment_index": seg_idx,
-                "claims": [],
-                "arguments": [],
-                "examples": [],
-                "decorative": []
-            }), filename=output_file)
+            append_response_to_file(json.dumps(_empty_result(seg_idx)), filename=output_file)
             continue
 
         append_response_to_file(response.content, filename=output_file)

@@ -56,7 +56,7 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5):
     
     # Formalize claims
     print("Starting formalization of claims...")
-    formalized_data = formalize_claims(all_claims_data, mode)
+    formalized_data = formalize_claims(all_claims_data, mode, max_workers=max_workers)
 
     warning = None
     if all_claims_data and not formalized_data.get("axioms"):

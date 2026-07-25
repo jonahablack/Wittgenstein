@@ -11,9 +11,9 @@ def _risk_line(ax):
         return None
     flags = ax.get("risk_flags") or []
     if not flags:
-        return f"    Risk ({tier}): no flags"
+        return f"    Risk tier: {tier} (no flags)"
     reasons = "; ".join(f"{f['type']}: {f['reason']}" for f in flags)
-    return f"    Risk ({tier}): {reasons}"
+    return f"    Potential formalization risk ({tier} tier): {reasons}"
 
 
 def generate_reconstructions(axioms, mode="logic"):

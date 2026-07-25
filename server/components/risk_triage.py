@@ -1,4 +1,4 @@
-"""Rule-based risk triage for (english claim, formal string) pairs.
+"""Rule-based risk triage for (english claim, structured form) pairs.
 
 Flags likely formalization errors with a human-readable reason, so a
 reviewer can prioritize attention instead of reading every claim equally
@@ -104,7 +104,8 @@ _STRONG_MODALS = [
     "requires", "mandatory", "every", "all", "none", "no",
 ]
 _STRONG_FORMAL_MARKERS = ["must", "necessarily", "□", "always", "∀", "shall"]
-_WEAK_FORMAL_MARKERS = ["may", "possibly", "◇", "might", "could"]
+_MEDIUM_FORMAL_MARKERS = ["should", "ought to", "ought"]
+_WEAK_FORMAL_MARKERS = ["may", "possibly", "◇", "might", "could", "can"]
 
 _NEGATION_WORDS = [
     "not", "n't", "never", "no", "without", "fails to", "fail to",
@@ -150,20 +151,34 @@ def _lower(text):
 
 
 def detect_hedges(english):
-    """Hedge detection.
+    """Hedge detection for non-modal-strength hedges.
+
+    Deliberately excludes hedge words that are also modal-strength words
+    (e.g. "may", "can") -- those are handled exclusively by
+    detect_modal_mismatch, which checks whether the structured form
+    actually preserved the modal rather than assuming it was dropped just
+    because the source contains a weak-modal word. Flagging both would be
+    either redundant (modal_mismatch already caught it) or wrong (the
+    modal was correctly preserved and modal_mismatch stayed silent).
+    Non-modal hedges ("generally", "arguably", "somewhat", ...) aren't
+    checked by modal_mismatch at all, so they still fire here
+    independently.
 
     Basis: [4] Datla et al., AAAI 2026 -- documents LLM rule-extraction
     pipelines "softening or dropping qualifiers" during formalization.
     Hedge words are exactly the qualifiers at risk of being dropped.
     """
     text = _lower(english)
-    hits = _find_phrases(text, _HEDGE_WORDS)
+    hits = [h for h in _find_phrases(text, _HEDGE_WORDS) if h not in _WEAK_MODALS]
     if not hits:
         return None
     quoted = ", ".join(f'"{h}"' for h in hits)
     return {
         "type": "hedge",
-        "reason": f"Source claim contains hedging language ({quoted}) that a formal statement may overstate.",
+        "reason": (
+            f"Source claim contains hedging language ({quoted}) -- worth "
+            "checking the structured form didn't overstate the claim's actual certainty."
+        ),
     }
 
 
@@ -182,24 +197,26 @@ def _formal_strength(formal):
     text = _lower(formal)
     if _find_phrases(text, _STRONG_FORMAL_MARKERS):
         return "strong"
+    if _find_phrases(text, _MEDIUM_FORMAL_MARKERS):
+        return "medium"
     if _find_phrases(text, _WEAK_FORMAL_MARKERS):
         return "weak"
     return None
 
 
 def detect_modal_mismatch(english, formal):
-    """Modal strength mismatch between source claim and formal string.
+    """Modal strength mismatch between source claim and structured form.
 
     Basis: [4] Datla et al., AAAI 2026 -- "over-normalize nuanced
     qualifiers into coarse schema slots, blurring distinctions between
     'may,' 'should,' and 'shall.'"
 
     Covers two distinct failure patterns documented there:
-      1. Source has a modal, formal string has a *different* modal
+      1. Source has a modal, the structured form has a *different* modal
          (source "may" formalized as though it were mandatory).
-      2. Source has a modal, formal string has *no* modal marker at all --
-         the qualifier was dropped rather than mistranslated. This is
-         the more common pattern per [4] ("softening or dropping
+      2. Source has a modal, the structured form has *no* modal marker at
+         all -- the qualifier was dropped rather than mistranslated. This
+         is the more common pattern per [4] ("softening or dropping
          qualifiers").
     """
     source_strength = _modal_strength(english)
@@ -213,8 +230,8 @@ def detect_modal_mismatch(english, formal):
             "type": "modal_mismatch",
             "reason": (
                 f"Source claim reads as {source_strength} certainty, but the "
-                "formal string carries no explicit modal marker at all -- "
-                "the qualifier may have been dropped during formalization."
+                "structured form carries no explicit modal marker -- worth "
+                "checking whether the qualifier was dropped during formalization."
             ),
         }
 
@@ -229,8 +246,9 @@ def detect_modal_mismatch(english, formal):
     return {
         "type": "modal_mismatch",
         "reason": (
-            f"Source claim reads as {source_strength} certainty but the formal "
-            f"string reads as {formal_strength} certainty ({severity})."
+            f"Source claim reads as {source_strength} certainty while the "
+            f"structured form reads as {formal_strength} certainty ({severity}) "
+            "-- worth checking the formalization preserved the claim's intended strength."
         ),
     }
 
@@ -256,8 +274,8 @@ def detect_negation_scope(english):
     return {
         "type": "negation_scope",
         "reason": (
-            "Claim combines a negation with multiple clauses, so it is "
-            "ambiguous which clause the negation applies to."
+            "Claim combines a negation with multiple clauses -- worth "
+            "checking which clause the negation was intended to apply to."
         ),
     }
 
@@ -277,8 +295,8 @@ def detect_cross_reference(english):
     return {
         "type": "cross_reference",
         "reason": (
-            f'Claim depends on context defined elsewhere ("{hits[0]}"), '
-            "which the formal string may not capture."
+            f'Claim depends on context defined elsewhere ("{hits[0]}") -- '
+            "worth checking the structured form didn't lose that dependency."
         ),
     }
 
@@ -309,9 +327,9 @@ def detect_unresolved_reference(english):
         "type": "unresolved_reference",
         "reason": (
             f'Claim refers to "{hits[0]}" without naming it directly in this '
-            "segment. The antecedent may have been separated from this "
-            "claim during chunking, so the formal string may bind to the "
-            "wrong entity."
+            "segment -- the antecedent may have been separated from this "
+            "claim during chunking, so worth checking the structured form "
+            "bound to the right entity."
         ),
     }
 
@@ -333,8 +351,8 @@ def detect_nested_conditionals(english):
     return {
         "type": "nested_conditional",
         "reason": (
-            f"Claim contains {count} conditional/exception markers; nested "
-            "conditions are easy to flatten or drop when formalizing."
+            f"Claim contains {count} conditional/exception markers -- worth "
+            "checking none were flattened or dropped when formalizing."
         ),
     }
 
@@ -358,31 +376,6 @@ _FLAG_WEIGHTS = {
     "modal_mismatch": 2,
 }
 
-# Flag types that overlap in what they detect (e.g. "may" can trigger both
-# a hedge flag and a modal_mismatch flag off the same word). When both fire
-# for the same underlying signal, only the higher-weighted flag counts
-# toward the tier score, so one linguistic feature isn't double-counted
-# as two independent pieces of evidence.
-_OVERLAPPING_GROUPS = [
-    {"hedge", "modal_mismatch"},
-]
-
-
-def _dedupe_for_scoring(flags):
-    """Collapse overlapping flag types to their highest-weight member
-    before scoring. All flags are still returned to the caller/UI --
-    this only affects the tier score, not what's displayed.
-    """
-    present_types = {f["type"] for f in flags}
-    drop_types = set()
-    for group in _OVERLAPPING_GROUPS:
-        present_in_group = group & present_types
-        if len(present_in_group) > 1:
-            keep = max(present_in_group, key=lambda t: _FLAG_WEIGHTS.get(t, 1))
-            drop_types |= (present_in_group - {keep})
-    return [f for f in flags if f["type"] not in drop_types]
-
-
 def flag_claim(english, formal):
     """Return a list of {type, reason} flags for one (english, formal) pair."""
     flags = []
@@ -397,12 +390,14 @@ def flag_claim(english, formal):
 
 
 def compute_tier(flags):
-    """Transparent, inspectable tiering rule: sum of per-flag-type weights,
-    with overlapping flag types deduplicated first so a single linguistic
-    feature (e.g. one hedge word) can't be counted twice.
+    """Transparent, inspectable tiering rule: sum of per-flag-type weights.
+
+    No dedup step is needed here: detect_hedges excludes modal-strength
+    words (see its docstring), so hedge and modal_mismatch can no longer
+    fire on the same underlying word -- if both are present in `flags`,
+    they're independent findings and both should count.
     """
-    scoring_flags = _dedupe_for_scoring(flags)
-    score = sum(_FLAG_WEIGHTS.get(f["type"], 1) for f in scoring_flags)
+    score = sum(_FLAG_WEIGHTS.get(f["type"], 1) for f in flags)
     if score >= 4:
         return "High"
     if score >= 2:

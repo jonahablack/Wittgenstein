@@ -5,16 +5,17 @@ from openai import OpenAI
 from openai import RateLimitError, APIError, APITimeoutError
 import os
 
-def generate_response(query, api_key=None, model=None, max_retries=3, base_delay=1):
+def generate_response(query, api_key=None, model=None, max_retries=3, base_delay=1,
+                       temperature=0, seed=13):
     if api_key is None:
         api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable is not set")
     if model is None:
         model = "gpt-4o-mini"
-    
+
     client = OpenAI(api_key=api_key)
-    
+
     for attempt in range(max_retries):
         try:
             # Add small random delay to avoid rate limiting
@@ -22,12 +23,18 @@ def generate_response(query, api_key=None, model=None, max_retries=3, base_delay
                 delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
                 print(f"Retrying in {delay:.2f} seconds... (attempt {attempt + 1}/{max_retries})")
                 time.sleep(delay)
-            
+
+            # temperature=0 + a fixed seed: same input should produce the same
+            # output across repeated runs on the same document (best-effort --
+            # OpenAI doesn't guarantee bit-for-bit determinism even so, but this
+            # removes the main source of run-to-run drift in claim counts).
             completion = client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "user", "content": query}
-                ]
+                ],
+                temperature=temperature,
+                seed=seed,
             )
             
             print(f'{"Type: " + str(type(completion.choices[0].message))}')

@@ -1,5 +1,6 @@
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from sympy.logic.boolalg import sympify, simplify_logic
 
 from api_call import generate_response
@@ -53,48 +54,79 @@ def _extract_json_object(text):
         return None
 
 
-def formalize_claims(all_claims_data, mode, batch_size=50):
-    all_axioms = []
+def _build_batch_prompt(mode, batch):
+    formatted_claims = "\n".join([f"- (Index {c['segment_index']}) {c['english']}" for c in batch])
+    return f"""
+    You are an assistant specialized in logic and formal reasoning.
+    I will provide you with a list of English claims.
+    For each claim:
+    1. Provide the original English claim.
+    2. {_MODE_INSTRUCTIONS[mode]}
+    3. Include the segment_index.
+
+    Return a JSON object with an "axioms" list. Each object in that list has keys:
+    {_MODE_FIELDS[mode]}.
+    Return only valid JSON. Do not include Markdown code fences or additional text.
+    Input claims:
+    {formatted_claims}
+    """
+
+
+def _formalize_batch(mode, batch, batch_num):
+    prompt = _build_batch_prompt(mode, batch)
+    response = generate_response(prompt)
+    if not response or not hasattr(response, "content"):
+        print(f"Failed to get response for batch {batch_num}, skipping...")
+        return []
+
+    batch_data = _extract_json_object(response.content)
+    if not batch_data or "axioms" not in batch_data:
+        print(f"Could not parse a valid axioms JSON object for batch {batch_num}.")
+        print(f"Raw response content: {response.content[:2000]}")
+        return []
+
+    return batch_data["axioms"]
+
+
+def formalize_claims(all_claims_data, mode, batch_size=50, max_workers=5):
+    """Send each batch of claims to the model in parallel.
+
+    This used to be a sequential for-loop -- one blocking OpenAI call after
+    another. For a document with several batches, that adds up: gunicorn's
+    default worker timeout is 30s, and even a generous --timeout won't help
+    if it isn't the value actually configured on the deployed service. This
+    mirrors the same ThreadPoolExecutor approach extract_claims already uses
+    for claim extraction, cutting wall-clock time roughly by max_workers so
+    a whole request is far less likely to run long enough to hit any
+    timeout, whatever it's set to.
+    """
     total_claims = len(all_claims_data)
+    batches = [
+        all_claims_data[i:i + batch_size]
+        for i in range(0, total_claims, batch_size)
+    ]
+    total_batches = len(batches)
 
-    print(f"Formalizing {total_claims} claims in batches of {batch_size}...")
+    print(f"Formalizing {total_claims} claims in {total_batches} batches of up to {batch_size}, {max_workers} at a time...")
 
-    for i in range(0, total_claims, batch_size):
-        batch = all_claims_data[i:i + batch_size]
-        batch_num = (i // batch_size) + 1
-        total_batches = (total_claims + batch_size - 1) // batch_size
+    results_by_batch = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_batch_num = {
+            executor.submit(_formalize_batch, mode, batch, batch_num): batch_num
+            for batch_num, batch in enumerate(batches, start=1)
+        }
+        for future in as_completed(future_to_batch_num):
+            batch_num = future_to_batch_num[future]
+            try:
+                results_by_batch[batch_num] = future.result()
+            except Exception as e:
+                print(f"Error formalizing batch {batch_num}: {e}")
+                results_by_batch[batch_num] = []
+            print(f"Completed batch {len(results_by_batch)}/{total_batches}")
 
-        print(f"Processing batch {batch_num}/{total_batches} ({len(batch)} claims)")
-
-        formatted_claims = "\n".join([f"- (Index {c['segment_index']}) {c['english']}" for c in batch])
-
-        prompt = f"""
-        You are an assistant specialized in logic and formal reasoning.
-        I will provide you with a list of English philosophical claims.
-        For each claim:
-        1. Provide the original English claim.
-        2. {_MODE_INSTRUCTIONS[mode]}
-        3. Include the segment_index.
-
-        Return a JSON object with an "axioms" list. Each object in that list has keys:
-        {_MODE_FIELDS[mode]}.
-        Return only valid JSON. Do not include Markdown code fences or additional text.
-        Input claims:
-        {formatted_claims}
-        """
-
-        response = generate_response(prompt)
-        if not response or not hasattr(response, "content"):
-            print(f"Failed to get response for batch {batch_num}, skipping...")
-            continue
-
-        batch_data = _extract_json_object(response.content)
-        if not batch_data or "axioms" not in batch_data:
-            print(f"Could not parse a valid axioms JSON object for batch {batch_num}.")
-            print(f"Raw response content: {response.content[:2000]}")
-            continue
-
-        all_axioms.extend(batch_data["axioms"])
+    all_axioms = []
+    for batch_num in range(1, total_batches + 1):
+        all_axioms.extend(results_by_batch.get(batch_num, []))
 
     if mode == "both":
         for ax in all_axioms:

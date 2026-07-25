@@ -46,11 +46,16 @@ export default function ClaimCard({ claim, decision, onDecide }) {
       )}
 
       {claim.risk_flags?.length > 0 && (
-        <ul style={{ margin: '0 0 10px', paddingLeft: 18, fontSize: 13, color: '#555' }}>
-          {claim.risk_flags.map((f, i) => (
-            <li key={i}><strong>{f.type.replace(/_/g, ' ')}:</strong> {f.reason}</li>
-          ))}
-        </ul>
+        <div style={{ margin: '0 0 10px' }}>
+          <div style={{ fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.4, color: '#888', marginBottom: 4 }}>
+            Potential formalization risk — worth a human check, not a confirmed error
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#555' }}>
+            {claim.risk_flags.map((f, i) => (
+              <li key={i}><strong>{f.type.replace(/_/g, ' ')}:</strong> {f.reason}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div style={{ display: 'flex', gap: 8 }}>

@@ -1,12 +1,14 @@
 import os
 import json
 import uuid
+import hashlib
 
 from components.text_extraction import extract_text_from_pdf, extract_text_from_epub, segment_text
 from components.response_parsing import extract_claims
 from components.logic_formalization import formalize_claims, check_contradictions
 from components.pdf_generation import generate_output_pdf
 from components.reconstruction import generate_reconstructions
+from components.risk_triage import annotate_axioms
 
 def save_to_json(data, filename="output_data.json"):
     with open(filename, "w", encoding="utf-8") as f:
@@ -56,6 +58,15 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5):
     print("Starting formalization of claims...")
     formalized_data = formalize_claims(all_claims_data, mode)
 
+    warning = None
+    if all_claims_data and not formalized_data.get("axioms"):
+        warning = (
+            f"Found {len(all_claims_data)} claims in the source text, but the "
+            "formalization model's responses could not be parsed into any "
+            "axioms. Check the server logs for the raw model output."
+        )
+        print(f"WARNING: {warning}")
+
     # compute Formalizability Index
     print("Computing formalizability index...")
     total_segments = len(parsed_data)
@@ -75,6 +86,18 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5):
         seg_idx = ax["segment_index"]
         ax["source"] = f"{base_url}#segment-{seg_idx}"
         ax["flag"] = "contradiction" if contradiction_found else "none"
+        ax["id"] = hashlib.sha1(
+            f"{seg_idx}|{ax.get('english', '')}|{ax.get('formal', '')}".encode("utf-8")
+        ).hexdigest()[:12]
+
+    # Risk-triage annotation (rule-based, legible reasons for reviewers)
+    print("Computing risk-triage flags...")
+    annotate_axioms(formalized_data.get("axioms", []))
+    risk_counts = {"High": 0, "Medium": 0, "Low": 0}
+    for ax in formalized_data.get("axioms", []):
+        tier = ax.get("risk_tier")
+        if tier in risk_counts:
+            risk_counts[tier] += 1
 
     # Save to JSON
     print("Saving results to JSON...")
@@ -88,7 +111,7 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5):
 
     # Generate reconstructions
     print("Generating reconstructions...")
-    logic_text, english_text = generate_reconstructions(final_data["axioms"])
+    logic_text, english_text = generate_reconstructions(final_data["axioms"], mode)
 
     # Now generate the PDF with the Formalizability Index at the top
     print("Generating PDF output...")
@@ -101,8 +124,9 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5):
         formalizability_index,
         total_segments,
         formalizable_segments,
+        risk_counts=risk_counts,
     )
-    
+
     print(f"PDF generated: {pdf_output_path}")
     print("Formalization complete!")
 
@@ -111,4 +135,5 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5):
         "output_pdf": pdf_output_path,
         "logic_reconstruction": logic_text,
         "english_reconstruction": english_text,
+        "warning": warning,
     }

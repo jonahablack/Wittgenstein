@@ -3,6 +3,7 @@ import os, uuid, shutil  # <-- add shutil
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from components.main import formalize_file
+from components.review_store import record_decision, get_all_decisions
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -13,6 +14,7 @@ UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 OUTPUT_DIR = os.path.join(DATA_DIR, "outputs")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+REVIEWS_FILE = os.path.join(OUTPUT_DIR, "reviews.json")  # lives under outputs/, already gitignored
 
 app = Flask(__name__, static_folder=CLIENT_DIR, static_url_path="")
 CORS(app)
@@ -38,7 +40,7 @@ def favicon():
 @app.errorhandler(404)
 def spa_fallback(err):
     wants_html = "text/html" in request.headers.get("Accept", "")
-    is_api = request.path.startswith(("/upload", "/formalize", "/download", "/files/", "/health", "/__debug"))
+    is_api = request.path.startswith(("/upload", "/formalize", "/download", "/files/", "/health", "/__debug", "/review", "/reviews"))
     if request.method == "GET" and wants_html and not is_api:
         return send_from_directory(CLIENT_DIR, "index.html")
     return err
@@ -90,7 +92,8 @@ def formalize():
             "axioms": result.get("axioms", []),
             "download_url": download_url,  # <-- client should use this
             "logic_reconstruction": result.get("logic_reconstruction", ""),
-            "english_reconstruction": result.get("english_reconstruction", "")
+            "english_reconstruction": result.get("english_reconstruction", ""),
+            "warning": result.get("warning"),
         })
     except Exception as e:
         print(f"/formalize error: {e}")
@@ -114,6 +117,23 @@ def download():
         if os.path.exists(candidate):
             return send_file(candidate, as_attachment=True)
     return jsonify({"error": "File not found"}), 404
+
+@app.post("/review")
+def review():
+    data = request.get_json(silent=True) or {}
+    claim_id = data.get("claimId")
+    decision = data.get("decision")
+    if not claim_id or not decision:
+        return jsonify({"error": "claimId and decision are required"}), 400
+    try:
+        record = record_decision(REVIEWS_FILE, claim_id, decision)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"claimId": claim_id, **record})
+
+@app.get("/reviews")
+def reviews():
+    return jsonify(get_all_decisions(REVIEWS_FILE))
 
 @app.get("/health")
 def health():

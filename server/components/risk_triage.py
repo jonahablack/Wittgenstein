@@ -122,34 +122,30 @@ _HEDGE_WORDS = [
     "it could be argued", "one might say",
 ]
 
+# Modal-strength tiers, one shared set of word lists used for BOTH the
+# source claim and the formal string. These used to be two separate pairs
+# of lists (_STRONG_MODALS vs _STRONG_FORMAL_MARKERS, and an implicit
+# medium-tier gap on the formal side with no list at all), which had to be
+# kept in sync by hand -- and didn't stay in sync. Two confirmed bugs came
+# directly from that duplication:
+#   - "can" and "perhaps" were in _WEAK_MODALS but missing from
+#     _WEAK_FORMAL_MARKERS, so a formal string that preserved "can"
+#     verbatim from the source ("...can generate entirely new
+#     possibilities") was still reported as having "no explicit modal
+#     marker at all."
+#   - There was no medium-tier formal list at all, so "should"/"ought"
+#     preserved verbatim in a formal string ("...should be deployed...")
+#     could never be recognized on the formal side, guaranteeing a false
+#     "modal marker dropped" flag on every medium-modal source claim
+#     whose formal string kept the same word.
+# A single shared set of tiers makes this whole bug class structurally
+# impossible: there is nothing left to fall out of sync.
 _WEAK_MODALS = ["may", "might", "could", "can", "possibly", "perhaps"]
 _MEDIUM_MODALS = ["should", "ought to", "ought"]
 _STRONG_MODALS = [
     "must", "shall", "always", "never", "necessarily", "required",
     "requires", "mandatory", "every", "all", "none", "no",
 ]
-
-# Formal-string-side markers. These are checked against ENGLISH-MODE
-# formal output only (see module docstring / detect_modal_mismatch) --
-# symbolic "logic" mode is exempted entirely, since sympy's classical
-# propositional logic has no deontic operators to look for.
-#
-# Previously this list only covered symbolic/logic-flavored tokens
-# ("must", "necessarily", "always", "shall") and was missing every
-# strong-modal word that _STRONG_MODALS already covers on the source
-# side ("required", "requires", "every", "all", "none", "no"). Since
-# _ENGLISH_INSTRUCTIONS explicitly produces plain English formal strings
-# ("For every X, it is not required that..."), those words are exactly
-# as likely to appear on the formal side as the source side, and their
-# absence from this list caused false "modal marker dropped" flags on
-# claims where the modal was carried over verbatim -- e.g. a source
-# claim using "required"/"every" formalized into English retaining both
-# words, incorrectly flagged because neither word was in this list.
-_STRONG_FORMAL_MARKERS = [
-    "must", "necessarily", "always", "shall",
-    "required", "requires", "every", "all", "none", "no", "mandatory",
-]
-_WEAK_FORMAL_MARKERS = ["may", "possibly", "might", "could"]
 
 _NEGATION_WORDS = [
     "not", "n't", "never", "no", "without", "fails to", "fail to",
@@ -224,10 +220,16 @@ def _modal_strength(text):
 
 
 def _formal_strength(formal):
+    """Same tiers, same word lists as _modal_strength -- see the comment
+    above _WEAK_MODALS for why this used to be two separate lists and
+    what that caused.
+    """
     text = _lower(formal)
-    if _find_phrases(text, _STRONG_FORMAL_MARKERS):
+    if _find_phrases(text, _STRONG_MODALS):
         return "strong"
-    if _find_phrases(text, _WEAK_FORMAL_MARKERS):
+    if _find_phrases(text, _MEDIUM_MODALS):
+        return "medium"
+    if _find_phrases(text, _WEAK_MODALS):
         return "weak"
     return None
 
@@ -482,6 +484,18 @@ def compute_tier(flags):
 def annotate_axiom(axiom, mode="english"):
     """Add risk_flags and risk_tier to a single axiom dict, in place.
 
+    Axioms with no formal representation at all (formalize_claims()
+    reconciliation left a placeholder because the model dropped that
+    claim -- see logic_formalization.py's _reconcile_batch) are given
+    risk_tier "Unformalized" and no flags, rather than running the normal
+    detectors. Without this check, a claim with e.g. a strong modal in
+    the source and formal=None would trip detect_modal_mismatch's "no
+    explicit modal marker" branch -- technically true, but misleading:
+    the real issue is that formalization failed outright, not that a
+    qualifier was quietly softened. "Unformalized" is a distinct,
+    differently-actionable signal from the usual Low/Medium/High tiers
+    and should be surfaced as such.
+
     `mode` should match the mode passed to formalize_claims(): "logic",
     "english", or "both". This determines which field is checked for
     modal-mismatch and whether that check runs at all:
@@ -497,6 +511,14 @@ def annotate_axiom(axiom, mode="english"):
         mismatch for the same reason "logic" mode is skipped.
     """
     english = axiom.get("english", "")
+
+    has_formal = bool(
+        axiom.get("formal") or axiom.get("formal_logic") or axiom.get("formal_english")
+    )
+    if not has_formal:
+        axiom["risk_flags"] = []
+        axiom["risk_tier"] = "Unformalized"
+        return axiom
 
     if mode == "both":
         formal_for_modal_check = axiom.get("formal_english", axiom.get("formal", ""))

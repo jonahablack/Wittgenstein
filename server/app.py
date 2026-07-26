@@ -1,5 +1,5 @@
 # server/app.py
-import os, uuid, shutil  # <-- add shutil
+import os, uuid, shutil
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from components.main import formalize_file
@@ -71,14 +71,30 @@ def formalize():
         return jsonify({"error": "File not found"}), 404
 
     use_parallel = data.get("useParallel", True)
+
+    # Bounded to avoid an unbounded client-supplied value spinning up an
+    # arbitrarily large thread pool (resource-exhaustion DoS from a single
+    # request). 20 is comfortably above the default of 5 for any legitimate
+    # use of this knob.
     max_workers = data.get("maxWorkers", 5)
+    try:
+        max_workers = int(max_workers)
+    except (TypeError, ValueError):
+        max_workers = 5
+    max_workers = max(1, min(max_workers, 20))
 
     try:
+        # Pass this app's own OUTPUT_DIR through explicitly, so the
+        # pipeline's intermediate and output files land in the one
+        # consistent, DATA_DIR-aware location this file already sets up --
+        # rather than main.py's own hardcoded relative "outputs" default,
+        # which could resolve to a different directory than UPLOAD_DIR/
+        # OUTPUT_DIR depending on the process's working directory.
         result = formalize_file(file_path, format_type,
                                 use_parallel=use_parallel,
-                                max_workers=max_workers)
+                                max_workers=max_workers,
+                                output_dir=OUTPUT_DIR)
 
-        # normalize/copy output into OUTPUT_DIR and return a public URL
         output_pdf = result.get("output_pdf") or result.get("output_pdf_path")
         download_url = None
         if output_pdf and os.path.exists(output_pdf):
@@ -106,12 +122,21 @@ def files(filename):
 
 @app.get("/download")
 def download():
+    """
+    Serves a file by NAME from UPLOAD_DIR or OUTPUT_DIR only.
+
+    Previously this accepted an arbitrary `path` query parameter and, if it
+    was an absolute path that existed on the server's filesystem, served it
+    directly with no sandboxing -- e.g. GET /download?path=/etc/passwd, or
+    any other file the Flask process could read (server .env, source code,
+    etc). That branch is removed entirely below. A caller can only ever
+    request a file by its basename, resolved against UPLOAD_DIR/OUTPUT_DIR,
+    exactly like the (already-safe) fallback loop below did before -- so
+    there is no longer any path that can escape those two directories.
+    """
     path = request.args.get("path")
     if not path:
         return jsonify({"error": "File not found"}), 404
-    if os.path.isabs(path) and os.path.exists(path):
-        return send_file(path, as_attachment=True)
-    # try both known dirs
     for base in (UPLOAD_DIR, OUTPUT_DIR):
         candidate = os.path.join(base, os.path.basename(path))
         if os.path.exists(candidate):

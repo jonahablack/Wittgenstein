@@ -13,8 +13,7 @@ _LOGIC_INSTRUCTIONS = """Translate the claim into a symbolic logical proposition
 ONLY ASCII operators, in a style sympy can parse: `&` for AND, `|` for OR, `~` for NOT,
 `>>` for IMPLIES, parentheses for grouping. Represent predicates as CamelCase
 function-style names with simple arguments, e.g. Cause(y, x), Contingent(x).
-Do NOT use Unicode symbols (no ∀, ∃, →, ¬, ∧, ∨, ↔, □, ◇) and do NOT restate the
-claim in English inside "formal" -- symbolic notation only.
+Do NOT use Unicode symbols (no ∀, ∃, →, ¬, ∧, ∨, ↔, □, ◇).
 Example claim: "Every event has a cause."
 Example formal: "Event(x) >> Cause(y, x)\""""
 
@@ -34,10 +33,19 @@ _MODE_INSTRUCTIONS = {
     "english": _ENGLISH_INSTRUCTIONS,
     "both": _BOTH_INSTRUCTIONS,
 }
+# "english" is deliberately NOT one of the keys the model is asked for.
+# It used to be -- the model would re-type the claim back to us -- which
+# meant (a) the model's copy could silently paraphrase or drift from the
+# source, and (b) there was no guaranteed 1:1 mapping between input claims
+# and output axioms, since nothing forced the model to produce exactly one
+# output object per input claim. The pipeline already has the original
+# verbatim text; the model's only job now is to formalize, keyed by
+# claim_index, which _formalize_batch reconciles against the input batch
+# after parsing (see below).
 _MODE_FIELDS = {
-    "logic": '"segment_index", "english", "formal"',
-    "english": '"segment_index", "english", "formal"',
-    "both": '"segment_index", "english", "formal_logic", "formal_english"',
+    "logic": '"claim_index", "formal"',
+    "english": '"claim_index", "formal"',
+    "both": '"claim_index", "formal_logic", "formal_english"',
 }
 
 
@@ -55,21 +63,80 @@ def _extract_json_object(text):
 
 
 def _build_batch_prompt(mode, batch):
-    formatted_claims = "\n".join([f"- (Index {c['segment_index']}) {c['english']}" for c in batch])
+    formatted_claims = "\n".join(
+        f"- (claim_index {c['claim_index']}) {c['english']}" for c in batch
+    )
     return f"""
     You are an assistant specialized in logic and formal reasoning.
-    I will provide you with a list of English claims.
-    For each claim:
-    1. Provide the original English claim.
-    2. {_MODE_INSTRUCTIONS[mode]}
-    3. Include the segment_index.
+    I will provide you with a list of English claims, each with a claim_index.
 
-    Return a JSON object with an "axioms" list. Each object in that list has keys:
-    {_MODE_FIELDS[mode]}.
+    For each claim, in order:
+    1. {_MODE_INSTRUCTIONS[mode]}
+    2. Echo back its claim_index exactly as given -- do not renumber, skip,
+       or merge claims. Every claim_index listed below must appear exactly
+       once in your output, even if you are unsure how to formalize it well
+       -- do your best rather than omitting it.
+
+    Do not include the claim's English text in your output at all; only the
+    claim_index and the formal representation(s).
+
+    Return a JSON object with an "axioms" list. Each object in that list has
+    keys: {_MODE_FIELDS[mode]}.
     Return only valid JSON. Do not include Markdown code fences or additional text.
     Input claims:
     {formatted_claims}
     """
+
+
+def _reconcile_batch(mode, batch, model_axioms):
+    """Rebuild this batch's axioms keyed off the INPUT claims, not the
+    model's output list -- guarantees exactly one axiom per input claim,
+    with "english" always the pipeline's own verbatim text, never the
+    model's copy of it.
+
+    Any claim_index the model didn't return (dropped, merged into another,
+    or unparseable) gets a placeholder axiom with formal=None (or
+    formal_logic/formal_english=None for "both" mode) rather than silently
+    vanishing from the count. Downstream, reconstruction.py already skips
+    axioms with no "formal" when building the formal-logic listing, but
+    still lists them in the English reconstruction -- so a failed
+    formalization stays visible (and countable) instead of disappearing.
+    """
+    by_index = {}
+    for item in model_axioms:
+        idx = item.get("claim_index")
+        if idx is not None:
+            by_index[idx] = item
+
+    reconciled = []
+    for claim in batch:
+        idx = claim["claim_index"]
+        model_item = by_index.get(idx)
+
+        axiom = {
+            "claim_index": idx,
+            "segment_index": claim["segment_index"],
+            "english": claim["english"],  # always the pipeline's own text
+        }
+
+        if model_item is None:
+            print(f"WARNING: model did not return claim_index {idx} "
+                  f"(\"{claim['english'][:60]}...\") -- keeping as unformalized.")
+            if mode == "both":
+                axiom["formal_logic"] = None
+                axiom["formal_english"] = None
+            else:
+                axiom["formal"] = None
+        else:
+            if mode == "both":
+                axiom["formal_logic"] = model_item.get("formal_logic")
+                axiom["formal_english"] = model_item.get("formal_english")
+            else:
+                axiom["formal"] = model_item.get("formal")
+
+        reconciled.append(axiom)
+
+    return reconciled
 
 
 def _formalize_batch(mode, batch, batch_num):
@@ -77,29 +144,34 @@ def _formalize_batch(mode, batch, batch_num):
     response = generate_response(prompt)
     if not response or not hasattr(response, "content"):
         print(f"Failed to get response for batch {batch_num}, skipping...")
-        return []
+        model_axioms = []
+    else:
+        batch_data = _extract_json_object(response.content)
+        if not batch_data or "axioms" not in batch_data:
+            print(f"Could not parse a valid axioms JSON object for batch {batch_num}.")
+            print(f"Raw response content: {response.content[:2000]}")
+            model_axioms = []
+        else:
+            model_axioms = batch_data["axioms"]
 
-    batch_data = _extract_json_object(response.content)
-    if not batch_data or "axioms" not in batch_data:
-        print(f"Could not parse a valid axioms JSON object for batch {batch_num}.")
-        print(f"Raw response content: {response.content[:2000]}")
-        return []
-
-    return batch_data["axioms"]
+    # Reconcile regardless of whether the call succeeded, failed, or
+    # partially succeeded -- every claim in `batch` gets an axiom out of
+    # this function, one way or another.
+    return _reconcile_batch(mode, batch, model_axioms)
 
 
 def formalize_claims(all_claims_data, mode, batch_size=50, max_workers=5):
     """Send each batch of claims to the model in parallel.
 
-    This used to be a sequential for-loop -- one blocking OpenAI call after
-    another. For a document with several batches, that adds up: gunicorn's
-    default worker timeout is 30s, and even a generous --timeout won't help
-    if it isn't the value actually configured on the deployed service. This
-    mirrors the same ThreadPoolExecutor approach extract_claims already uses
-    for claim extraction, cutting wall-clock time roughly by max_workers so
-    a whole request is far less likely to run long enough to hit any
-    timeout, whatever it's set to.
+    Each item in all_claims_data is assigned a stable claim_index (its
+    position in this list) up front. That index is the reconciliation key
+    used in _reconcile_batch to guarantee the output axiom count always
+    equals len(all_claims_data) -- see _reconcile_batch's docstring for why
+    that wasn't previously guaranteed.
     """
+    for i, claim in enumerate(all_claims_data):
+        claim["claim_index"] = i
+
     total_claims = len(all_claims_data)
     batches = [
         all_claims_data[i:i + batch_size]
@@ -121,7 +193,11 @@ def formalize_claims(all_claims_data, mode, batch_size=50, max_workers=5):
                 results_by_batch[batch_num] = future.result()
             except Exception as e:
                 print(f"Error formalizing batch {batch_num}: {e}")
-                results_by_batch[batch_num] = []
+                # Even on an unexpected exception, reconcile against an
+                # empty model response so this batch's claims still show
+                # up as unformalized placeholders instead of vanishing.
+                batch = batches[batch_num - 1]
+                results_by_batch[batch_num] = _reconcile_batch(mode, batch, [])
             print(f"Completed batch {len(results_by_batch)}/{total_batches}")
 
     all_axioms = []
@@ -130,17 +206,20 @@ def formalize_claims(all_claims_data, mode, batch_size=50, max_workers=5):
 
     if mode == "both":
         for ax in all_axioms:
-            ax.setdefault("formal", ax.get("formal_logic", ""))
+            ax.setdefault("formal", ax.get("formal_logic") or "")
 
-    print(f"Successfully formalized {len(all_axioms)} claims")
-    if total_claims > 0 and not all_axioms:
+    unformalized = sum(1 for ax in all_axioms if not ax.get("formal") and not ax.get("formal_logic"))
+    print(f"Successfully formalized {len(all_axioms) - unformalized}/{len(all_axioms)} claims "
+          f"({unformalized} unformalized)")
+
+    if total_claims > 0 and unformalized == len(all_axioms):
         print(
-            "WARNING: formalize_claims produced zero axioms from "
-            f"{total_claims} claims -- the model likely returned unparseable "
-            "responses for every batch. Check the raw-response logs above."
+            "WARNING: formalize_claims produced zero successfully-formalized "
+            f"axioms from {total_claims} claims -- the model likely returned "
+            "unparseable responses for every batch. Check the raw-response logs above."
         )
 
-    return {"axioms": all_axioms}
+    return {"axioms": all_axioms, "unformalized_count": unformalized}
 
 
 def check_contradictions(axioms):

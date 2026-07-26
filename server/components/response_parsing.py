@@ -1,8 +1,7 @@
 import os
 import json
 import re
-import asyncio
-import aiohttp
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from api_call import generate_response
 
@@ -63,7 +62,7 @@ def extract_json_from_response(response_content):
             print("Skipping: No valid JSON found in response.")
             return None
         return json.loads(json_match.group(0))
-    except (json.JSONDecodeError, Exception) as e:
+    except json.JSONDecodeError as e:
         print(f"Skipping JSON decoding error: {e}")
         return None
 
@@ -71,7 +70,7 @@ def append_response_to_file(response_content, filename):
     with open(filename, "a", encoding="utf-8") as f:
         f.write(response_content.strip() + "\n---END-OF-SEGMENT---\n")
 
-def parse_combined_responses(filename="all_responses.txt"):
+def parse_combined_responses(filename):
     if not os.path.exists(filename):
         print(f"No combined response file found: {filename}")
         return []
@@ -131,28 +130,40 @@ def process_single_segment(segment_data):
         print(f"JSON decoding error for segment {seg_idx}: {e}")
         return _empty_result(seg_idx)
 
-def extract_claims(segments, output_file="all_responses.txt", max_workers=5):
+def extract_claims(segments, output_file=None, max_workers=5, scratch_dir=None):
+    """
+    output_file: if not given, a fresh uuid-named scratch file is created
+    (in `scratch_dir` if given, else the current working directory) instead
+    of the previous hardcoded "all_responses.txt". A shared, hardcoded
+    filename means two concurrent /formalize requests (two browser tabs,
+    two users, or overlapping requests under a threaded server) delete and
+    rewrite each other's scratch file mid-flight -- one request's claims
+    silently corrupt or get read by another. Each call now gets its own
+    file, and it's removed after use so scratch files don't accumulate.
+    """
     import time
-    import random
-    
+
+    owns_file = output_file is None
+    if output_file is None:
+        scratch_dir = scratch_dir or os.getcwd()
+        os.makedirs(scratch_dir, exist_ok=True)
+        output_file = os.path.join(scratch_dir, f"claims_{uuid.uuid4().hex}.txt")
+
     if os.path.exists(output_file):
         os.remove(output_file)
 
     total_segments = len(segments)
     print(f"Processing {total_segments} segments with {max_workers} parallel workers...")
-    
-    # Use ThreadPoolExecutor for parallel processing
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks
         future_to_segment = {
-            executor.submit(process_single_segment, segment): segment 
+            executor.submit(process_single_segment, segment): segment
             for segment in segments
         }
-        
-        # Collect results as they complete
+
         results = []
         completed = 0
-        
+
         for future in as_completed(future_to_segment):
             segment = future_to_segment[future]
             try:
@@ -160,38 +171,51 @@ def extract_claims(segments, output_file="all_responses.txt", max_workers=5):
                 results.append(result)
                 completed += 1
                 print(f"Completed {completed}/{total_segments} segments (index {segment[0]})")
-                
-                # Add small delay to avoid overwhelming the API
+
                 if completed < total_segments:
-                    time.sleep(0.1)  # Small delay between completions
-                    
+                    time.sleep(0.1)
+
             except Exception as e:
                 print(f"Error processing segment {segment[0]}: {e}")
-                # Add empty result for failed segment
                 results.append(_empty_result(segment[0]))
                 completed += 1
-    
-    # Sort results by segment index to maintain order
+
     results.sort(key=lambda x: x.get("segment_index", 0))
-    
-    # Write all results to file
+
     for result in results:
         append_response_to_file(json.dumps(result), filename=output_file)
-    
-    print(f"Parallel processing complete! Processed {len(results)} segments.")
-    return parse_combined_responses(filename=output_file)
 
-def extract_claims_sequential(segments, output_file="all_responses.txt"):
-    """Original sequential version - kept as fallback"""
+    print(f"Parallel processing complete! Processed {len(results)} segments.")
+    parsed = parse_combined_responses(filename=output_file)
+
+    if owns_file:
+        try:
+            os.remove(output_file)
+        except OSError:
+            pass
+
+    return parsed
+
+def extract_claims_sequential(segments, output_file=None, scratch_dir=None):
+    """Original sequential version - kept as fallback.
+
+    Same per-call scratch file fix as extract_claims() -- see its docstring.
+    """
     import time
     import random
-    
+
+    owns_file = output_file is None
+    if output_file is None:
+        scratch_dir = scratch_dir or os.getcwd()
+        os.makedirs(scratch_dir, exist_ok=True)
+        output_file = os.path.join(scratch_dir, f"claims_{uuid.uuid4().hex}.txt")
+
     if os.path.exists(output_file):
         os.remove(output_file)
 
     total_segments = len(segments)
     print(f"Processing {total_segments} segments sequentially...")
-    
+
     for i, (seg_idx, sentence) in enumerate(segments):
         print(f"Processing segment {i+1}/{total_segments} (index {seg_idx})")
 
@@ -204,10 +228,17 @@ def extract_claims_sequential(segments, output_file="all_responses.txt"):
             continue
 
         append_response_to_file(response.content, filename=output_file)
-        
-        # Add small delay between requests to avoid rate limiting
-        if i < total_segments - 1:  # Don't delay after the last segment
-            delay = 0.5 + random.uniform(0, 0.5)  # 0.5-1.0 seconds
+
+        if i < total_segments - 1:
+            delay = 0.5 + random.uniform(0, 0.5)
             time.sleep(delay)
 
-    return parse_combined_responses(filename=output_file)
+    parsed = parse_combined_responses(filename=output_file)
+
+    if owns_file:
+        try:
+            os.remove(output_file)
+        except OSError:
+            pass
+
+    return parsed

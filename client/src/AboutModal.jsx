@@ -77,6 +77,9 @@ export default function AboutModal({ onClose }) {
             fontSize: 20, cursor: 'pointer', color: '#666', lineHeight: 1, padding: 4,
           }}
         >
+          {'\u00D7' /* × -- previously had no visible content at all; aria-label
+                          covered screen readers but sighted users saw a blank,
+                          unlabeled clickable rectangle in the corner. */}
         </button>
 
         <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 22 }}>About Wittgenstein</h2>

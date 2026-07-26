@@ -4,9 +4,15 @@ import FileUpload from './FileUpload.jsx';
 import ClaimCard from './ClaimCard.jsx';
 import AboutModal from './AboutModal.jsx';
 
-const TIER_ORDER = { High: 0, Medium: 1, Low: 2 };
-const TIER_FILTERS = ['All', 'High', 'Medium', 'Low'];
+// "Unformalized" sorts first (priority 0, ahead of even High) rather than
+// falling through to the `?? 3` default below -- a claim with no formal
+// representation at all is a more complete failure than any risk-flagged
+// but successfully-formalized claim, and deserves top billing, not to be
+// buried below every Low-risk claim in the list.
+const TIER_ORDER = { Unformalized: 0, High: 1, Medium: 2, Low: 3 };
+const TIER_FILTERS = ['All', 'Unformalized', 'High', 'Medium', 'Low'];
 const TIER_LEGEND = [
+  { tier: 'Unformalized', color: '#6c757d', desc: 'no formal representation was produced for this claim -- review the source directly' },
   { tier: 'High', color: '#dc3545', desc: '2+ weighted flags (e.g. modal mismatch or ambiguous negation)' },
   { tier: 'Medium', color: '#fd7e14', desc: 'one moderate flag, or several minor ones' },
   { tier: 'Low', color: '#198754', desc: 'no risk flags detected' },
@@ -147,7 +153,7 @@ export default function App() {
 
   const visibleClaims = (formalizationData?.axioms || [])
     .filter((a) => tierFilter === 'All' || a.risk_tier === tierFilter)
-    .sort((a, b) => (TIER_ORDER[a.risk_tier] ?? 3) - (TIER_ORDER[b.risk_tier] ?? 3));
+    .sort((a, b) => (TIER_ORDER[a.risk_tier] ?? 4) - (TIER_ORDER[b.risk_tier] ?? 4));
 
   return (
     <div style={{ maxWidth: 880, margin: '0 auto', padding: '40px 24px 80px', fontFamily: 'system-ui, Arial, sans-serif', color: '#1a1a1a' }}>
@@ -265,8 +271,15 @@ export default function App() {
         <section style={panelStyle}>
           <h2 style={sectionTitleStyle}>3. Review</h2>
           <p style={{ margin: '0 0 12px', color: '#444' }}>
-            Found {formalizationData.axioms?.length || 0} formalized claims
+            Found {formalizationData.axioms?.length || 0} claims
             {formalizeType ? ` (${FORMALIZE_OPTIONS.find((o) => o.type === formalizeType)?.label.toLowerCase()})` : ''}.
+            {(() => {
+              const unformalizedCount = (formalizationData.axioms || [])
+                .filter((a) => a.risk_tier === 'Unformalized').length;
+              return unformalizedCount > 0
+                ? ` ${unformalizedCount} could not be formalized and are shown below with no formal representation.`
+                : '';
+            })()}
           </p>
           {(formalizationData.download_url || formalizationData.output_pdf_path) && (
             <div style={{ margin: '0 0 16px' }}>

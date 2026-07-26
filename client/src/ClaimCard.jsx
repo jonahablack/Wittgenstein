@@ -2,6 +2,13 @@
 import React from 'react';
 
 const TIER_COLORS = {
+  // Distinct gray, not reused from High/Medium/Low -- this codebase's own
+  // color language uses green/orange/red to mean "risk level of a claim
+  // that WAS formalized." Falling back to Low's green (as this did before
+  // "Unformalized" had its own entry) told a reviewer "no concern" about a
+  // claim that in fact has no formal representation at all -- the opposite
+  // of what that color is supposed to signal everywhere else in this UI.
+  Unformalized: { bg: '#e2e3e5', fg: '#41464b', border: '#c4c8cb' },
   High: { bg: '#f8d7da', fg: '#842029', border: '#f1aeb5' },
   Medium: { bg: '#fff3cd', fg: '#664d03', border: '#ffe69c' },
   Low: { bg: '#d1e7dd', fg: '#0f5132', border: '#a3cfbb' },
@@ -38,11 +45,22 @@ export default function ClaimCard({ claim, decision, onDecide }) {
       <div style={{ marginBottom: 6 }}><strong>Claim:</strong> {claim.english}</div>
       {claim.formal_logic != null || claim.formal_english != null ? (
         <>
-          <div style={{ marginBottom: 4, color: '#444' }}><strong>Logic:</strong> {claim.formal_logic}</div>
-          <div style={{ marginBottom: 8, color: '#444' }}><strong>English formalization:</strong> {claim.formal_english}</div>
+          <div style={{ marginBottom: 4, color: '#444' }}>
+            <strong>Logic:</strong>{' '}
+            {claim.formal_logic ?? <em style={{ color: '#888' }}>not available -- formalization failed for this claim</em>}
+          </div>
+          <div style={{ marginBottom: 8, color: '#444' }}>
+            <strong>English formalization:</strong>{' '}
+            {claim.formal_english ?? <em style={{ color: '#888' }}>not available -- formalization failed for this claim</em>}
+          </div>
         </>
       ) : (
-        <div style={{ marginBottom: 8, color: '#444' }}><strong>Formal:</strong> {claim.formal}</div>
+        <div style={{ marginBottom: 8, color: '#444' }}>
+          <strong>Formal:</strong>{' '}
+          {claim.formal
+            ? claim.formal
+            : <em style={{ color: '#888' }}>not available -- formalization failed for this claim</em>}
+        </div>
       )}
 
       {claim.risk_flags?.length > 0 && (

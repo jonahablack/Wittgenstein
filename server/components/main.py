@@ -61,6 +61,14 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5, output_dir
     segments = segment_text(text)
     print(f"Text segmented into {len(segments)} segments")
 
+    # segment_index -> original sentence text, so risk_triage.py's
+    # segment-level checks can see the sentence a claim was extracted
+    # from (before claim extraction split it into one or more separate
+    # claims), not just that claim's own fragment. See risk_triage.py's
+    # detect_segment_nested_conditionals/detect_segment_negation_scope
+    # docstrings for why this exists.
+    segment_lookup = {seg_idx: sentence for seg_idx, sentence in segments}
+
     print("Extracting claims from segments...")
     if use_parallel:
         parsed_data = extract_claims(segments, max_workers=max_workers, scratch_dir=output_dir)
@@ -128,7 +136,7 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5, output_dir
 
     # Risk-triage annotation (rule-based, legible reasons for reviewers)
     print("Computing risk-triage flags...")
-    annotate_axioms(formalized_data.get("axioms", []), mode=mode)
+    annotate_axioms(formalized_data.get("axioms", []), mode=mode, segment_lookup=segment_lookup)
     risk_counts = {"High": 0, "Medium": 0, "Low": 0, "Unformalized": 0}
     for ax in formalized_data.get("axioms", []):
         tier = ax.get("risk_tier")

@@ -150,11 +150,11 @@ _STRONG_MODALS = [
 _NEGATION_WORDS = [
     "not", "n't", "never", "no", "without", "fails to", "fail to",
     "lacks", "lack of", "isn't", "aren't", "doesn't", "don't", "cannot",
-    "can't",
+    "can't", "neither", "nor",
 ]
 _CLAUSE_CONNECTORS = [
     "and", "or", "but", "if", "unless", "because", "while",
-    "although", "though", ", which", ", who",
+    "although", "though", ", which", ", who", "until",
 ]
 
 _CROSS_REFERENCE_PHRASES = [
@@ -402,6 +402,85 @@ def detect_nested_conditionals(english):
     }
 
 
+def detect_segment_nested_conditionals(segment_text):
+    """Same marker-counting logic as detect_nested_conditionals, but run
+    against the full ORIGINAL SEGMENT (the source sentence before claim
+    extraction split it into separate claims), not an individual extracted
+    claim's text.
+
+    Basis: claim extraction is deliberately atomic -- one assertion per
+    claim (see response_parsing.py's extraction prompt) -- which means a
+    single sentence with several nested conditions ("...unless X, provided
+    that Y, and except when Z, in which case W...") gets split into several
+    separate claims, each retaining at most one of those conditions. By the
+    time each fragment reaches detect_nested_conditionals, the markers that
+    used to co-occur in one sentence are scattered across different claim
+    objects, so the claim-level detector never sees 2+ markers in any one
+    of them and never fires -- even though the source sentence genuinely
+    had a nested-conditional structure that a reviewer would want flagged.
+    This is a real, confirmed gap (not hypothetical): see the 2026-vendor-
+    policy test run where a sentence with four stacked conditions produced
+    zero nested_conditional flags across all five of its extracted claims.
+
+    Only meaningful when the corresponding claim-level check (2+ markers
+    within the claim's own text) did NOT already fire -- see
+    annotate_axiom, which only calls this when detect_nested_conditionals
+    found nothing, so a claim that genuinely retains multiple markers on
+    its own isn't flagged twice for the same underlying signal.
+    """
+    text = _lower(segment_text)
+    count = sum(
+        _count_phrase_occurrences(text, marker) for marker in _CONDITIONAL_MARKERS
+    )
+    if count < 2:
+        return None
+    return {
+        "type": "segment_nested_conditional",
+        "reason": (
+            f"This claim was extracted from a source sentence containing {count} "
+            "conditional/exception markers, but this claim's own text does not "
+            "show that structure. Claim extraction may have split a single "
+            "nested-conditional sentence into several separate claims, each "
+            "losing some of the conditions attached to it in the original "
+            "sentence."
+        ),
+    }
+
+
+def detect_segment_negation_scope(segment_text):
+    """Same negation-plus-connector logic as detect_negation_scope, but run
+    against the full original SEGMENT text.
+
+    Basis: same mechanism as detect_segment_nested_conditionals above --
+    a compound sentence like "should not transfer X, and should not permit
+    Y" gets split into two claims, each with one negation and no
+    connector, so detect_negation_scope never fires on either fragment
+    even though the source sentence combined a negation with multiple
+    clauses.
+
+    Only meaningful when the corresponding claim-level check did NOT
+    already fire -- see annotate_axiom.
+    """
+    text = _lower(segment_text)
+    if not _find_phrases(text, _NEGATION_WORDS):
+        return None
+    connector_count = sum(
+        _count_phrase_occurrences(text, c) for c in _CLAUSE_CONNECTORS
+    )
+    if connector_count == 0:
+        return None
+    return {
+        "type": "segment_negation_scope",
+        "reason": (
+            "This claim was extracted from a source sentence combining a "
+            "negation with multiple clauses, but this claim's own text does "
+            "not show that structure. Claim extraction may have separated "
+            "this claim from the clause that determines what the negation "
+            "in the original sentence applied to."
+        ),
+    }
+
+
 _DETECTORS_ENGLISH_ONLY = [
     detect_hedges,
     detect_negation_scope,
@@ -419,6 +498,12 @@ _FLAG_WEIGHTS = {
     "nested_conditional": 1,
     "negation_scope": 2,
     "modal_mismatch": 2,
+    # Same weight as their claim-level counterparts (see detect_segment_*
+    # below) -- these fire on the sentence a claim was extracted FROM, not
+    # the claim's own text, specifically to catch structure that claim
+    # extraction's atomization silently stripped out.
+    "segment_nested_conditional": 1,
+    "segment_negation_scope": 2,
 }
 
 # Flag types that overlap in what they detect (e.g. "may" can trigger both
@@ -446,7 +531,7 @@ def _dedupe_for_scoring(flags):
     return [f for f in flags if f["type"] not in drop_types]
 
 
-def flag_claim(english, formal, formal_mode="english"):
+def flag_claim(english, formal, formal_mode="english", segment_text=None):
     """Return a list of {type, reason} flags for one (english, formal) pair.
 
     formal_mode should be "english", "logic", or "both" -- matching the
@@ -455,15 +540,39 @@ def flag_claim(english, formal, formal_mode="english"):
     pass the formal_english string here, not formal_logic; see
     annotate_axiom for the caller-facing version that handles this
     automatically from a raw axiom dict.
+
+    segment_text, if given, is the original source sentence this claim was
+    extracted from (before claim extraction split it into one or more
+    claims). When present, detect_segment_nested_conditionals and
+    detect_segment_negation_scope run against it -- but ONLY for whichever
+    of the two checks didn't already fire at the claim level, so a claim
+    that genuinely retains the structure on its own isn't flagged twice
+    for the same underlying signal. See those functions' docstrings for
+    why this exists: claim extraction's atomization can silently strip
+    nested-conditional and compound-negation structure that existed in the
+    source sentence before either detector ever sees the claim.
     """
     flags = []
+    flag_types_present = set()
     for detector in _DETECTORS_ENGLISH_ONLY:
         flag = detector(english)
         if flag:
             flags.append(flag)
+            flag_types_present.add(flag["type"])
     modal_flag = detect_modal_mismatch(english, formal, formal_mode=formal_mode)
     if modal_flag:
         flags.append(modal_flag)
+
+    if segment_text:
+        if "nested_conditional" not in flag_types_present:
+            seg_flag = detect_segment_nested_conditionals(segment_text)
+            if seg_flag:
+                flags.append(seg_flag)
+        if "negation_scope" not in flag_types_present:
+            seg_flag = detect_segment_negation_scope(segment_text)
+            if seg_flag:
+                flags.append(seg_flag)
+
     return flags
 
 
@@ -481,7 +590,7 @@ def compute_tier(flags):
     return "Low"
 
 
-def annotate_axiom(axiom, mode="english"):
+def annotate_axiom(axiom, mode="english", segment_text=None):
     """Add risk_flags and risk_tier to a single axiom dict, in place.
 
     Axioms with no formal representation at all (formalize_claims()
@@ -509,6 +618,16 @@ def annotate_axiom(axiom, mode="english"):
         mismatch, since that's the field where modal language is
         expressible; axiom["formal_logic"] is not checked for modal
         mismatch for the same reason "logic" mode is skipped.
+
+    Segment-level checks (see flag_claim's docstring) are skipped
+    entirely for Unformalized axioms, for the same reason as above --
+    piling more flags onto a claim with no formal representation at all
+    would dilute that already-distinct signal.
+
+    segment_text, if given, is passed through to flag_claim -- see its
+    docstring for what this enables (recovering nested-conditional/
+    negation-scope structure that claim extraction's atomization can
+    strip out of an individual claim before it's ever seen here).
     """
     english = axiom.get("english", "")
 
@@ -527,11 +646,29 @@ def annotate_axiom(axiom, mode="english"):
         formal_for_modal_check = axiom.get("formal", "")
         effective_mode = mode
 
-    flags = flag_claim(english, formal_for_modal_check, formal_mode=effective_mode)
+    flags = flag_claim(
+        english, formal_for_modal_check, formal_mode=effective_mode,
+        segment_text=segment_text,
+    )
     axiom["risk_flags"] = flags
     axiom["risk_tier"] = compute_tier(flags)
     return axiom
 
 
-def annotate_axioms(axioms, mode="english"):
-    return [annotate_axiom(ax, mode=mode) for ax in axioms]
+def annotate_axioms(axioms, mode="english", segment_lookup=None):
+    """
+    segment_lookup: optional dict mapping segment_index -> original source
+    sentence text, so annotate_axiom can recover nested-conditional/
+    negation-scope structure claim extraction stripped out of individual
+    claims. See annotate_axiom's and flag_claim's docstrings. If not
+    given, segment-level checks are simply skipped (backward compatible
+    with existing callers that don't have this lookup handy).
+    """
+    segment_lookup = segment_lookup or {}
+    return [
+        annotate_axiom(
+            ax, mode=mode,
+            segment_text=segment_lookup.get(ax.get("segment_index")),
+        )
+        for ax in axioms
+    ]

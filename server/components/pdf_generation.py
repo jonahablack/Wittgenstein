@@ -77,10 +77,20 @@ def generate_output_pdf(
     draw_line(f"Total Segments: {total_segments}")
     draw_line(f"Formalizable Segments: {formalizable_segments}")
     if risk_counts:
-        draw_line(
+        # "Unformalized" was missing from this line entirely -- risk_triage.py
+        # and main.py both track it (main.py's risk_counts dict has always
+        # included the key since it was added), but this summary line never
+        # read it, so a document with several failed formalizations would
+        # report only High/Medium/Low counts that silently didn't sum to the
+        # total claim count, with no visible explanation why.
+        unformalized = risk_counts.get('Unformalized', 0)
+        tier_line = (
             f"Risk Tiers: High {risk_counts.get('High', 0)}, "
             f"Medium {risk_counts.get('Medium', 0)}, Low {risk_counts.get('Low', 0)}"
         )
+        if unformalized:
+            tier_line += f", Unformalized {unformalized}"
+        draw_line(tier_line)
     y -= 0.3 * inch
 
     has_logic = bool(logic_text.strip())

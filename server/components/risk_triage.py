@@ -1,4 +1,4 @@
-"""Rule-based risk triage for (english claim, structured form) pairs.
+"""Rule-based risk triage for (english claim, formal string) pairs.
 
 Flags likely formalization errors with a human-readable reason, so a
 reviewer can prioritize attention instead of reading every claim equally
@@ -39,11 +39,39 @@ MATCHING NOTE: every phrase list below is matched with word-boundary
 regex via _contains_phrase / _find_phrases, never plain Python `in`
 substring checks. Plain substring checks on short tokens are a real bug
 class here -- e.g. the strong-modal token "no" as a bare substring check
-matches inside "nonprofit", "no" would also match inside "technology" if
-it weren't space-delimited some other way, "all" matches inside "small",
-"can"/"may" match inside "canada"/"mayor"/"mayonnaise", etc. All matching
-in this file goes through the helpers below so this class of bug can't
-silently reappear when a new phrase is added to a list.
+matches inside "nonprofit", "all" matches inside "small", "can"/"may"
+match inside "canada"/"mayor"/"mayonnaise", etc. All matching in this
+file goes through the helpers below so this class of bug can't silently
+reappear when a new phrase is added to a list.
+
+MODAL-MISMATCH AND FORMALIZATION MODE: logic_formalization.py supports
+two formal-output modes with fundamentally different expressive power:
+
+  - "english": the model rewrites the claim as precise, logically
+    explicit plain English ("For every X, ..."). Modal/deontic language
+    ("must", "required", "may") is fully expressible here, and its
+    disappearance from the formal string relative to the source claim is
+    real, checkable evidence of a dropped qualifier.
+
+  - "logic": the model produces ASCII symbolic notation (&, |, ~, >>)
+    parsed downstream by sympy (check_contradictions() calls sympify()
+    directly on the "formal" field). sympy.logic.boolalg implements
+    classical propositional logic only -- there is no deontic operator
+    for "must" vs. "may" vs. "is predicted to" anywhere in that algebra,
+    and the prompt's own worked example ("Every event has a cause" ->
+    "Event(x) >> Cause(y, x)") establishes the Predicate(x) >>
+    Predicate(y, x) shape for every claim regardless of the source
+    claim's modal force. A symbolic formal string therefore has no
+    modal marker *by construction*, not because a qualifier was dropped
+    in this particular instance. Flagging every symbolic-mode claim for
+    "missing modal marker" would be noise, not signal, and would
+    reintroduce the undifferentiated-alert problem this tool exists to
+    prevent.
+
+  detect_modal_mismatch therefore takes a `formal_mode` argument and is
+  a no-op whenever formal_mode == "logic". It still runs normally for
+  "english" mode, and for "both" mode should be called against the
+  formal_english field specifically (see annotate_axiom).
 """
 
 import re
@@ -58,9 +86,6 @@ def _boundary_pattern(phrase):
     spaces or for phrases ending in punctuation-adjacent characters, so
     this builds the boundary condition explicitly: the phrase must not
     be immediately preceded or followed by an alphanumeric character.
-    Phrases may include a trailing space in the source lists (a leftover
-    convention from before this fix); that's stripped before building
-    the pattern since the boundary check makes it redundant.
     """
     core = phrase.strip()
     escaped = re.escape(core)
@@ -103,9 +128,28 @@ _STRONG_MODALS = [
     "must", "shall", "always", "never", "necessarily", "required",
     "requires", "mandatory", "every", "all", "none", "no",
 ]
-_STRONG_FORMAL_MARKERS = ["must", "necessarily", "□", "always", "∀", "shall"]
-_MEDIUM_FORMAL_MARKERS = ["should", "ought to", "ought"]
-_WEAK_FORMAL_MARKERS = ["may", "possibly", "◇", "might", "could", "can"]
+
+# Formal-string-side markers. These are checked against ENGLISH-MODE
+# formal output only (see module docstring / detect_modal_mismatch) --
+# symbolic "logic" mode is exempted entirely, since sympy's classical
+# propositional logic has no deontic operators to look for.
+#
+# Previously this list only covered symbolic/logic-flavored tokens
+# ("must", "necessarily", "always", "shall") and was missing every
+# strong-modal word that _STRONG_MODALS already covers on the source
+# side ("required", "requires", "every", "all", "none", "no"). Since
+# _ENGLISH_INSTRUCTIONS explicitly produces plain English formal strings
+# ("For every X, it is not required that..."), those words are exactly
+# as likely to appear on the formal side as the source side, and their
+# absence from this list caused false "modal marker dropped" flags on
+# claims where the modal was carried over verbatim -- e.g. a source
+# claim using "required"/"every" formalized into English retaining both
+# words, incorrectly flagged because neither word was in this list.
+_STRONG_FORMAL_MARKERS = [
+    "must", "necessarily", "always", "shall",
+    "required", "requires", "every", "all", "none", "no", "mandatory",
+]
+_WEAK_FORMAL_MARKERS = ["may", "possibly", "might", "could"]
 
 _NEGATION_WORDS = [
     "not", "n't", "never", "no", "without", "fails to", "fail to",
@@ -151,34 +195,20 @@ def _lower(text):
 
 
 def detect_hedges(english):
-    """Hedge detection for non-modal-strength hedges.
-
-    Deliberately excludes hedge words that are also modal-strength words
-    (e.g. "may", "can") -- those are handled exclusively by
-    detect_modal_mismatch, which checks whether the structured form
-    actually preserved the modal rather than assuming it was dropped just
-    because the source contains a weak-modal word. Flagging both would be
-    either redundant (modal_mismatch already caught it) or wrong (the
-    modal was correctly preserved and modal_mismatch stayed silent).
-    Non-modal hedges ("generally", "arguably", "somewhat", ...) aren't
-    checked by modal_mismatch at all, so they still fire here
-    independently.
+    """Hedge detection.
 
     Basis: [4] Datla et al., AAAI 2026 -- documents LLM rule-extraction
     pipelines "softening or dropping qualifiers" during formalization.
     Hedge words are exactly the qualifiers at risk of being dropped.
     """
     text = _lower(english)
-    hits = [h for h in _find_phrases(text, _HEDGE_WORDS) if h not in _WEAK_MODALS]
+    hits = _find_phrases(text, _HEDGE_WORDS)
     if not hits:
         return None
     quoted = ", ".join(f'"{h}"' for h in hits)
     return {
         "type": "hedge",
-        "reason": (
-            f"Source claim contains hedging language ({quoted}) -- worth "
-            "checking the structured form didn't overstate the claim's actual certainty."
-        ),
+        "reason": f"Source claim contains hedging language ({quoted}) that a formal statement may overstate.",
     }
 
 
@@ -197,28 +227,42 @@ def _formal_strength(formal):
     text = _lower(formal)
     if _find_phrases(text, _STRONG_FORMAL_MARKERS):
         return "strong"
-    if _find_phrases(text, _MEDIUM_FORMAL_MARKERS):
-        return "medium"
     if _find_phrases(text, _WEAK_FORMAL_MARKERS):
         return "weak"
     return None
 
 
-def detect_modal_mismatch(english, formal):
-    """Modal strength mismatch between source claim and structured form.
+def detect_modal_mismatch(english, formal, formal_mode="english"):
+    """Modal strength mismatch between source claim and formal string.
 
     Basis: [4] Datla et al., AAAI 2026 -- "over-normalize nuanced
     qualifiers into coarse schema slots, blurring distinctions between
     'may,' 'should,' and 'shall.'"
 
-    Covers two distinct failure patterns documented there:
-      1. Source has a modal, the structured form has a *different* modal
+    formal_mode controls whether this check runs at all. When
+    formal_mode == "logic", this is a no-op: symbolic output parsed by
+    sympy (see check_contradictions() in logic_formalization.py) has no
+    deontic operators in its algebra, so *every* symbolic formal string
+    lacks an explicit modal marker by construction, regardless of the
+    source claim's modal force. Checking for one there would flag
+    essentially every obligation-bearing claim run through symbolic
+    mode, which is noise, not signal. For "english" mode (or "both",
+    checked against formal_english -- see annotate_axiom), modal
+    language is fully expressible in the formal string, so its absence
+    is real, checkable evidence.
+
+    Covers two distinct failure patterns, both only meaningful outside
+    "logic" mode:
+      1. Source has a modal, formal string has a *different* modal
          (source "may" formalized as though it were mandatory).
-      2. Source has a modal, the structured form has *no* modal marker at
-         all -- the qualifier was dropped rather than mistranslated. This
-         is the more common pattern per [4] ("softening or dropping
+      2. Source has a modal, formal string has *no* modal marker at all --
+         the qualifier was dropped rather than mistranslated. This is
+         the more common pattern per [4] ("softening or dropping
          qualifiers").
     """
+    if formal_mode == "logic":
+        return None
+
     source_strength = _modal_strength(english)
     if not source_strength:
         return None
@@ -230,8 +274,8 @@ def detect_modal_mismatch(english, formal):
             "type": "modal_mismatch",
             "reason": (
                 f"Source claim reads as {source_strength} certainty, but the "
-                "structured form carries no explicit modal marker -- worth "
-                "checking whether the qualifier was dropped during formalization."
+                "formal string carries no explicit modal marker at all -- "
+                "the qualifier may have been dropped during formalization."
             ),
         }
 
@@ -246,9 +290,8 @@ def detect_modal_mismatch(english, formal):
     return {
         "type": "modal_mismatch",
         "reason": (
-            f"Source claim reads as {source_strength} certainty while the "
-            f"structured form reads as {formal_strength} certainty ({severity}) "
-            "-- worth checking the formalization preserved the claim's intended strength."
+            f"Source claim reads as {source_strength} certainty but the formal "
+            f"string reads as {formal_strength} certainty ({severity})."
         ),
     }
 
@@ -274,8 +317,8 @@ def detect_negation_scope(english):
     return {
         "type": "negation_scope",
         "reason": (
-            "Claim combines a negation with multiple clauses -- worth "
-            "checking which clause the negation was intended to apply to."
+            "Claim combines a negation with multiple clauses, so it is "
+            "ambiguous which clause the negation applies to."
         ),
     }
 
@@ -295,8 +338,8 @@ def detect_cross_reference(english):
     return {
         "type": "cross_reference",
         "reason": (
-            f'Claim depends on context defined elsewhere ("{hits[0]}") -- '
-            "worth checking the structured form didn't lose that dependency."
+            f'Claim depends on context defined elsewhere ("{hits[0]}"), '
+            "which the formal string may not capture."
         ),
     }
 
@@ -327,9 +370,9 @@ def detect_unresolved_reference(english):
         "type": "unresolved_reference",
         "reason": (
             f'Claim refers to "{hits[0]}" without naming it directly in this '
-            "segment -- the antecedent may have been separated from this "
-            "claim during chunking, so worth checking the structured form "
-            "bound to the right entity."
+            "segment. The antecedent may have been separated from this "
+            "claim during chunking, so the formal string may bind to the "
+            "wrong entity."
         ),
     }
 
@@ -351,8 +394,8 @@ def detect_nested_conditionals(english):
     return {
         "type": "nested_conditional",
         "reason": (
-            f"Claim contains {count} conditional/exception markers -- worth "
-            "checking none were flattened or dropped when formalizing."
+            f"Claim contains {count} conditional/exception markers; nested "
+            "conditions are easy to flatten or drop when formalizing."
         ),
     }
 
@@ -376,28 +419,59 @@ _FLAG_WEIGHTS = {
     "modal_mismatch": 2,
 }
 
-def flag_claim(english, formal):
-    """Return a list of {type, reason} flags for one (english, formal) pair."""
+# Flag types that overlap in what they detect (e.g. "may" can trigger both
+# a hedge flag and a modal_mismatch flag off the same word). When both fire
+# for the same underlying signal, only the higher-weighted flag counts
+# toward the tier score, so one linguistic feature isn't double-counted
+# as two independent pieces of evidence.
+_OVERLAPPING_GROUPS = [
+    {"hedge", "modal_mismatch"},
+]
+
+
+def _dedupe_for_scoring(flags):
+    """Collapse overlapping flag types to their highest-weight member
+    before scoring. All flags are still returned to the caller/UI --
+    this only affects the tier score, not what's displayed.
+    """
+    present_types = {f["type"] for f in flags}
+    drop_types = set()
+    for group in _OVERLAPPING_GROUPS:
+        present_in_group = group & present_types
+        if len(present_in_group) > 1:
+            keep = max(present_in_group, key=lambda t: _FLAG_WEIGHTS.get(t, 1))
+            drop_types |= (present_in_group - {keep})
+    return [f for f in flags if f["type"] not in drop_types]
+
+
+def flag_claim(english, formal, formal_mode="english"):
+    """Return a list of {type, reason} flags for one (english, formal) pair.
+
+    formal_mode should be "english", "logic", or "both" -- matching the
+    mode values used in logic_formalization.py -- and controls whether
+    detect_modal_mismatch runs (see its docstring). For "both" mode,
+    pass the formal_english string here, not formal_logic; see
+    annotate_axiom for the caller-facing version that handles this
+    automatically from a raw axiom dict.
+    """
     flags = []
     for detector in _DETECTORS_ENGLISH_ONLY:
         flag = detector(english)
         if flag:
             flags.append(flag)
-    modal_flag = detect_modal_mismatch(english, formal)
+    modal_flag = detect_modal_mismatch(english, formal, formal_mode=formal_mode)
     if modal_flag:
         flags.append(modal_flag)
     return flags
 
 
 def compute_tier(flags):
-    """Transparent, inspectable tiering rule: sum of per-flag-type weights.
-
-    No dedup step is needed here: detect_hedges excludes modal-strength
-    words (see its docstring), so hedge and modal_mismatch can no longer
-    fire on the same underlying word -- if both are present in `flags`,
-    they're independent findings and both should count.
+    """Transparent, inspectable tiering rule: sum of per-flag-type weights,
+    with overlapping flag types deduplicated first so a single linguistic
+    feature (e.g. one hedge word) can't be counted twice.
     """
-    score = sum(_FLAG_WEIGHTS.get(f["type"], 1) for f in flags)
+    scoring_flags = _dedupe_for_scoring(flags)
+    score = sum(_FLAG_WEIGHTS.get(f["type"], 1) for f in scoring_flags)
     if score >= 4:
         return "High"
     if score >= 2:
@@ -405,13 +479,37 @@ def compute_tier(flags):
     return "Low"
 
 
-def annotate_axiom(axiom):
-    """Add risk_flags and risk_tier to a single axiom dict, in place."""
-    flags = flag_claim(axiom.get("english", ""), axiom.get("formal", ""))
+def annotate_axiom(axiom, mode="english"):
+    """Add risk_flags and risk_tier to a single axiom dict, in place.
+
+    `mode` should match the mode passed to formalize_claims(): "logic",
+    "english", or "both". This determines which field is checked for
+    modal-mismatch and whether that check runs at all:
+
+      - "english": checks axiom["formal"] normally.
+      - "logic": checks axiom["formal"], but detect_modal_mismatch is a
+        no-op in this mode regardless (see its docstring) -- sympy-
+        parsed symbolic output has no modal marker to find by
+        construction, so this is skipped rather than flagged.
+      - "both": checks axiom["formal_english"] specifically for modal
+        mismatch, since that's the field where modal language is
+        expressible; axiom["formal_logic"] is not checked for modal
+        mismatch for the same reason "logic" mode is skipped.
+    """
+    english = axiom.get("english", "")
+
+    if mode == "both":
+        formal_for_modal_check = axiom.get("formal_english", axiom.get("formal", ""))
+        effective_mode = "english"
+    else:
+        formal_for_modal_check = axiom.get("formal", "")
+        effective_mode = mode
+
+    flags = flag_claim(english, formal_for_modal_check, formal_mode=effective_mode)
     axiom["risk_flags"] = flags
     axiom["risk_tier"] = compute_tier(flags)
     return axiom
 
 
-def annotate_axioms(axioms):
-    return [annotate_axiom(ax) for ax in axioms]
+def annotate_axioms(axioms, mode="english"):
+    return [annotate_axiom(ax, mode=mode) for ax in axioms]

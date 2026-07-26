@@ -183,8 +183,29 @@ _CONDITIONAL_MARKERS = [
 ]
 
 
+# "no less than X" / "no more than X" / "no later than X" / "no fewer than
+# X" / "no greater than X" / "no earlier than X" / "no sooner than X" are
+# quantity/degree idioms -- "no" here isn't negating a clause a reviewer
+# would need to disambiguate scope for, and it isn't asserting a strong
+# deontic claim either. Left unmasked, bare "no" inside these idioms was
+# matching both _NEGATION_WORDS (a false negation_scope/segment_negation_
+# scope trigger on sentences with no real negation at all -- e.g. "must
+# retain logs for no less than ninety days, and this requirement applies
+# ...", where "no" + the unrelated "and" elsewhere in the sentence
+# combined to produce a spurious segment-level negation flag) and
+# _STRONG_MODALS (a latent false-strong-modal reading via the same
+# mechanism, not yet observed in practice but structurally identical).
+# Masked centrally in _lower(), which every detector routes through, so
+# this is fixed once rather than needing a special case in each affected
+# detector separately.
+_NO_THAN_IDIOM = re.compile(
+    r"\bno\s+(?:less|more|fewer|greater|later|earlier|sooner)\s+than\b"
+)
+
+
 def _lower(text):
-    return (text or "").lower()
+    text = (text or "").lower()
+    return _NO_THAN_IDIOM.sub("some threshold", text)
 
 
 # --- flag detectors -----------------------------------------------------------

@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this registry or tooling, please cite it as below."
+title: "Wittgenstein RAG Reliability: An Evidence-Graded Registry of RAG Failure Mechanisms"
+authors:
+  - name: "Wittgenstein RAG Reliability contributors"
+date-released: 2026-09-02
+version: 0.1.0
+repository-code: "https://github.com/REPLACE_WITH_ORG/wittgenstein-rag-reliability"
+license: Apache-2.0

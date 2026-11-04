@@ -1,0 +1,96 @@
+{
+  "trace_id": "LV-TRACE-08-clarification-needed-underspecified-intent",
+  "manifest_id": "LV-MANIFEST-segmented-rag",
+  "corpus_id": "CORPUS-widget-cert-001",
+  "query": "What certification tier applies to my widget?",
+  "query_timestamp": "2026-09-09T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": false,
+    "required_support_item_ids": [],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-1",
+      "segment_id": "doc1-seg1",
+      "excerpt": "Certification tier is determined by widget weight class and intended-use region; see Table 1.",
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 120
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-5",
+      "segment_id": "doc5-seg2",
+      "excerpt": "Region-A widgets under 2kg are Tier-1; Region-B widgets under 2kg are Tier-2.",
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 110
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-1",
+      "segment_id": "doc1-seg1",
+      "excerpt": "Certification tier is determined by widget weight class and intended-use region; see Table 1.",
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 120
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-5",
+      "segment_id": "doc5-seg2",
+      "excerpt": "Region-A widgets under 2kg are Tier-1; Region-B widgets under 2kg are Tier-2.",
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 110
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-1",
+      "segment_id": "doc1-seg1",
+      "excerpt": "Certification tier is determined by widget weight class and intended-use region; see Table 1.",
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 120
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-5",
+      "segment_id": "doc5-seg2",
+      "excerpt": "Region-A widgets under 2kg are Tier-1; Region-B widgets under 2kg are Tier-2.",
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 110
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "...(tier depends on weight class and region, neither of which the query specifies)...",
+  "final_prompt_token_count": 600,
+  "prompt_token_spans": [
+    {"context_item_id": "item-1", "start_token": 0, "end_token": 120, "position_rank": 1},
+    {"context_item_id": "item-2", "start_token": 120, "end_token": 230, "position_rank": 2}
+  ],
+  "generation_parameters": {},
+  "answer": "Your widget is likely Tier-1, assuming it is under 2kg and used in Region A.",
+  "answer_claims": [
+    {"claim_id": "claim-1", "text": "The widget is Tier-1, assuming under 2kg and Region A."}
+  ],
+  "answer_support_edges": [
+    {"claim_id": "claim-1", "context_item_ids": ["item-2"], "support_status": "unknown", "judged_by": null}
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [],
+  "risk_events": [],
+  "trace_status": "complete"
+}

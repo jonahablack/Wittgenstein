@@ -1,0 +1,16 @@
+{
+  "case_id": "asteria-008-distractor-same-topic",
+  "fixture_category": "same_topic_non_supporting_distractor",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d2-classification-seg9"],
+  "distractor_locations": ["d2-classification-seg10"],
+  "distractor_note": "d2-classification-seg10 (Class S, 8 cm) is retrieved into the same candidate pool as the same-topic, non-supporting distractor for a Class-R-specific claim.",
+  "expected_claim_link_relationship": "direct_support_candidate",
+  "expected_distractor_relationship": "unresolved",
+  "expected_distractor_note": "field_comparison classifies the claim-vs-distractor pair unresolved, carrying entity_binding_mismatch and value_mismatch outcomes (Class R vs. Class S, 12 cm vs. 8 cm) -- never direct_support_candidate. Verified directly by running field comparison against the distractor, per the fixture-integrity validator's requirement that a distractor never accidentally satisfies the claim it is designed to fail.",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": null,
+  "expected_reviewer_action": "approve_sufficiently_supported",
+  "expected_reviewer_action_is_advisory_only": true,
+  "known_limitations": []
+}

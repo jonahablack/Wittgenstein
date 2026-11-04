@@ -1,0 +1,98 @@
+{
+  "trace_id": "LV-TRACE-05-boundary-present-complete-support-packed",
+  "manifest_id": "LV-MANIFEST-segmented-rag",
+  "corpus_id": "CORPUS-widget-cert-001",
+  "query": "Does a Tier-2 widget need the extended durability test?",
+  "query_timestamp": "2026-09-09T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": true,
+    "required_support_item_ids": ["item-1", "item-2"],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-9",
+      "segment_id": "doc9-seg2",
+      "excerpt": "Tier-2 widgets require the extended durability test unless covered by exemption 4.1(b).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 190
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-9",
+      "segment_id": "doc9-seg3",
+      "excerpt": "Exemption 4.1(b) applies to widgets manufactured before program year 3.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 170
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-9",
+      "segment_id": "doc9-seg2",
+      "excerpt": "Tier-2 widgets require the extended durability test unless covered by exemption 4.1(b).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 190
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-9",
+      "segment_id": "doc9-seg3",
+      "excerpt": "Exemption 4.1(b) applies to widgets manufactured before program year 3.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 170
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-9",
+      "segment_id": "doc9-seg2",
+      "excerpt": "Tier-2 widgets require the extended durability test unless covered by exemption 4.1(b).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 190
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-9",
+      "segment_id": "doc9-seg3",
+      "excerpt": "Exemption 4.1(b) applies to widgets manufactured before program year 3.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 170
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "...(both the durability-test requirement and the exemption clause are packed, despite the segment boundary between them)...",
+  "final_prompt_token_count": 1500,
+  "prompt_token_spans": [
+    {"context_item_id": "item-1", "start_token": 0, "end_token": 190, "position_rank": 1},
+    {"context_item_id": "item-2", "start_token": 190, "end_token": 360, "position_rank": 2}
+  ],
+  "generation_parameters": {},
+  "answer": "Yes, a Tier-2 widget needs the extended durability test, unless it was manufactured before program year 3.",
+  "answer_claims": [
+    {"claim_id": "claim-1", "text": "A Tier-2 widget needs the extended durability test unless manufactured before program year 3."}
+  ],
+  "answer_support_edges": [
+    {"claim_id": "claim-1", "context_item_ids": ["item-1", "item-2"], "support_status": "supported", "judged_by": "reviewer"}
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [
+    "exemption-applicability relation crosses segment_id=doc9-seg2/doc9-seg3, but both segments were retrieved, selected, and packed together -- full support reached the generator despite the boundary crossing"
+  ],
+  "risk_events": [],
+  "trace_status": "complete"
+}

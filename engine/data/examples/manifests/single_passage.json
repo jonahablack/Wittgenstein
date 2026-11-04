@@ -1,0 +1,68 @@
+{
+  "manifest_id": "MANIFEST-single-passage-001",
+  "system_name": "synthetic-single-passage-rag",
+  "system_version": "0.1.0-synthetic",
+  "created_at": "2026-09-02T00:00:00Z",
+  "corpus_manifest": {
+    "corpus_id": "CORPUS-faq-001",
+    "source_type": null,
+    "domain": "internal_faq",
+    "language": null,
+    "document_count": 120,
+    "corpus_versioning": null
+  },
+  "ingestion_manifest": {
+    "parser": null,
+    "ocr_used": null,
+    "table_extraction_method": null,
+    "structure_extraction_method": null
+  },
+  "representation_manifest": {
+    "index_unit": null,
+    "embedding_family": null,
+    "embedding_model_identifier": null
+  },
+  "retrieval_manifest": {
+    "retriever_family": "bm25",
+    "retrieval_topology": null,
+    "retrieval_unit": "passage",
+    "chunking_method": "fixed_size",
+    "chunk_size_or_distribution": "256_tokens",
+    "overlap_or_stride": null,
+    "candidate_depth": 5,
+    "query_transformation_enabled": null,
+    "query_transformation_method": null,
+    "parent_child_expansion": null,
+    "graph_retrieval": null
+  },
+  "reranking_manifest": {
+    "reranking_enabled": false,
+    "reranker_family": null,
+    "rerank_depth": null
+  },
+  "selection_manifest": {
+    "selection_policy": "top_1",
+    "max_selected_items": 1
+  },
+  "packing_manifest": {
+    "packing_method": "single_item",
+    "ordering_method": null,
+    "compression_enabled": null,
+    "compression_type": null,
+    "compression_ratio": null,
+    "context_window_tokens": 2000,
+    "evidence_budget_tokens": 500
+  },
+  "generation_manifest": {
+    "generator_family": "small_instruct_llm",
+    "model_identifier": null,
+    "prompting_policy": null,
+    "citation_policy": null,
+    "abstention_policy": null
+  },
+  "evaluation_manifest": {
+    "evaluation_metrics": [],
+    "human_review_enabled": null
+  },
+  "missing_information": []
+}

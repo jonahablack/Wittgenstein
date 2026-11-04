@@ -1,0 +1,69 @@
+# Every review action is a bounded, human-checkable question or comparison.
+# instructs_acceptance is always false -- enforced by ReviewAction's own validator.
+review_actions:
+  - id: RA_COMPARE_WITH_WITHOUT_DISTRACTOR
+    applicable_mechanism_ids: [RET_HARD_DISTRACTOR]
+    prompt_text: >
+      A query-related, non-supporting passage is present in the packed context. Compare
+      the answer generated with this passage included against the answer generated with
+      it removed. Does removing it change correctness or attribution?
+    action_type: compare_with_and_without_item
+    instructs_acceptance: false
+
+  - id: RA_CONFIRM_MULTIHOP_SUPPORT_GAP
+    applicable_mechanism_ids: [RET_MULTIHOP_SUPPORT_INCOMPLETE]
+    prompt_text: >
+      This query was assessed as requiring multiple support elements, and at least one
+      required element is missing from the packed context. Confirm whether the missing
+      element is actually necessary for a correct answer, and whether the answer given
+      is in fact incomplete or incorrect without it.
+    action_type: confirm_support_status
+    instructs_acceptance: false
+
+  - id: RA_CHECK_POSITION_SENSITIVITY
+    applicable_mechanism_ids: [CTX_POSITION_SENSITIVE_USE]
+    prompt_text: >
+      Answer-supporting material sits at packed position rank {position_rank} of
+      {packed_item_count} in a long packed context. Check whether the answer correctly
+      used this material, independent of its position -- this flag identifies a context-
+      use risk to review, not proof that a position-caused error occurred.
+    action_type: check_context_use
+    instructs_acceptance: false
+
+  - id: RA_CHECK_SEGMENTATION_BOUNDARY
+    applicable_mechanism_ids: [REP_SEGMENTATION_GRANULARITY_MISMATCH]
+    prompt_text: >
+      A support/dependency relation was flagged as crossing a retrieval-segment
+      boundary. Check whether the retrieved segments together still supplied everything
+      needed for a correct answer.
+    action_type: check_segmentation_boundary
+    instructs_acceptance: false
+
+  - id: RA_CONFIRM_OMISSION_MATERIALITY
+    applicable_mechanism_ids: [PACK_OMISSION_OR_TRUNCATION]
+    prompt_text: >
+      A selected context item (or a support dependency it carried) was omitted,
+      truncated, or compressed before the final prompt was built. Confirm whether the
+      omitted material was actually needed for a correct, complete answer.
+    action_type: confirm_omission_materiality
+    instructs_acceptance: false
+
+  - id: RA_CHECK_CONFLICT_RESOLUTION
+    applicable_mechanism_ids: [GEN_CONTEXT_CONFLICT_UNRESOLVED]
+    prompt_text: >
+      The packed context contains conflicting claims along dimension "{dimension}", and
+      the answer did not state how it resolved them. Check whether the answer's choice
+      is defensible and whether the conflict should have been surfaced to the user
+      instead of silently resolved.
+    action_type: check_conflict_resolution
+    instructs_acceptance: false
+
+  - id: RA_CONFIRM_ANSWER_SUPPORT_EDGE
+    applicable_mechanism_ids: [GEN_UNSUPPORTED_DESPITE_CONTEXT]
+    prompt_text: >
+      An answer claim has no confirmed supporting edge to any packed context item, even
+      though at least one packed item was assessed as capable of supporting a correct
+      answer. Confirm whether the claim is actually supported by material present in the
+      context, misattributed, or genuinely unsupported.
+    action_type: confirm_support_status
+    instructs_acceptance: false

@@ -1,0 +1,128 @@
+{
+  "$defs": {
+    "ManifestPredicate": {
+      "additionalProperties": false,
+      "description": "One documented predicate over a manifest-derived field.\n\n`field_path` is a dotted path into either the manifest-derived\n`ExperimentalEnvelope` (preferred, e.g. \"packed_item_count\") or a raw\n`PipelineManifest` section (e.g. \"packing_manifest.compression_type\"). The engine\nimplementation for the owning mechanism is expected to evaluate exactly this\npredicate; tests assert code and registry text stay consistent.",
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "expected_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Value"
+        },
+        "field_path": {
+          "title": "Field Path",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "operator": {
+          "$ref": "#/$defs/PredicateOperator"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "field_path",
+        "operator"
+      ],
+      "title": "ManifestPredicate",
+      "type": "object"
+    },
+    "PredicateOperator": {
+      "enum": [
+        "equals",
+        "not_equals",
+        "greater_than",
+        "greater_or_equal",
+        "less_than",
+        "less_or_equal",
+        "is_true",
+        "is_false",
+        "in_set",
+        "not_in_set",
+        "is_known",
+        "exists_and_nonempty"
+      ],
+      "title": "PredicateOperator",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/ManifestGate.schema.json",
+  "additionalProperties": false,
+  "description": "A hard predicate set determining whether a mechanism could apply at all.",
+  "properties": {
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "disqualifying_predicates": {
+      "items": {
+        "$ref": "#/$defs/ManifestPredicate"
+      },
+      "title": "Disqualifying Predicates",
+      "type": "array"
+    },
+    "failure_mechanism_id": {
+      "title": "Failure Mechanism Id",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "required_manifest_predicates": {
+      "items": {
+        "$ref": "#/$defs/ManifestPredicate"
+      },
+      "title": "Required Manifest Predicates",
+      "type": "array"
+    },
+    "strengthening_predicates": {
+      "items": {
+        "$ref": "#/$defs/ManifestPredicate"
+      },
+      "title": "Strengthening Predicates",
+      "type": "array"
+    },
+    "unknown_manifest_behavior": {
+      "default": "If any required field's value is unknown, the gate result is unknown_insufficient_data (never inferred as satisfied or violated).",
+      "title": "Unknown Manifest Behavior",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "failure_mechanism_id",
+    "description"
+  ],
+  "title": "ManifestGate",
+  "type": "object"
+}

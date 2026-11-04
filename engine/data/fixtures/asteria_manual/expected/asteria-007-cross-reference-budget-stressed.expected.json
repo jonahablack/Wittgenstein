@@ -1,0 +1,23 @@
+{
+  "case_id": "asteria-007-cross-reference-budget-stressed",
+  "fixture_category": "cross_reference_target_in_corpus_not_retrieved",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d3-registration-seg9"],
+  "expected_claim_link_relationship": "best_effort_observed_not_forced",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": {
+    "marker_text": "Annex I",
+    "reference_type": "annex",
+    "target_identifier": "annex:I",
+    "expected_coarse_target_state": "in_corpus",
+    "expected_resolution_granularity": "annex",
+    "expected_exact_target_status": "target_missing",
+    "note": "Annex I exists in the asteria-manual corpus (annex-i-conformity-table.md) but is not among this query's retrieval candidates under asteria-p2-budget-stressed -- confirmed directly against the trace's retrieval_candidates/packed_context_items, not asserted."
+  },
+  "expected_reviewer_action": "request_additional_context",
+  "expected_reviewer_action_is_advisory_only": true,
+  "unresolved_source_expansion_scenario": {
+    "note": "Whether Annex I's actual content (the conformity table) supports the claim cannot be determined from what is packed under this budget-stressed manifest -- the case's intended reviewer action is 'request_additional_context' or 'mark_unresolved', not approve/reject. This is advisory only; the frontend does not force or highlight this action."
+  },
+  "known_limitations": []
+}

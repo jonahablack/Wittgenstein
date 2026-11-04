@@ -1,0 +1,163 @@
+# Human-readable mirror of manifests.json -- generated together, never hand-edited
+# separately (docs/controlled-synthetic-corpus-plan.md §11). The machine-readable
+# file manifests.json is what wittgenstein fixture run / load_manifests() actually read.
+asteria-p1-baseline:
+  manifest_id: asteria-p1-baseline
+  system_name: asteria-controlled-corpus-demo
+  system_version: 0.1.0
+  created_at: '2026-09-16T00:00:00Z'
+  corpus_manifest:
+    corpus_id: asteria-manual
+    source_type: synthetic_markdown
+    domain: fictional_autonomous_systems_certification
+    language: en
+    document_count: 4
+    corpus_versioning: single_pinned_version_3.2
+  ingestion_manifest:
+    parser: deterministic_parser_v1
+    ocr_used: false
+    table_extraction_method: markdown_table_row_regex
+    structure_extraction_method: heading_and_blank_line_rules
+  representation_manifest:
+    index_unit: paragraph_list_item_table_row
+    embedding_family: null
+    embedding_model_identifier: null
+  retrieval_manifest:
+    retriever_family: bm25_lexical
+    retrieval_topology: single_corpus_flat
+    retrieval_unit: paragraph_list_item_table_row
+    chunking_method: structural_segmentation_no_fixed_window
+    candidate_depth: 5
+    query_transformation_enabled: false
+    parent_child_expansion: false
+    graph_retrieval: false
+  packing_manifest:
+    packing_method: greedy_rank_order_token_budget
+    ordering_method: retrieval_rank
+    compression_enabled: false
+    context_window_tokens: 600
+    evidence_budget_tokens: 600
+  missing_information:
+  - generation_manifest.generator_family
+  - generation_manifest.model_identifier
+asteria-p2-budget-stressed:
+  manifest_id: asteria-p2-budget-stressed
+  system_name: asteria-controlled-corpus-demo
+  system_version: 0.1.0
+  created_at: '2026-09-16T00:00:00Z'
+  corpus_manifest:
+    corpus_id: asteria-manual
+    source_type: synthetic_markdown
+    domain: fictional_autonomous_systems_certification
+    language: en
+    document_count: 4
+    corpus_versioning: single_pinned_version_3.2
+  ingestion_manifest:
+    parser: deterministic_parser_v1
+    ocr_used: false
+    table_extraction_method: markdown_table_row_regex
+    structure_extraction_method: heading_and_blank_line_rules
+  representation_manifest:
+    index_unit: paragraph_list_item_table_row
+    embedding_family: null
+    embedding_model_identifier: null
+  retrieval_manifest:
+    retriever_family: bm25_lexical
+    retrieval_topology: single_corpus_flat
+    retrieval_unit: paragraph_list_item_table_row
+    chunking_method: structural_segmentation_no_fixed_window
+    candidate_depth: 5
+    query_transformation_enabled: false
+    parent_child_expansion: false
+    graph_retrieval: false
+  packing_manifest:
+    packing_method: greedy_rank_order_token_budget
+    ordering_method: retrieval_rank
+    compression_enabled: false
+    context_window_tokens: 60
+    evidence_budget_tokens: 60
+  missing_information:
+  - generation_manifest.generator_family
+  - generation_manifest.model_identifier
+asteria-p3-parent-context:
+  manifest_id: asteria-p3-parent-context
+  system_name: asteria-controlled-corpus-demo
+  system_version: 0.1.0
+  created_at: '2026-09-16T00:00:00Z'
+  corpus_manifest:
+    corpus_id: asteria-manual
+    source_type: synthetic_markdown
+    domain: fictional_autonomous_systems_certification
+    language: en
+    document_count: 4
+    corpus_versioning: single_pinned_version_3.2
+  ingestion_manifest:
+    parser: deterministic_parser_v1
+    ocr_used: false
+    table_extraction_method: markdown_table_row_regex
+    structure_extraction_method: heading_and_blank_line_rules
+  representation_manifest:
+    index_unit: paragraph_list_item_table_row
+    embedding_family: null
+    embedding_model_identifier: null
+  retrieval_manifest:
+    retriever_family: bm25_lexical
+    retrieval_topology: single_corpus_flat
+    retrieval_unit: paragraph_list_item_table_row
+    chunking_method: structural_segmentation_no_fixed_window
+    candidate_depth: 5
+    query_transformation_enabled: false
+    parent_child_expansion: true
+    graph_retrieval: false
+  packing_manifest:
+    packing_method: greedy_rank_order_token_budget
+    ordering_method: retrieval_rank
+    compression_enabled: false
+    context_window_tokens: 600
+    evidence_budget_tokens: 600
+  missing_information:
+  - generation_manifest.generator_family
+  - generation_manifest.model_identifier
+  - "representable_but_not_executable: parent_child_expansion=true describes a configuration\
+    \ this repository's trace/packer.py does not implement -- schema-valid, never\
+    \ run by 'wittgenstein fixture run' or any automated demo claim. See docs/controlled-synthetic-corpus-plan.md\
+    \ \xA711."
+asteria-p4-full-context-control:
+  manifest_id: asteria-p4-full-context-control
+  system_name: asteria-controlled-corpus-demo
+  system_version: 0.1.0
+  created_at: '2026-09-16T00:00:00Z'
+  corpus_manifest:
+    corpus_id: asteria-manual
+    source_type: synthetic_markdown
+    domain: fictional_autonomous_systems_certification
+    language: en
+    document_count: 4
+    corpus_versioning: single_pinned_version_3.2
+  ingestion_manifest:
+    parser: deterministic_parser_v1
+    ocr_used: false
+    table_extraction_method: markdown_table_row_regex
+    structure_extraction_method: heading_and_blank_line_rules
+  representation_manifest:
+    index_unit: paragraph_list_item_table_row
+    embedding_family: null
+    embedding_model_identifier: null
+  retrieval_manifest:
+    retriever_family: bm25_lexical
+    retrieval_topology: single_corpus_flat
+    retrieval_unit: paragraph_list_item_table_row
+    chunking_method: structural_segmentation_no_fixed_window
+    candidate_depth: 1
+    query_transformation_enabled: false
+    parent_child_expansion: false
+    graph_retrieval: false
+  packing_manifest:
+    packing_method: greedy_rank_order_token_budget
+    ordering_method: retrieval_rank
+    compression_enabled: false
+    context_window_tokens: 600
+    evidence_budget_tokens: 600
+  missing_information:
+  - generation_manifest.generator_family
+  - generation_manifest.model_identifier

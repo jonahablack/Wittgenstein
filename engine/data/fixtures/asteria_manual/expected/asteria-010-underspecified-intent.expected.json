@@ -1,0 +1,14 @@
+{
+  "case_id": "asteria-010-underspecified-intent",
+  "fixture_category": "underspecified_user_intent",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": [],
+  "underspecification_note": "The query never names a unit class, and Class R (12 cm) and Class S (8 cm) carry different thresholds. The answer silently assumes Class R -- a real ambiguity the system cannot resolve on the reviewer's behalf.",
+  "expected_claim_link_relationship": "no_direct_support_anywhere",
+  "expected_claim_link_note": "No packed candidate reaches direct_support_candidate for this claim -- verified directly. This reflects the query's own ambiguity, not a retrieval or claim-linking defect.",
+  "expected_evidence_set_status": "composite_unresolved",
+  "expected_cross_reference": null,
+  "expected_reviewer_action": "ask_clarifying_question",
+  "expected_reviewer_action_is_advisory_only": true,
+  "known_limitations": []
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "Authoring worksheet, not a runnable case -- see docs/real-corpus-case-authoring-guide.md for the exact mapping onto a schemas/smoke_test.py::SmokeTestCase entry in your own cases.json. Replace every '<REPLACE...>' placeholder; leave other fields at their shown default (null/[]/{}) until you have a real value, never guess to fill a blank.",
+  "case_id": "<REPLACE: short kebab-case id, e.g. real-001-eligibility-threshold>",
+  "corpus_id": "<REPLACE: the corpus_id you use in your CorpusReference>",
+  "document_id": "<REPLACE: the specific document within the corpus this case is about>",
+  "document_version": null,
+  "source_title": "<REPLACE>",
+  "source_url": null,
+  "license_or_public_access_basis": "<REPLACE: e.g. 'CC-BY-4.0', 'public domain (US federal government work)', 'user-owned, license confirmed 2026-01-15'>",
+  "source_access_date": "<REPLACE: YYYY-MM-DD>",
+  "source_hash": "<REPLACE: sha256 from docs/real-corpus-diagnostic-runbook.md step 2>",
+  "local_source_path": "<REPLACE: path under data/examples/evidence_set_diagnostics/local_corpora/, e.g. local_corpora/my-corpus/doc1.txt>",
+  "query": "<REPLACE>",
+  "user_stated_constraints": {},
+  "unresolved_intent_fields": [],
+  "answer": "<REPLACE>",
+  "answer_origin": "<REPLACE: one of human_authored_for_pilot | document_verbatim | manual_transcription_from_document | controlled_perturbation_unsupported | controlled_perturbation_contradicted | llm_generated_unverified>",
+  "manifest_id": "<REPLACE: matches a manifest_id in your manifests.json>",
+  "expected_evidence_locations": [],
+  "expected_structure_tags": [],
+  "known_limitations": null,
+  "annotation_status": "draft"
+}

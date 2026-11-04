@@ -1,0 +1,493 @@
+# Bootstrap seed registry of RAG failure mechanisms. NOT exhaustive.
+# See data/registry/README.md for what "bootstrap" means and how records mature.
+mechanisms:
+  # ---------------------------------------------------------------------------
+  # Concrete mechanisms (7): grounded in named, primary-source-verified candidate
+  # papers as of the 2026-09-09 literature-review pass (see
+  # docs/literature-review-results.md). Every evidence record now has a real,
+  # extracted quote -- but every one is still verification_status: unverified
+  # (single-reviewer extraction; docs/literature-review-protocol.md requires an
+  # independent second-reviewer pass before "verified"), so
+  # default_activation_policy stays disabled for every mechanism whose activation
+  # claim depends on that evidence -- see registry/validator.py.
+  # ---------------------------------------------------------------------------
+
+  - id: RET_HARD_DISTRACTOR
+    canonical_name: Query-related hard distractor contamination
+    short_description: >
+      A retrieved/packed passage that is topically related to the query but does not
+      support the answer ("hard distractor") can measurably reduce answer correctness
+      relative to a context without it, independent of simple irrelevant noise.
+    causal_claim: >
+      Packing a query-related, non-supporting passage into the generation context can
+      distract the generator and reduce answer correctness, compared to an otherwise
+      identical context without that passage.
+    pipeline_stage: packed_context_items
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "More than one context item is packed alongside the distractor."
+      - "The distractor is query-related (not random noise)."
+      - "The distractor does not support the answer."
+    known_boundary_conditions:
+      - "Does not apply when only a single, short passage is packed (no distractor can coexist)."
+      - "Distinct from random/irrelevant noise, which the source evidence treats as a separate condition."
+      - "Effect magnitude and generalization across generator families is not yet confirmed pending quote verification."
+      - "epistemic_status is manifest_conditioned_transfer, not externally_established: only one A2-grade record is linked, and the evidence-threshold rule requires either one A1 study or >=2 independent A1/A2 studies (see docs/evidence-grading.md). A single narrow benchmark is not presented as a universal law."
+    epistemic_status: manifest_conditioned_transfer
+    default_evidence_grade: A2_strong_comparative_peer_reviewed
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: limited
+    tags: [retrieval, context-utilization, distractor, bootstrap-unverified]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: RET_MULTIHOP_SUPPORT_INCOMPLETE
+    canonical_name: Incomplete multi-hop or multi-evidence support retrieval
+    short_description: >
+      Queries whose correct answer requires combining multiple support propositions or
+      documents can fail when retrieval surfaces only a subset of the required support set.
+    causal_claim: >
+      When a query requires multiple support elements (documents, propositions, or
+      dependency-graph edges) and retrieval returns fewer than the full required set,
+      answer correctness on that query is at elevated risk relative to queries whose
+      full support set was retrieved.
+    pipeline_stage: retrieval_candidates
+    failure_object: retrieval_quality
+    necessary_causal_ingredients:
+      - "The query/answer is assessed as requiring multiple support elements (multi-hop or multi-document)."
+      - "The trace records a support-set or dependency structure to compare against."
+      - "At least one required support element is absent from the actual retrieved/packed set."
+    known_boundary_conditions:
+      - "Does not apply to queries with known single-span support."
+      - "Benchmark-level (observational) evidence is distinct from a direct causal intervention; do not conflate the two."
+      - "Its one linked evidence record (EV-RET_MULTIHOP_SUPPORT_INCOMPLETE-001) is now graded C_preprint_empirical, not A2: the primary-source PDF examined during the 2026-09-09 literature-review pass is an arXiv preprint with no confirmable peer-review venue marking, so evidence_grade was downgraded per the peer-review-gating rule even though the paper's finding (0.56 vs. 0.89 accuracy under retrieved vs. ground-truth evidence) directly supports the mechanism. epistemic_status remains manifest_conditioned_transfer either way."
+    epistemic_status: manifest_conditioned_transfer
+    default_evidence_grade: C_preprint_empirical
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: limited
+    tags: [retrieval, multi-hop, bootstrap-unverified]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: CTX_POSITION_SENSITIVE_USE
+    canonical_name: Position-sensitive use of relevant information in packed long context
+    short_description: >
+      Language models are known to use information less reliably when it sits in the
+      middle of a long input context, versus the beginning or end. This is direct
+      long-context evidence; it transfers to RAG only when a system packs multiple
+      passages into a sufficiently long prompt.
+    causal_claim: >
+      In sufficiently long input contexts, model accuracy on information placed in the
+      middle of the context is measurably lower than for the same information placed
+      near the beginning or end. In a RAG system, this transfers only when the packed
+      context is long and multiple items are packed -- it is a context-use risk to
+      review, not proof that a specific answer error was position-caused.
+    pipeline_stage: packed_context_items
+    failure_object: context_utilization
+    necessary_causal_ingredients:
+      - "Multiple items are packed."
+      - "Actual prompt token positions/spans are available in the trace."
+      - "Total packed context length meets or exceeds the configured position-risk threshold."
+      - "Answer-supporting material within the packed context is identifiable."
+    known_boundary_conditions:
+      - "Does not apply to a single short packed passage."
+      - "Source evidence is a direct long-context finding, not a RAG-specific experiment; treat as manifest_conditioned_transfer, not directly_matched, unless a RAG-specific replication is added."
+    epistemic_status: manifest_conditioned_transfer
+    default_evidence_grade: A1_direct_causal_peer_reviewed
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: limited
+    tags: [context-utilization, position-bias, long-context, bootstrap-unverified]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: REP_SEGMENTATION_GRANULARITY_MISMATCH
+    canonical_name: Retrieval-unit segmentation and granularity mismatch
+    short_description: >
+      The choice of retrieval unit/chunking granularity can change whether a support
+      relation crosses a segment boundary and becomes unrecoverable at query time.
+      Evidence on which granularity is "better" is mixed/contradictory across studies;
+      this registry does not encode any chunking method as universally superior.
+    causal_claim: >
+      When a corpus is retrieved at a segmentation granularity that separates
+      dependent/supporting content across segment boundaries, retrieval can fail to
+      recover the full support needed for a query, independent of retriever quality.
+    pipeline_stage: index_units
+    failure_object: retrieval_quality
+    necessary_causal_ingredients:
+      - "The corpus uses independently retrievable segments (chunking applied)."
+      - "Chunking method and retrieval unit are known from the manifest."
+      - "The trace shows a dependency/support relation crossing a segment boundary, or a segment-to-context mismatch."
+    known_boundary_conditions:
+      - "Does not apply when retrieval unit is a whole document with no sub-document segmentation."
+      - "Two independent, RAG-native, peer-reviewed controlled comparisons (EV-REP_SEGMENTATION_GRANULARITY_MISMATCH-001, -002) converge on the general causal claim -- segmentation/granularity choice measurably affects RAG retrieval and QA reliability -- which is why epistemic_status is now externally_established (as of the 2026-09-09 literature-review pass). This does NOT mean the literature agrees on which specific chunking method or granularity level is best: the two studies test different specific techniques (retrieval-unit type vs. chunk-boundary placement method) and neither claims a universal ranking. Do not present any single method as universally superior."
+      - "As of the 2026-09-09 second-review pass (docs/literature-review-second-review-results.md), both linked evidence records are verification_status=verified (a same-day solo-contributor second pass, disclosed as such). Both were re-confirmed as genuinely independent (no overlapping authors or institutions between Chen et al. and Wang et al.) and genuinely RAG-native."
+      - "GOVERNANCE NOTE (2026-09-09 activation-policy decision, docs/registry-governance.md): default_activation_policy is now manifest_conditioned, not disabled, and not triage_enabled. (1) externally_established is necessary but not sufficient for universal activation -- it certifies the evidence, not the deployment trust level. (2) This mechanism is activated conditionally because transfer from the two studies' envelopes to any specific deployment still depends on that deployment's actual segmentation manifest and observed trace boundary flags -- manifest_conditioned means the risk event is only ever shown when both gate families genuinely pass, never by default assumption. (3) default_activation_policy is a distinct axis from epistemic_status/verification_status: reaching externally_established with verified evidence removes the validator's structural block on activation, but does not itself justify full (triage_enabled) trust -- that requires a separate, deliberate decision, which this is. (4) Promotion to triage_enabled (full, uncapped reviewer-priority weight) requires a LocalValidationRecord establishing reviewer_yield for this mechanism in a specific deployment (docs/research-protocol.md) -- not merely more literature evidence. Until then, manifest_conditioned risk events are shown to reviewers but capped below PriorityTier.HIGH (services/applicability_service.py)."
+      - "Activation gates (manifest+trace, matching/eligibility.py::_eval_rep_segmentation_granularity_mismatch, unchanged by this decision -- already implemented all five conditions below at eligibility-evaluation time): (1) retrieval_unit is not whole_document, i.e. independently retrievable segmented units are in use; (2) chunking_method and retrieval_unit are both known from the manifest; (3)+(4) the trace records at least one segment_boundary_dependency_flags entry -- a support/dependency relation crossing a segment boundary, meaning the dependency is actually separated in the retrieval/packing path, not merely hypothetically possible; (5) if any required manifest field is unknown, the result is unknown_insufficient_data, never an assumed pass. The mechanism does NOT activate merely because chunking exists, the corpus is large, the chunker is fixed-size/semantic/propositional, a retrieved passage is short, or the answer is incorrect -- none of those alone satisfy the trace-level boundary-dependency requirement."
+    epistemic_status: externally_established
+    default_evidence_grade: A2_strong_comparative_peer_reviewed
+    default_activation_policy: manifest_conditioned
+    evidence_synthesis: convergent
+    tags: [representation, chunking, granularity, bootstrap-unverified]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.3.0"
+
+  - id: PACK_OMISSION_OR_TRUNCATION
+    canonical_name: Evidence selection, truncation, or compression loss prior to generation
+    short_description: >
+      A candidate that was selected as relevant can still fail to reach the generator
+      because of context-budget truncation or lossy compression before packing. This
+      is reportable as a directly observable trace fact -- distinct from and prior to
+      any claim that it caused a specific answer error.
+    causal_claim: >
+      A selected context item, or a support dependency it carries, was omitted,
+      truncated, or compressed away before the final prompt was constructed. This is a
+      trace-integrity condition: it states what happened in the pipeline, and does not
+      by itself claim the omission caused an answer error unless linked to direct
+      causal evidence or local causal validation.
+    pipeline_stage: packed_context_items
+    failure_object: context_integrity
+    necessary_causal_ingredients:
+      - "Candidate, selected, and packed-context stages are all logged in the trace."
+      - "A selected item or a support dependency it carries was omitted, truncated, or compressed."
+      - "The omitted/truncated material is identifiable (not just an aggregate count)."
+    known_boundary_conditions:
+      - "Usable as a trace fact even before a direct, matched answer-error causal effect is established for a given deployment."
+      - "Does not apply when no compression, truncation, or budget-driven omission occurred in the trace."
+    epistemic_status: trace_integrity_condition
+    default_evidence_grade: D_local_empirical
+    default_activation_policy: enabled_with_manifest_gates
+    evidence_synthesis: unresolved
+    tags: [packing, truncation, compression, trace-integrity]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: GEN_CONTEXT_CONFLICT_UNRESOLVED
+    canonical_name: Unresolved conflicting retrieved evidence
+    short_description: >
+      When packed context contains passages that make incompatible claims (differing
+      entity, predicate, value, polarity, condition, time/version, jurisdiction, or
+      authority), a generator may choose or synthesize a claim without surfacing that
+      a conflict existed, rather than flagging the conflict for the user.
+    causal_claim: >
+      When the packed context contains explicitly identifiable, incompatible claims
+      along a stated conflict dimension, and the answer selects or synthesizes among
+      them without a stated resolution, the answer's reliability on that point is at
+      risk independent of which source (if any) is factually correct. This registry
+      does not encode an automatic rule for which conflicting source is correct.
+    pipeline_stage: answer_claims
+    failure_object: answer_consistency
+    necessary_causal_ingredients:
+      - "The packed context contains normalized, explicitly incompatible claims."
+      - "A specific conflict dimension is identified (entity, predicate, value, polarity, condition, time/version, jurisdiction, or authority)."
+      - "The answer chooses or synthesizes a claim without a stated resolution or caveat."
+    known_boundary_conditions:
+      - "Does not determine which conflicting source is correct; that remains a reviewer judgment."
+      - "Primary source is now confirmed (RAG-RewardBench, Jin et al., Findings of ACL 2025, verified 2026-09-09), but it is a reward-model benchmark -- it measures whether a reward model can correctly judge RALM responses to synthesized conflicting evidence, not RALM response behavior directly. Its linked evidence record is therefore direction=null, not supports; a primary source directly measuring RALM-response-level conflict handling against naturally-occurring (not synthesized) multi-source conflicts remains an open literature-search task -- see the dossier's open-evidence-gaps section."
+    epistemic_status: manifest_conditioned_transfer
+    default_evidence_grade: B2_component_evidence_peer_reviewed
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [generation, conflict, consistency, bootstrap-unverified, evidence-gap]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: GEN_UNSUPPORTED_DESPITE_CONTEXT
+    canonical_name: Unsupported answer generation despite relevant packed evidence
+    short_description: >
+      A generator can produce an answer claim that is not supported by the packed
+      context even when genuinely supporting material was present and packed. This is
+      defined structurally, via answer-to-evidence support edges -- "hallucination" is
+      not used as a sufficient formal definition on its own.
+    causal_claim: >
+      An answer claim can lack a supporting answer-to-evidence edge to any packed
+      context item, even when a packed item that could support a correct answer to the
+      query was present in the final prompt.
+    pipeline_stage: answer_to_evidence_support_edges
+    failure_object: answer_attribution
+    necessary_causal_ingredients:
+      - "The packed context contains at least one item assessed as capable of supporting a correct answer."
+      - "The produced answer claim has no support edge to any packed context item, or its support edge is assessed as unsupported/contradicted."
+    known_boundary_conditions:
+      - "Distinct from cases where no supporting material was ever packed (that is a retrieval/packing failure, not this mechanism)."
+      - "'Hallucination' alone is not treated as a sufficient formal trigger; the support-edge structure must actually be evaluated."
+      - "Its linked evidence record (EV-GEN_UNSUPPORTED_DESPITE_CONTEXT-001, Wallat et al. 2024, verified 2026-09-09) studies a related but distinct phenomenon -- citation faithfulness (does an existing, textually-correct citation reflect genuine causal reliance) rather than this mechanism's exact claim (an answer claim with NO support edge at all despite genuinely supporting material being packed) -- so it is linked with direction=null, not supports. A primary source directly measuring the zero-support-edge claim remains an open literature-search task; see the dossier's open-evidence-gaps section. Wallat et al.'s correctness-vs-faithfulness distinction also surfaces a candidate future refinement to AnswerSupportEdge.support_status (schemas/trace.py), not acted on in this pass."
+    epistemic_status: manifest_conditioned_transfer
+    default_evidence_grade: C_preprint_empirical
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [generation, attribution, unsupported-claims, bootstrap-unverified]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  # ---------------------------------------------------------------------------
+  # Research-hypothesis mechanisms (11): review cues, NOT experimentally established
+  # generic RAG failure modes. Several are informed by generalizable lessons from an
+  # unrelated proof-of-concept classifier's edge-case log (see docs/implementation-plan.md,
+  # section 0) but are not themselves validated by that log for RAG specifically.
+  # ---------------------------------------------------------------------------
+
+  - id: HYP_NEGATION_TRANSFORMATION
+    canonical_name: Answer-to-source negation transformation
+    short_description: >
+      Review cue -- an answer claim may invert or drop a negation present in its
+      source material during generation, reversing the claim's truth value.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet; this is a
+      linguistically plausible transformation risk worth a reviewer's attention, not a
+      demonstrated RAG failure mode.
+    pipeline_stage: answer_claims
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "Source material contains an explicit negation bearing on the answer claim."
+      - "The produced answer claim's polarity relative to that negation has not been reviewer-checked."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+      - "Presence of a negation word alone is not sufficient -- see docs/registry-governance.md on avoiding bare trigger-word matching."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_MODAL_STRENGTH_TRANSFORMATION
+    canonical_name: Modal-strength transformation
+    short_description: >
+      Review cue -- an answer claim may shift modal strength (e.g. "may" to "must",
+      or drop a modal marker entirely) relative to its source.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: answer_claims
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "Source material carries an explicit modal marker bearing on the claim's strength."
+      - "The produced answer claim's modal strength relative to the source has not been reviewer-checked."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_CONDITIONAL_APPLICABILITY_OMISSION
+    canonical_name: Conditional applicability omission
+    short_description: >
+      Review cue -- an answer claim may drop a conditioning clause ("if X, then Y")
+      that scopes when the source claim actually applies.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: answer_claims
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "Source material states the claim as conditional on an identifiable clause."
+      - "The produced answer claim's preservation of that condition has not been reviewer-checked."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+      - "A trigger word (e.g. 'if') alone does not establish a well-formed conditional clause was present."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_EXCEPTION_CONCESSION_OMISSION
+    canonical_name: Exception/concession omission
+    short_description: >
+      Review cue -- an answer claim may drop a stated exception or concession
+      ("except for...", "although...") that qualifies the source claim.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: answer_claims
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "Source material states an exception or concession bearing on the claim."
+      - "The produced answer claim's preservation of that exception has not been reviewer-checked."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_UNRESOLVED_CROSS_REFERENCE
+    canonical_name: Unresolved cross-reference
+    short_description: >
+      Review cue -- source material may reference another section/document ("see
+      Section 4.2") whose content was never retrieved or packed, leaving the answer
+      built on an unresolved reference.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: selected_context_items
+    failure_object: context_integrity
+    necessary_causal_ingredients:
+      - "A packed segment contains an explicit cross-reference to other corpus content."
+      - "The referenced content was not retrieved or packed."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, retrieval]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_MISSING_ANAPHORIC_ANTECEDENT
+    canonical_name: Missing anaphoric antecedent
+    short_description: >
+      Review cue -- a packed segment may contain a pronoun or anaphor ("it", "this
+      requirement") whose antecedent lives in a different, non-packed segment.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: packed_context_items
+    failure_object: context_integrity
+    necessary_causal_ingredients:
+      - "A packed segment contains an anaphoric reference."
+      - "The antecedent segment is not among the packed context items."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, packing]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_THRESHOLD_UNIT_COMPARATOR_MISBINDING
+    canonical_name: Threshold/unit/comparator misbinding
+    short_description: >
+      Review cue -- an answer claim may misbind a numeric threshold to the wrong unit
+      or comparator (e.g. "at least" vs "at most", or drop a unit) relative to source.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: answer_claims
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "Source material states a numeric threshold with an explicit unit and comparator."
+      - "The produced answer claim's unit/comparator fidelity has not been reviewer-checked."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_TEMPORAL_VERSION_APPLICABILITY_MISMATCH
+    canonical_name: Temporal or version applicability mismatch
+    short_description: >
+      Review cue -- packed context may include superseded or differently-dated
+      versions of a claim, and the answer may not indicate which version applies.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: answer_claims
+    failure_object: answer_consistency
+    necessary_causal_ingredients:
+      - "Packed context contains version- or date-differentiated variants of a claim."
+      - "The answer does not indicate which version/date it draws from."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+      - "Related to, but narrower than, GEN_CONTEXT_CONFLICT_UNRESOLVED's time/version conflict dimension."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_ENTITY_ROLE_BINDING_MISMATCH
+    canonical_name: Entity-role binding mismatch
+    short_description: >
+      Review cue -- an answer claim may bind an attribute or action to the wrong
+      entity/role when the source describes multiple entities in similar roles.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: answer_claims
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "Source material describes multiple entities in structurally similar roles."
+      - "The produced answer claim's entity-role binding has not been reviewer-checked."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_CAUSAL_STRENGTH_ESCALATION
+    canonical_name: Causal-strength escalation
+    short_description: >
+      Review cue -- an answer claim may escalate a correlational or associative
+      source statement into a stronger causal statement.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: answer_claims
+    failure_object: answer_correctness
+    necessary_causal_ingredients:
+      - "Source material states an association or correlation without asserting causation."
+      - "The produced answer claim's causal framing relative to the source has not been reviewer-checked."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, generation]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"
+
+  - id: HYP_TABLE_ROW_COLUMN_RELATION_LOSS
+    canonical_name: Table row/column relation loss
+    short_description: >
+      Review cue -- flattening a table into prose or a text chunk may lose the
+      row/column relation that gave a cell value its meaning.
+    causal_claim: >
+      Hypothesized only. No direct empirical RAG evidence is attached yet.
+    pipeline_stage: parsed_representation
+    failure_object: context_integrity
+    necessary_causal_ingredients:
+      - "Source content includes a table with a row/column relation bearing on the answer."
+      - "The parsed/chunked representation does not clearly preserve that relation."
+    known_boundary_conditions:
+      - "Not activated by default; research-mode only."
+    epistemic_status: research_hypothesis
+    default_evidence_grade: E_hypothesis
+    default_activation_policy: disabled_by_default_or_research_mode
+    evidence_synthesis: unresolved
+    tags: [research_hypothesis, review_cue, representation, tables]
+    created_at: "2026-09-02T00:00:00Z"
+    updated_at: "2026-09-09T00:00:00Z"
+    registry_version: "0.2.0"

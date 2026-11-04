@@ -1,0 +1,146 @@
+{
+  "$defs": {
+    "ExtractionValidationStatus": {
+      "description": "Outcome of a Tier-3 LLM extraction attempt\n(schemas/proposition.py::LLMExtractionResult). Fallback behavior\n(docs/efficiency-and-processing-architecture.md \u00a77) always yields one of the\nnon-`validated` values here rather than raising or guessing.",
+      "enum": [
+        "not_attempted",
+        "validated",
+        "validation_failed",
+        "llm_unavailable"
+      ],
+      "title": "ExtractionValidationStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/LLMExtractionResult.schema.json",
+  "additionalProperties": false,
+  "description": "The result of one Tier-3 LLM extraction attempt -- also the LLM cache's value\ntype (docs/efficiency-and-processing-architecture.md \u00a73), not a separate shape.\nFallback (\u00a77) always populates this with a non-`validated` status and leaves\n`parsed_output` `None` rather than raising or guessing.",
+  "properties": {
+    "cache_key": {
+      "title": "Cache Key",
+      "type": "string"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "extractor_version": {
+      "title": "Extractor Version",
+      "type": "string"
+    },
+    "from_cache": {
+      "default": false,
+      "title": "From Cache",
+      "type": "boolean"
+    },
+    "input_tokens": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Input Tokens"
+    },
+    "latency_seconds": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latency Seconds"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "None when no call was attempted (llm_unavailable).",
+      "title": "Model"
+    },
+    "output_tokens": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Tokens"
+    },
+    "parsed_output": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Parsed semantic result, only present when validation_status=validated.",
+      "title": "Parsed Output"
+    },
+    "prompt_version": {
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "raw_output": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Output"
+    },
+    "requested_at": {
+      "format": "date-time",
+      "title": "Requested At",
+      "type": "string"
+    },
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "validation_errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Validation Errors",
+      "type": "array"
+    },
+    "validation_status": {
+      "$ref": "#/$defs/ExtractionValidationStatus"
+    }
+  },
+  "required": [
+    "cache_key",
+    "candidate_id",
+    "prompt_version",
+    "schema_version",
+    "extractor_version",
+    "validation_status",
+    "requested_at"
+  ],
+  "title": "LLMExtractionResult",
+  "type": "object"
+}

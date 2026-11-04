@@ -1,0 +1,104 @@
+# Declarative, human-readable form of each mechanism's required trace observables.
+# See manifest_gates.seed.yaml header for the code/documentation relationship.
+trace_triggers:
+  - id: TT_RET_HARD_DISTRACTOR_01
+    failure_mechanism_id: RET_HARD_DISTRACTOR
+    description: >
+      At least one packed context item is query-related but not answer-supporting, and
+      both properties are actually assessed (not unknown) in the trace.
+    required_trace_observables:
+      - id: TO_RET_HARD_DISTRACTOR_relatedness_known
+        description: "packed_context_items entries carry a non-null is_query_related and is_answer_supporting judgment."
+        trace_field_path: "packed_context_items[].is_query_related,is_answer_supporting"
+    causal_claim_permitted: false
+
+  - id: TT_RET_MULTIHOP_SUPPORT_INCOMPLETE_01
+    failure_mechanism_id: RET_MULTIHOP_SUPPORT_INCOMPLETE
+    description: >
+      The query is assessed as multi-hop with an explicit required support-item set,
+      and at least one required item is absent from packed_context_items.
+    required_trace_observables:
+      - id: TO_RET_MULTIHOP_support_requirement_known
+        description: "support_requirement is present and is_multi_hop=true with a non-empty required_support_item_ids."
+        trace_field_path: "support_requirement.{is_multi_hop,required_support_item_ids}"
+      - id: TO_RET_MULTIHOP_packed_items_known
+        description: "packed_context_items is logged (not null), so absence of a required item can be confirmed."
+        trace_field_path: "packed_context_items"
+    causal_claim_permitted: false
+
+  - id: TT_CTX_POSITION_SENSITIVE_USE_01
+    failure_mechanism_id: CTX_POSITION_SENSITIVE_USE
+    description: >
+      More than one item is actually packed, prompt token positions are logged, total
+      packed length meets the configured threshold, and answer-supporting material is
+      identifiable among the packed items.
+    required_trace_observables:
+      - id: TO_CTX_POSITION_packed_count
+        description: "packed_context_items has more than one entry."
+        trace_field_path: "packed_context_items"
+      - id: TO_CTX_POSITION_spans_known
+        description: "prompt_token_spans is non-empty."
+        trace_field_path: "prompt_token_spans"
+      - id: TO_CTX_POSITION_length_known
+        description: "final_prompt_token_count is known and meets the configured position-risk threshold."
+        trace_field_path: "final_prompt_token_count"
+      - id: TO_CTX_POSITION_support_identifiable
+        description: "At least one packed_context_items entry has a non-null is_answer_supporting judgment."
+        trace_field_path: "packed_context_items[].is_answer_supporting"
+    causal_claim_permitted: false
+
+  - id: TT_REP_SEGMENTATION_GRANULARITY_MISMATCH_01
+    failure_mechanism_id: REP_SEGMENTATION_GRANULARITY_MISMATCH
+    description: >
+      The trace records at least one explicit segment-boundary dependency flag (a
+      support/dependency relation crossing a segment boundary, or a segment-to-context
+      mismatch).
+    required_trace_observables:
+      - id: TO_REP_SEG_boundary_flags
+        description: "segment_boundary_dependency_flags is non-empty."
+        trace_field_path: "segment_boundary_dependency_flags"
+    causal_claim_permitted: false
+
+  - id: TT_PACK_OMISSION_OR_TRUNCATION_01
+    failure_mechanism_id: PACK_OMISSION_OR_TRUNCATION
+    description: >
+      Candidate, selected, and packed-context stages are all logged (not null), and at
+      least one selected item is identifiably missing from packed_context_items or
+      present in omitted_context_items/compressed_context_items with an omission_reason.
+    required_trace_observables:
+      - id: TO_PACK_OMISSION_stages_logged
+        description: "retrieval_candidates, selected_context_items, and packed_context_items are all non-null."
+        trace_field_path: "retrieval_candidates,selected_context_items,packed_context_items"
+      - id: TO_PACK_OMISSION_identifiable_gap
+        description: "At least one selected_context_items entry is absent from packed_context_items, or appears in omitted_context_items/compressed_context_items with a non-null omission_reason."
+        trace_field_path: "selected_context_items,packed_context_items,omitted_context_items,compressed_context_items"
+    causal_claim_permitted: false
+
+  - id: TT_GEN_CONTEXT_CONFLICT_UNRESOLVED_01
+    failure_mechanism_id: GEN_CONTEXT_CONFLICT_UNRESOLVED
+    description: >
+      The trace records at least one normalized context_conflicts entry (with an
+      explicit dimension) whose conflict_id is not in conflict_ids_addressed_in_answer.
+    required_trace_observables:
+      - id: TO_GEN_CONFLICT_present
+        description: "context_conflicts is non-empty."
+        trace_field_path: "context_conflicts"
+      - id: TO_GEN_CONFLICT_unaddressed
+        description: "At least one context_conflicts.conflict_id is absent from conflict_ids_addressed_in_answer."
+        trace_field_path: "conflict_ids_addressed_in_answer"
+    causal_claim_permitted: false
+
+  - id: TT_GEN_UNSUPPORTED_DESPITE_CONTEXT_01
+    failure_mechanism_id: GEN_UNSUPPORTED_DESPITE_CONTEXT
+    description: >
+      At least one packed_context_items entry is assessed as answer-supporting, and at
+      least one answer_claims entry has no support_status=supported edge to any packed
+      item.
+    required_trace_observables:
+      - id: TO_GEN_UNSUPPORTED_supporting_material_packed
+        description: "At least one packed_context_items entry has is_answer_supporting=true."
+        trace_field_path: "packed_context_items[].is_answer_supporting"
+      - id: TO_GEN_UNSUPPORTED_claim_without_support
+        description: "At least one answer_claims entry has no answer_support_edges entry with support_status=supported."
+        trace_field_path: "answer_claims,answer_support_edges"
+    causal_claim_permitted: false

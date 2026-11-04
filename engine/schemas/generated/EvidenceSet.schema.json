@@ -1,0 +1,552 @@
+{
+  "$defs": {
+    "ClaimComponent": {
+      "additionalProperties": false,
+      "description": "One structured component of an answer claim -- wraps an\n`ExtractedField` (schemas/claim_comparison.py) with the two additional judgments\nevidence-set construction needs: is this component load-bearing, and does covering\nit depend on another component being resolved first.",
+      "properties": {
+        "component_id": {
+          "title": "Component Id",
+          "type": "string"
+        },
+        "component_type": {
+          "$ref": "#/$defs/ComparisonFieldName"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "dependencies": {
+          "description": "component_id values this component's resolution depends on, if any.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "extraction_method": {
+          "title": "Extraction Method",
+          "type": "string"
+        },
+        "extraction_status": {
+          "$ref": "#/$defs/ExtractionStatus"
+        },
+        "normalized_value": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalized Value"
+        },
+        "raw_surface_form": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Surface Form"
+        },
+        "requiredness": {
+          "$ref": "#/$defs/ComponentRequiredness"
+        },
+        "source_span": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Offset within the answer claim's text.",
+          "title": "Source Span"
+        }
+      },
+      "required": [
+        "component_id",
+        "component_type",
+        "extraction_method",
+        "extraction_status",
+        "requiredness"
+      ],
+      "title": "ClaimComponent",
+      "type": "object"
+    },
+    "ClaimSupportCandidateStatus": {
+      "description": "A programmatic, pre-review classification linking one AnswerClaim to packed\nevidence (schemas/trace.py::AnswerSupportEdge.candidate_support_status) --\ndeliberately not a final correctness verdict and never rendered as \"the answer is\nfalse/faithful/hallucinated\" (docs/review-loop-implementation-plan.md, \"Answer\nclaim extraction\"). Kept as a field separate from the existing, reviewer-facing\n`AnswerSupportEdge.support_status` so a programmatic linking pass can never masquerade\nas a reviewer's judgment.",
+      "enum": [
+        "supported_candidate",
+        "partial_support_candidate",
+        "no_support_edge_found",
+        "conflict_candidate",
+        "unresolved",
+        "direct_support_candidate",
+        "qualification_required",
+        "contradiction_candidate",
+        "composite_support_candidate",
+        "composite_partial_support_candidate",
+        "composite_qualification_required",
+        "composite_conflict_candidate",
+        "composite_unresolved"
+      ],
+      "title": "ClaimSupportCandidateStatus",
+      "type": "string"
+    },
+    "ComparisonFieldName": {
+      "description": "The 17 structured field types `review/field_extraction.py` attempts to extract\nfrom a claim or candidate passage, per\ndocs/claim-linking-improvement-plan.md \u00a72. Not every field fires on every text --\na field this extractor finds no signal for is `ABSENT` (ComparisonOutcome), not a\nfailure.",
+      "enum": [
+        "entity",
+        "predicate",
+        "object_value",
+        "polarity",
+        "modality",
+        "quantification",
+        "population_scope",
+        "condition",
+        "exception",
+        "temporal",
+        "version",
+        "frequency_duration",
+        "numeric_value",
+        "comparator",
+        "unit",
+        "jurisdiction",
+        "cross_reference"
+      ],
+      "title": "ComparisonFieldName",
+      "type": "string"
+    },
+    "ComparisonOutcome": {
+      "description": "The four-state field-comparison lattice\n(docs/claim-linking-improvement-plan.md \u00a73). ABSENT and UNKNOWN are deliberately\ndistinct: ABSENT means the field is not expressed on at least one side (nothing to\ncompare); UNKNOWN means it may be expressed on both sides but cannot be compared\nwith sufficient confidence (extraction/normalization/scope uncertainty).",
+      "enum": [
+        "match",
+        "mismatch",
+        "absent",
+        "unknown"
+      ],
+      "title": "ComparisonOutcome",
+      "type": "string"
+    },
+    "ComponentRequiredness": {
+      "description": "Whether a `ClaimComponent` (schemas/evidence_set.py) is load-bearing for the\nclaim -- docs/multi-passage-evidence-plan.md \u00a74. CRITICAL components must be\ncovered by some member of a candidate evidence set for composite support to be\nconsidered valid; INFORMATIONAL components (currently just cross-references) are\nnever themselves treated as blocking.",
+      "enum": [
+        "critical",
+        "non_critical",
+        "informational"
+      ],
+      "title": "ComponentRequiredness",
+      "type": "string"
+    },
+    "EvidenceSetConflict": {
+      "additionalProperties": false,
+      "description": "One detected incompatibility between two members of a candidate set.",
+      "properties": {
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "field_name": {
+          "$ref": "#/$defs/ComparisonFieldName"
+        },
+        "member_a_context_item_id": {
+          "title": "Member A Context Item Id",
+          "type": "string"
+        },
+        "member_b_context_item_id": {
+          "title": "Member B Context Item Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "member_a_context_item_id",
+        "member_b_context_item_id",
+        "field_name",
+        "explanation"
+      ],
+      "title": "EvidenceSetConflict",
+      "type": "object"
+    },
+    "EvidenceSetConstructionMethod": {
+      "description": "How an EvidenceSet was assembled -- docs/multi-passage-evidence-plan.md \u00a79.\nAlways deterministic/programmatic in this pass; the enum exists so a future\nsemantic-assisted method (\u00a7\"OPTIONAL SEMANTIC LAYER\") has a place to be recorded\nwithout a schema change.",
+      "enum": [
+        "bounded_greedy_set_cover"
+      ],
+      "title": "EvidenceSetConstructionMethod",
+      "type": "string"
+    },
+    "EvidenceSetMember": {
+      "additionalProperties": false,
+      "description": "One packed ContextItem's role within a candidate EvidenceSet.",
+      "properties": {
+        "context_item_id": {
+          "title": "Context Item Id",
+          "type": "string"
+        },
+        "field_comparisons": {
+          "description": "This member's own field comparisons against the claim (its individual candidate assessment).",
+          "items": {
+            "$ref": "#/$defs/FieldComparison"
+          },
+          "title": "Field Comparisons",
+          "type": "array"
+        },
+        "selection_rationale": {
+          "description": "Bounded, reviewer-facing reason this member was included.",
+          "title": "Selection Rationale",
+          "type": "string"
+        },
+        "source_location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Location"
+        },
+        "supplied_component_ids": {
+          "description": "component_id values (from the parent EvidenceSet.claim_components) this member covers at MATCH.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Supplied Component Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "context_item_id",
+        "selection_rationale"
+      ],
+      "title": "EvidenceSetMember",
+      "type": "object"
+    },
+    "ExtractionStatus": {
+      "description": "Outcome of attempting to extract one ComparisonFieldName from one text.\nDistinct from ComparisonOutcome (which compares two sides) -- this describes one\nside's extraction attempt only.",
+      "enum": [
+        "extracted",
+        "absent",
+        "extraction_failed",
+        "extraction_conflict"
+      ],
+      "title": "ExtractionStatus",
+      "type": "string"
+    },
+    "FieldComparison": {
+      "additionalProperties": false,
+      "description": "One field's four-state comparison outcome between a claim and a candidate.",
+      "properties": {
+        "claim_span": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claim Span"
+        },
+        "claim_value": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claim Value"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "explanation": {
+          "description": "A bounded, single-field explanation -- never a truth claim.",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "extraction_method": {
+          "title": "Extraction Method",
+          "type": "string"
+        },
+        "field_name": {
+          "$ref": "#/$defs/ComparisonFieldName"
+        },
+        "mismatch_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MismatchType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set only when outcome=MISMATCH -- never implies contradiction by itself."
+        },
+        "normalization_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalization Method"
+        },
+        "outcome": {
+          "$ref": "#/$defs/ComparisonOutcome"
+        },
+        "source_span": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Span"
+        },
+        "source_value": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Value"
+        }
+      },
+      "required": [
+        "field_name",
+        "outcome",
+        "extraction_method",
+        "explanation"
+      ],
+      "title": "FieldComparison",
+      "type": "object"
+    },
+    "MismatchType": {
+      "description": "Classification of a MISMATCH-outcome FieldComparison\n(docs/claim-linking-improvement-plan.md \u00a74). A mismatch is never automatically a\ncontradiction -- that inference is relationship classification's job, under\nstricter conditions (see ClaimSupportCandidateStatus.CONTRADICTION_CANDIDATE).",
+      "enum": [
+        "frequency_mismatch",
+        "duration_mismatch",
+        "numeric_mismatch",
+        "unit_mismatch",
+        "comparator_mismatch",
+        "polarity_mismatch",
+        "modality_escalation",
+        "modality_weakening",
+        "scope_broadening",
+        "scope_narrowing",
+        "condition_omission",
+        "exception_omission",
+        "temporal_mismatch",
+        "version_mismatch",
+        "jurisdiction_mismatch",
+        "entity_binding_mismatch",
+        "predicate_mismatch",
+        "value_mismatch"
+      ],
+      "title": "MismatchType",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/EvidenceSet.schema.json",
+  "additionalProperties": false,
+  "description": "A candidate proposal that 2 (or, bounded, 3) packed items jointly cover the\ncomponents one AnswerClaim requires -- never a factual adjudication, never written\nback onto AnswerSupportEdge (docs/multi-passage-evidence-plan.md \u00a75).",
+  "properties": {
+    "answer_claim_id": {
+      "title": "Answer Claim Id",
+      "type": "string"
+    },
+    "claim_components": {
+      "items": {
+        "$ref": "#/$defs/ClaimComponent"
+      },
+      "title": "Claim Components",
+      "type": "array"
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confidence"
+    },
+    "conflicts": {
+      "items": {
+        "$ref": "#/$defs/EvidenceSetConflict"
+      },
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "construction_method": {
+      "$ref": "#/$defs/EvidenceSetConstructionMethod",
+      "default": "bounded_greedy_set_cover"
+    },
+    "construction_rationale": {
+      "description": "Bounded, reviewer-facing summary of why this set was proposed.",
+      "title": "Construction Rationale",
+      "type": "string"
+    },
+    "covered_component_ids": {
+      "description": "component_id values covered at MATCH by the union of members.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Covered Component Ids",
+      "type": "array"
+    },
+    "evidence_set_id": {
+      "title": "Evidence Set Id",
+      "type": "string"
+    },
+    "explanation": {
+      "description": "Bounded reviewer-facing text -- never a truth claim.",
+      "title": "Explanation",
+      "type": "string"
+    },
+    "member_context_item_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Member Context Item Ids",
+      "type": "array"
+    },
+    "members": {
+      "items": {
+        "$ref": "#/$defs/EvidenceSetMember"
+      },
+      "title": "Members",
+      "type": "array"
+    },
+    "redundant_component_ids": {
+      "description": "component_id values covered by more than one member (recorded, not an error).",
+      "items": {
+        "type": "string"
+      },
+      "title": "Redundant Component Ids",
+      "type": "array"
+    },
+    "relationship_status": {
+      "$ref": "#/$defs/ClaimSupportCandidateStatus"
+    },
+    "trace_id": {
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "uncertainty_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Uncertainty Reason"
+    },
+    "unresolved_component_ids": {
+      "description": "critical component_id values no member covers, or only UNKNOWN.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Unresolved Component Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "evidence_set_id",
+    "trace_id",
+    "answer_claim_id",
+    "relationship_status",
+    "construction_rationale",
+    "explanation"
+  ],
+  "title": "EvidenceSet",
+  "type": "object"
+}

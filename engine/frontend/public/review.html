@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Wittgenstein review screen (prototype)</title>
+<style>
+  /* Deliberately unstyled beyond basic legibility -- no polished visual design before
+     the review loop works end to end (docs/review-loop-implementation-plan.md §H). */
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 1.5rem auto; padding: 0 1rem; color: #111; }
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.05rem; margin-top: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 0.25rem; }
+  section { margin-bottom: 1rem; }
+  textarea, input[type=text] { width: 100%; box-sizing: border-box; font-family: inherit; }
+  textarea { height: 4rem; }
+  .item { border: 1px solid #ccc; border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; }
+  .item.packed { border-left: 4px solid #2a6; }
+  .item.omitted { border-left: 4px solid #999; opacity: 0.8; }
+  .item.retrieved-not-packed { border-left: 4px solid #b80; }
+  .risk.priority-high { border-left: 4px solid #b00; }
+  .risk.priority-medium { border-left: 4px solid #b80; }
+  .risk.priority-low, .risk.priority-informational { border-left: 4px solid #888; }
+  .tag { display: inline-block; font-size: 0.75rem; padding: 0.05rem 0.4rem; border-radius: 3px; background: #eee; margin-right: 0.25rem; }
+  .muted { color: #666; font-size: 0.9rem; }
+  .cols { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .cols > div { flex: 1 1 260px; min-width: 0; }
+  button { cursor: pointer; }
+  .action-btn { margin: 0.15rem; }
+  pre { white-space: pre-wrap; background: #f7f7f7; padding: 0.5rem; border-radius: 4px; }
+  #status { font-family: monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h1>Wittgenstein review screen (prototype)</h1>
+<p class="muted">
+  Domain-neutral widget-certification example. This page shows the actual evidence
+  path behind an answer -- retrieval ranks, what was packed vs. omitted, proposition
+  and dependency cues, and registry-derived risk events -- never a single opaque
+  hallucination probability.
+</p>
+
+<section>
+  <label>API base URL: <input type="text" id="apiBase" value="http://localhost:8000" /></label>
+</section>
+
+<h2>1. Query, answer, and evidence source</h2>
+<section>
+  <label>Corpus<br/>
+    <select id="corpusChoice">
+      <option value="widget">Widget certification demo (fictional)</option>
+      <option value="asteria">Asteria Autonomous Systems Certification Manual (fictional, controlled synthetic corpus)</option>
+    </select>
+  </label><br/><br/>
+  <div id="asteriaControls" hidden>
+    <label>Asteria fixture case<br/>
+      <select id="asteriaCase"><option value="">-- enter query/answer manually --</option></select>
+    </label><br/><br/>
+    <label>Pipeline manifest<br/>
+      <select id="asteriaManifest"></select>
+    </label>
+    <p class="muted">
+      A fully fictional, tracked, hand-verified regression-test corpus -- see
+      data/fixtures/asteria_manual/README.md. Not a real standard, not a human-subjects
+      study, and no case's "expected" outcome (in its own fixture file) is shown here or
+      forced on the reviewer -- this page never declares an answer objectively correct.
+    </p><br/>
+  </div>
+  <label>Query<br/><input type="text" id="query" value="What is the pass threshold for a Class I widget?" /></label><br/><br/>
+  <label>Answer<br/><textarea id="answer">A Class I widget must pass the Load Stress Test at a 95% threshold. It is exempt from inspection.</textarea></label><br/><br/>
+  <button id="runBtn">Run imported-answer review</button>
+  <pre id="status"></pre>
+</section>
+
+<div id="results" hidden>
+  <h2>2 &amp; 3. Answer and answer claims</h2>
+  <section id="answerClaims"></section>
+
+  <h2>7. Risk events (sorted by priority)</h2>
+  <section id="riskEvents"></section>
+
+  <h2>4, 5, 6. Query-relevant evidence, source locations, and dependency/annotation cues</h2>
+  <section id="packedEvidence"></section>
+
+  <h2>8. Retrieved but not packed</h2>
+  <section id="omittedEvidence"></section>
+
+  <h2>9. Full retrieved set</h2>
+  <section id="retrievedSet"></section>
+
+  <h2>Claim/evidence comparison fields</h2>
+  <p class="muted">Per (claim, candidate) field-by-field comparison -- programmatic candidate classification, never a final verdict. See docs/claim-linking-improvement-plan.md.</p>
+  <section id="claimComparisons"></section>
+
+  <h2>Evidence-set composition</h2>
+  <p class="muted">Bounded, deterministic multi-passage composition attempts -- see docs/multi-passage-evidence-plan.md. Composition status is a candidate classification about this pipeline's behavior, never a factual adjudication.</p>
+  <section id="evidenceSets"></section>
+
+  <h2>Cross-reference targets</h2>
+  <p class="muted">Coarse pipeline-stage state, resolution granularity, and exact-target availability are three separate signals -- see docs/cross-reference-granularity-resolution-plan.md. None of this establishes legal correctness or that a reference is necessary to interpret the claim.</p>
+  <section id="crossReferenceTargets"></section>
+
+  <h2>10 &amp; 11. Reviewer action</h2>
+  <section id="reviewerPanel"></section>
+</div>
+
+<script>
+const PRIORITY_ORDER = { high: 0, medium: 1, low: 2, informational: 3 };
+const REVIEWER_ACTIONS = [
+  "approve_sufficiently_supported", "approve_with_qualification", "request_additional_context",
+  "inspect_referenced_section", "compare_competing_sources", "check_date_version_jurisdiction",
+  "ask_clarifying_question", "escalate_to_domain_expert", "reject_as_unsupported", "mark_unresolved",
+  "dismiss_as_low_priority", "override_risk_priority",
+];
+
+let lastResult = null;
+let displayedRiskEventIds = [];
+let openedEvidenceItemIds = new Set();
+
+function apiBase() { return document.getElementById("apiBase").value.replace(/\/$/, ""); }
+function el(tag, opts = {}, children = []) {
+  const node = document.createElement(tag);
+  if (opts.class) node.className = opts.class;
+  if (opts.text) node.textContent = opts.text;
+  if (opts.html) node.innerHTML = opts.html;
+  for (const child of children) node.appendChild(child);
+  return node;
+}
+
+async function runReview() {
+  const status = document.getElementById("status");
+  status.textContent = "Running...";
+  document.getElementById("results").hidden = true;
+
+  const corpusChoice = document.getElementById("corpusChoice").value;
+  const body = {
+    query: document.getElementById("query").value,
+    answer: document.getElementById("answer").value,
+    token_budget: 300,
+    top_k: 5,
+  };
+  if (corpusChoice === "widget") {
+    body.corpus = WIDGET_CORPUS;
+    body.corpus_id = "widget-certification-demo";
+  } else if (corpusChoice === "asteria") {
+    body.corpus = ASTERIA_CORPUS;
+    body.corpus_id = "asteria-manual";
+    const manifestId = document.getElementById("asteriaManifest").value;
+    const manifest = ASTERIA_MANIFESTS[manifestId];
+    if (manifest) {
+      body.manifest = manifest;
+      body.top_k = manifest.retrieval_manifest.candidate_depth || 5;
+      body.token_budget = manifest.packing_manifest.evidence_budget_tokens || 300;
+    }
+  }
+
+  try {
+    const resp = await fetch(`${apiBase()}/review/import-answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      status.textContent = `Error ${resp.status}: ${await resp.text()}`;
+      return;
+    }
+    lastResult = await resp.json();
+    status.textContent = `OK. trace_id=${lastResult.trace.trace_id}`;
+    render(lastResult);
+    document.getElementById("results").hidden = false;
+  } catch (err) {
+    status.textContent = "Request failed: " + err;
+  }
+}
+
+function render(result) {
+  openedEvidenceItemIds = new Set();
+  renderAnswerClaims(result);
+  renderRiskEvents(result);
+  renderPackedEvidence(result);
+  renderOmittedEvidence(result);
+  renderRetrievedSet(result);
+  renderClaimComparisons(result);
+  renderEvidenceSets(result);
+  renderCrossReferenceTargets(result);
+  renderReviewerPanel(result);
+}
+
+function renderClaimComparisons(result) {
+  const container = document.getElementById("claimComparisons");
+  container.innerHTML = "";
+  const comparisons = result.claim_evidence_comparisons || [];
+  if (!comparisons.length) {
+    container.appendChild(el("p", { class: "muted", text: "No claim/evidence comparisons for this trace." }));
+    return;
+  }
+  for (const c of comparisons) {
+    const div = el("div", { class: "item" });
+    div.appendChild(el("div", { html:
+      `<span class="tag">${c.relationship_status}</span>` +
+      `<span class="muted">claim ${escapeHtml(c.claim_id)} vs. ${escapeHtml(c.context_item_id)}</span>`
+    }));
+    const mismatches = (c.field_comparisons || []).filter(fc => fc.outcome !== "match" && fc.outcome !== "absent");
+    if (mismatches.length) {
+      div.appendChild(el("div", { class: "muted", text:
+        "Mismatched fields: " + mismatches.map(fc => `${fc.field_name}${fc.mismatch_type ? ` (${fc.mismatch_type})` : ""}`).join(", ")
+      }));
+    }
+    container.appendChild(div);
+  }
+}
+
+function renderEvidenceSets(result) {
+  const container = document.getElementById("evidenceSets");
+  container.innerHTML = "";
+  const sets = result.evidence_sets || [];
+  if (!sets.length) {
+    container.appendChild(el("p", { class: "muted", text: "No evidence-set composition was attempted for this trace." }));
+    return;
+  }
+  for (const es of sets) {
+    const div = el("div", { class: "item" });
+    div.appendChild(el("div", { html:
+      `<span class="tag">${es.relationship_status}</span>` +
+      `<span class="muted">claim ${escapeHtml(es.answer_claim_id)} -- ${(es.members || []).length} member(s), ` +
+      `construction: ${es.construction_method || "unknown"}</span>`
+    }));
+    for (const m of (es.members || [])) {
+      div.appendChild(el("div", { class: "muted", text: `  member: ${m.context_item_id} (${m.role || "unspecified role"})` }));
+    }
+    if ((es.conflicts || []).length) {
+      div.appendChild(el("div", { class: "muted", text: `  ${es.conflicts.length} member conflict(s) recorded -- see the diagnostic report for detail.` }));
+    }
+    container.appendChild(div);
+  }
+}
+
+function renderCrossReferenceTargets(result) {
+  const container = document.getElementById("crossReferenceTargets");
+  container.innerHTML = "";
+  const byClaim = result.cross_reference_markers || {};
+  const claimIds = Object.keys(byClaim);
+  if (!claimIds.length) {
+    container.appendChild(el("p", { class: "muted", text: "No explicit cross-reference markers were detected in this answer." }));
+    return;
+  }
+  for (const claimId of claimIds) {
+    for (const marker of byClaim[claimId]) {
+      const div = el("div", { class: "item" });
+      div.appendChild(el("div", { html:
+        `<span class="tag">${marker.target_state}</span>` +
+        ` <strong>${escapeHtml(marker.marker_text)}</strong>` +
+        `<span class="muted"> (${marker.reference_type})</span>`
+      }));
+      if (marker.warning) {
+        div.appendChild(el("div", { class: "muted", text: marker.warning }));
+      }
+      for (const t of (marker.targets || [])) {
+        div.appendChild(el("div", { class: "muted", html:
+          `target ${escapeHtml(t.target_identifier || "?")}: ` +
+          `<span class="tag">${t.resolution_granularity}</span>` +
+          `<span class="tag">${t.exact_target_status}</span>`
+        }));
+        if (t.exactness_explanation) {
+          div.appendChild(el("div", { class: "muted", text: t.exactness_explanation }));
+        }
+      }
+      container.appendChild(div);
+    }
+  }
+}
+
+function renderAnswerClaims(result) {
+  const container = document.getElementById("answerClaims");
+  container.innerHTML = "";
+  container.appendChild(el("p", { html: `<strong>Answer:</strong> ${escapeHtml(result.trace.answer || "")}` }));
+  const edgesByClaim = Object.fromEntries((result.trace.answer_support_edges || []).map(e => [e.claim_id, e]));
+  for (const claim of result.trace.answer_claims || []) {
+    const edge = edgesByClaim[claim.claim_id];
+    const div = el("div", { class: "item" });
+    div.appendChild(el("div", { html: `<strong>Claim:</strong> ${escapeHtml(claim.text)}` }));
+    div.appendChild(el("div", { class: "muted", text: `extraction_method: ${claim.extraction_method || "unknown"}` }));
+    if (edge) {
+      div.appendChild(el("div", {
+        html: `<span class="tag">${edge.candidate_support_status || "unresolved"}</span>` +
+              `<span class="muted">linked evidence items: ${(edge.context_item_ids || []).join(", ") || "none"} ` +
+              `-- programmatic, pre-review candidate only, not a final verdict.</span>`
+      }));
+    }
+    container.appendChild(div);
+  }
+}
+
+function renderRiskEvents(result) {
+  const container = document.getElementById("riskEvents");
+  container.innerHTML = "";
+  const events = [...(result.risk_events || [])].sort(
+    (a, b) => (PRIORITY_ORDER[a.priority_tier] ?? 9) - (PRIORITY_ORDER[b.priority_tier] ?? 9)
+  );
+  displayedRiskEventIds = events.map(e => e.risk_event_id);
+  if (events.length === 0) {
+    container.appendChild(el("p", { class: "muted", text: "No risk events derived for this trace." }));
+  }
+  for (const risk of events) {
+    const div = el("div", { class: `item risk priority-${risk.priority_tier}` });
+    div.appendChild(el("div", { html:
+      `<span class="tag">${risk.priority_tier}</span>` +
+      `<span class="tag">${risk.epistemic_status}</span>` +
+      `<span class="tag">${risk.transfer_level}</span>` +
+      ` <strong>${escapeHtml(risk.mechanism_id)}</strong>`
+    }));
+    div.appendChild(el("div", { html: `<strong>Observed:</strong> ${escapeHtml(risk.observed_evidence)}` }));
+    div.appendChild(el("div", { html: `<strong>Reviewer language:</strong> ${escapeHtml(risk.reviewer_explanation)}` }));
+    div.appendChild(el("div", { html: `<strong>Recommended action:</strong> ${escapeHtml(risk.reviewer_action)}` }));
+    div.appendChild(el("div", { class: "muted", html:
+      `What the tool does not know: unknown/insufficient-data gate results are not shown here as ` +
+      `confirmed facts -- see the full assessment via the API for gate-by-gate detail. This risk event ` +
+      `does not prove the answer is false.`
+    }));
+    container.appendChild(div);
+  }
+}
+
+function evidenceItem(item, cssClass) {
+  const div = el("div", { class: `item ${cssClass}` });
+  div.appendChild(el("div", { html:
+    `<span class="tag">rank ${item.rank ?? "?"}</span>` +
+    `<span class="tag">score ${item.relevance_score != null ? item.relevance_score.toFixed(2) : "?"}</span>` +
+    (item.omission_reason ? `<span class="tag">${item.omission_reason}</span>` : "")
+  }));
+  div.appendChild(el("div", { class: "muted", text: `source: ${item.source_document_id || "unknown"} / ${item.segment_id || "unknown"}` }));
+  const excerpt = el("div", { text: item.excerpt || "" });
+  div.appendChild(excerpt);
+  const openBtn = el("button", { text: "Mark opened/inspected" });
+  openBtn.onclick = () => { openedEvidenceItemIds.add(item.item_id); openBtn.textContent = "Opened ✓"; };
+  div.appendChild(openBtn);
+  return div;
+}
+
+function renderPackedEvidence(result) {
+  const container = document.getElementById("packedEvidence");
+  container.innerHTML = "";
+  for (const item of result.trace.packed_context_items || []) {
+    container.appendChild(evidenceItem(item, "packed"));
+  }
+  const flags = result.trace.segment_boundary_dependency_flags || [];
+  if (flags.length) {
+    const box = el("div", { class: "item" });
+    box.appendChild(el("div", { html: "<strong>Dependency/annotation cues:</strong>" }));
+    for (const flag of flags) box.appendChild(el("div", { class: "muted", text: flag }));
+    container.appendChild(box);
+  }
+}
+
+function renderOmittedEvidence(result) {
+  const container = document.getElementById("omittedEvidence");
+  container.innerHTML = "";
+  const omitted = result.trace.omitted_context_items || [];
+  if (!omitted.length) container.appendChild(el("p", { class: "muted", text: "Nothing was omitted for this query." }));
+  for (const item of omitted) container.appendChild(evidenceItem(item, "omitted"));
+}
+
+function renderRetrievedSet(result) {
+  const container = document.getElementById("retrievedSet");
+  container.innerHTML = "";
+  container.appendChild(el("p", { class: "muted", text:
+    "Every retrieved candidate remains accessible here, independent of whether it was packed -- " +
+    "low-priority or unflagged evidence is never hidden from the reviewer."
+  }));
+  const packedIds = new Set((result.trace.packed_context_items || []).map(i => i.item_id));
+  for (const item of result.trace.retrieval_candidates || []) {
+    container.appendChild(evidenceItem(item, packedIds.has(item.item_id) ? "packed" : "retrieved-not-packed"));
+  }
+}
+
+function renderReviewerPanel(result) {
+  const container = document.getElementById("reviewerPanel");
+  container.innerHTML = "";
+
+  const reviewerId = el("input", { class: "" }); reviewerId.type = "text"; reviewerId.placeholder = "reviewer id"; reviewerId.value = "reviewer-1";
+  const condition = el("select");
+  for (const c of ["query_scoped", "manifest_conditioned", "undifferentiated"]) {
+    condition.appendChild(el("option", { text: c }));
+  }
+  const confidence = el("input"); confidence.type = "number"; confidence.min = "0"; confidence.max = "1"; confidence.step = "0.05"; confidence.placeholder = "confidence (0-1)";
+  const uncertainty = el("input"); uncertainty.type = "text"; uncertainty.placeholder = "uncertainty";
+  const notes = el("textarea"); notes.placeholder = "notes";
+  const statusLine = el("pre", { text: "" });
+
+  container.appendChild(el("div", {}, [el("label", { text: "Reviewer id: " }), reviewerId]));
+  container.appendChild(el("div", {}, [el("label", { text: "Review condition: " }), condition]));
+  container.appendChild(el("div", {}, [el("label", { text: "Confidence: " }), confidence]));
+  container.appendChild(el("div", {}, [el("label", { text: "Uncertainty: " }), uncertainty]));
+  container.appendChild(el("div", {}, [el("label", { text: "Notes: " }), notes]));
+
+  const actionsDiv = el("div");
+  for (const action of REVIEWER_ACTIONS) {
+    const btn = el("button", { class: "action-btn", text: action });
+    btn.onclick = async () => {
+      statusLine.textContent = "Submitting...";
+      try {
+        const resp = await fetch(`${apiBase()}/review/events`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            trace_id: result.trace.trace_id,
+            reviewer_id: reviewerId.value || "reviewer-1",
+            review_condition: condition.value,
+            displayed_risk_event_ids: displayedRiskEventIds,
+            opened_evidence_item_ids: [...openedEvidenceItemIds],
+            reviewer_action: action,
+            target_risk_event_id: displayedRiskEventIds[0] || null,
+            confidence: confidence.value ? parseFloat(confidence.value) : null,
+            uncertainty: uncertainty.value || null,
+            notes: notes.value || null,
+          }),
+        });
+        const body = await resp.json();
+        statusLine.textContent = resp.ok ? `Saved: ${body.review_event_id}` : `Error ${resp.status}: ${JSON.stringify(body)}`;
+      } catch (err) {
+        statusLine.textContent = "Request failed: " + err;
+      }
+    };
+    actionsDiv.appendChild(btn);
+  }
+  container.appendChild(actionsDiv);
+  container.appendChild(statusLine);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text == null ? "" : String(text);
+  return div.innerHTML;
+}
+
+document.getElementById("runBtn").addEventListener("click", runReview);
+
+function setupAsteriaControls() {
+  const manifestSelect = document.getElementById("asteriaManifest");
+  for (const manifestId of Object.keys(ASTERIA_MANIFESTS)) {
+    manifestSelect.appendChild(el("option", { text: manifestId }));
+  }
+  const caseSelect = document.getElementById("asteriaCase");
+  for (const c of ASTERIA_CASES) {
+    caseSelect.appendChild(el("option", { text: c.case_id }));
+  }
+  caseSelect.addEventListener("change", () => {
+    const chosen = ASTERIA_CASES.find(c => c.case_id === caseSelect.value);
+    if (!chosen) return;
+    document.getElementById("query").value = chosen.query;
+    document.getElementById("answer").value = chosen.answer;
+    if (ASTERIA_MANIFESTS[chosen.manifest_id]) manifestSelect.value = chosen.manifest_id;
+  });
+}
+
+document.getElementById("corpusChoice").addEventListener("change", (e) => {
+  document.getElementById("asteriaControls").hidden = e.target.value !== "asteria";
+});
+
+setupAsteriaControls();
+
+// The same fictional "widget certification program" corpus as
+// src/wittgenstein/demo/widget_corpus.py -- kept in sync by hand (no shared build step
+// between the Python backend and this static page).
+const WIDGET_CORPUS = {
+  "certification-handbook": `# Widget Certification Handbook
+
+## Section 1: Eligibility
+
+A manufacturer is eligible for Standard Certification if it has held a valid Facility
+Registration for at least 12 months and has not received a Class A nonconformance
+finding in the preceding 24 months. A manufacturer that has received a Class B
+nonconformance finding remains eligible, provided that a corrective action plan was
+filed within 30 business days of the finding.
+
+Eligibility does not extend to facilities operating under a Temporary Variance, except
+when the variance concerns packaging labeling only. See Section 4 for the full
+variance exception list.
+
+## Section 2: Application Requirements
+
+An applicant must submit the following: a completed Form W-100, evidence of facility
+registration, and a summary of the last two internal audits.
+
+- Form W-100, signed by an authorized representative
+- Facility Registration certificate, issued within the last 5 years
+- Internal audit summaries covering Program Year 2024 and Program Year 2025
+- A calibration log for any load-bearing test equipment, if applicable
+
+Applications missing any required item will be returned without review. Applications
+are typically processed within 45 business days, though complex cases involving
+Table 3 exemptions may take longer.
+
+## Section 3: Testing Standards
+
+| Widget Class | Required Test | Pass Threshold |
+| --- | --- | --- |
+| Class I | Load Stress Test | 95% |
+| Class II | Load Stress Test | 90% |
+| Class III | Thermal Cycling Test | 85% |
+
+A Class I widget must pass the Load Stress Test at a 95% threshold unless it qualifies
+for the reduced-threshold exemption described in Section 4, Exemption C. Class II and
+Class III widgets are tested according to Table 3 above.
+
+## Section 4: Exemptions and Variances
+
+Exemption C applies to widgets manufactured before January 2023, which may be tested
+at an 85% threshold instead of the standard 95% threshold. Exemption C does not apply
+to any widget that has been remanufactured or substantially modified since its
+original manufacture date.
+
+A Temporary Variance may be granted for packaging labeling changes only; it does not
+permit deviation from the testing standards in Section 3. According to the Certification
+Board, variances are reviewed quarterly and expire automatically after 180 days unless
+renewed.
+
+## Section 5: Revocation
+
+Certification may be revoked if a Class A nonconformance is found after certification
+is granted, or if the manufacturer fails to maintain facility registration. Revocation
+is not automatic for a Class B finding; the Board must first offer an opportunity to
+file a corrective action plan within 30 business days.
+`,
+  "inspection-procedures": `# Inspection Procedures Manual
+
+## Overview
+
+Inspectors conduct on-site facility reviews to confirm that certified manufacturers
+continue to meet the standards described in the Widget Certification Handbook,
+Section 3.
+
+## Scheduling
+
+Routine inspections occur once per Program Year, unless a complaint triggers an
+unscheduled inspection. An unscheduled inspection may occur at any time if the Board
+receives a credible report of a Class A nonconformance.
+
+## Inspection Checklist
+
+- Confirm current Facility Registration is displayed and unexpired
+- Verify calibration logs for load-bearing test equipment match Section 2 requirements
+- Sample at least 10 units per widget class for retest
+- Document any deviation from the pass thresholds in Table 3 of the Handbook
+
+## Findings
+
+A finding is classified as Class A if it directly affects test result validity; it is
+classified as Class B for all other deviations, including documentation gaps. Class A
+findings must be reported to the Certification Board within 5 business days. Class B
+findings should be reported within 15 business days, except when they co-occur with a
+Class A finding, in which case both are reported on the Class A timeline.
+
+Inspectors may not issue a finding without direct observation or verified test data;
+a finding based solely on a manufacturer's self-report is not permitted.
+`,
+};
+
+// The same fictional "Asteria Autonomous Systems Certification Manual" corpus as
+// data/fixtures/asteria_manual/documents/*.md -- kept in sync by hand (no shared build
+// step between the Python backend and this static page), same pattern as WIDGET_CORPUS.
+const ASTERIA_CORPUS = {
+  "annex-i-conformity-table": `# Asteria Autonomous Systems Certification Manual -- Annexes
+
+Version 3.2, effective 1 March 2027. Fictional content -- see \`README.md\` in this directory's parent for the full research-only notice.
+
+Annex I
+
+Conformity Reference Table
+
+| Unit Class | Required Assessment | Minimum Clearance Margin |
+| --- | --- | --- |
+| Class R | Structural Load Assessment | 12 cm |
+| Class S | Structural Load Assessment | 8 cm |
+
+Table A.2 sets out the minimum clearance margins referenced in Article 2. A report filed under Article 6 shall cite the applicable row of Table A.2.
+`,
+  "d1-definitions": `# Asteria Autonomous Systems Certification Manual -- Definitions
+
+Version 3.2, effective 1 March 2027. This is a fictional manual authored for
+Wittgenstein's controlled synthetic-corpus regression tests. It is not a real
+standard, regulation, or product manual, and none of its terms, thresholds, or
+requirements apply to any real inspection unit.
+
+## Definition D-01: Autonomous inspection unit
+
+An autonomous inspection unit is a self-directed mechanical system designed to
+perform structural inspection tasks without continuous human operation.
+
+## Definition D-02: Class R inspection unit
+
+A Class R inspection unit is an autonomous inspection unit intended for operation in
+restricted-access industrial zones, as distinguished from a Class S inspection unit
+under Definition D-03.
+
+## Definition D-03: Class S inspection unit
+
+A Class S inspection unit is an autonomous inspection unit intended for operation in
+surface-level, publicly accessible zones.
+
+## Definition D-04: Registered operator
+
+A registered operator is a natural or legal person who has completed registration
+under Article 5.
+
+## Definition D-05: Conformity assessment
+
+A conformity assessment is the documented process by which an inspection unit's
+compliance with Article 2 is verified prior to deployment.
+
+## Definition D-06: Reporting period
+
+A reporting period is the twelve-month interval beginning 1 April of each calendar
+year, distinct from a calendar year.
+`,
+  "d2-classification": `# Asteria Autonomous Systems Certification Manual -- Classification
+
+Version 3.2, effective 1 March 2027. Fictional content -- see \`README.md\` in this directory's parent for the full research-only notice.
+
+Article 2
+
+Classification requirement
+
+1. A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres before deployment, provided that the unit has completed a conformity assessment under Definition D-05.
+
+2. A Class S inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 8 centimetres before deployment.
+
+Article 3
+
+Exception for legacy units
+
+An inspection unit manufactured before 1 January 2025 is exempt from the clearance margin set out in Article 2, except where the unit has been substantially modified since its original manufacture date.
+
+Article 4
+
+Scope of application
+
+The requirements of Article 2 apply to every Class R inspection unit operating within a restricted-access industrial zone on or after 1 March 2027, regardless of the unit's manufacturer. See Section 1 for applicable definitions.
+`,
+  "d3-registration": `# Asteria Autonomous Systems Certification Manual -- Registration
+
+Version 3.2, effective 1 March 2027. Fictional content -- see \`README.md\` in this directory's parent for the full research-only notice.
+
+Article 5
+
+Registration obligation
+
+1. Before deployment of a Class R inspection unit, the operator shall register the unit with the Asteria Standards Authority in the Unit Registry referenced in Annex I.
+
+2. Before deployment of a Class S inspection unit, the operator shall register the unit with the Asteria Standards Authority in the Unit Registry, unless the unit is deployed for fewer than 5 operating days in a reporting period.
+
+3. A registered operator shall renew registration annually, no later than the last day of the reporting period defined in Definition D-06.
+
+4. A registered operator is subject to the renewal obligation under this Article only if the operator's inspection unit operates in a restricted-access industrial zone.
+
+Article 6
+
+Reporting deadlines
+
+An operator that discovers a nonconformance shall report it to the Asteria Standards Authority within 10 business days, in accordance with the registration obligation set out in Article 5(1). A report under this clause shall cite the applicable row of Table A.2.
+`,
+};
+
+// The 10 asteria_manual fixture cases (query/answer/manifest only -- full ground
+// truth stays in data/fixtures/asteria_manual/expected/, never shipped to this page).
+const ASTERIA_CASES = [
+  {
+    "case_id": "asteria-001-direct-single-span-class-s",
+    "query": "What minimum clearance margin must a Class S inspection unit meet in the Structural Load Assessment?",
+    "answer": "A Class S inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 8 centimetres.",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-002-definition-plus-requirement",
+    "query": "What is a Class R inspection unit, and what minimum clearance margin must it meet?",
+    "answer": "A Class R inspection unit is an autonomous inspection unit intended for operation in restricted-access industrial zones. A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres.",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-003-two-passage-complementary",
+    "query": "How often must a registered operator renew registration, and is a registered operator subject to the renewal obligation only if the operator's inspection unit operates in a restricted-access industrial zone?",
+    "answer": "A registered operator whose inspection unit operates in a restricted-access industrial zone must renew registration annually.",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-004-rule-plus-condition",
+    "query": "According to Article 2, what must a Class R inspection unit satisfy before deployment?",
+    "answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres, provided that the unit has completed a conformity assessment.",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-005-rule-plus-exception",
+    "query": "Is an inspection unit manufactured in 2023 required to meet the Article 2 clearance margin?",
+    "answer": "An inspection unit manufactured before 1 January 2025 is exempt from the clearance margin set out in Article 2, except where the unit has been substantially modified since its original manufacture date.",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-006-cross-reference-exact-target-packed",
+    "query": "What must a Class R inspection unit's operator do with the Unit Registry before deployment, per Article 5(1), and what does Article 6 require in relation to that obligation?",
+    "answer": "Before deployment, the operator of a Class R inspection unit shall register the unit with the Asteria Standards Authority in the Unit Registry, as set out in Article 5(1). Article 6 requires a nonconformance report to be filed in accordance with that registration obligation set out in Article 5(1).",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-007-cross-reference-budget-stressed",
+    "query": "According to Article 5(1), where must a Class R inspection unit's operator register the unit?",
+    "answer": "According to Article 5(1), the operator must register the unit with the Asteria Standards Authority in the Unit Registry referenced in Annex I.",
+    "manifest_id": "asteria-p2-budget-stressed"
+  },
+  {
+    "case_id": "asteria-008-distractor-same-topic",
+    "query": "What minimum clearance margin must a Class R inspection unit meet in the Structural Load Assessment?",
+    "answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres.",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-009-numeric-threshold-mismatch",
+    "query": "What minimum clearance margin must a Class R inspection unit meet in the Structural Load Assessment?",
+    "answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 20 centimetres.",
+    "manifest_id": "asteria-p1-baseline"
+  },
+  {
+    "case_id": "asteria-010-underspecified-intent",
+    "query": "What is the minimum clearance margin?",
+    "answer": "The minimum clearance margin is 12 centimetres.",
+    "manifest_id": "asteria-p1-baseline"
+  }
+];
+
+// The 3 executable asteria_manual manifests (P3 excluded -- representable but not
+// executable, see docs/controlled-synthetic-corpus-plan.md §11).
+const ASTERIA_MANIFESTS = {
+  "asteria-p1-baseline": {
+    "manifest_id": "asteria-p1-baseline",
+    "system_name": "asteria-controlled-corpus-demo",
+    "system_version": "0.1.0",
+    "created_at": "2026-09-16T00:00:00Z",
+    "corpus_manifest": {
+      "corpus_id": "asteria-manual",
+      "source_type": "synthetic_markdown",
+      "domain": "fictional_autonomous_systems_certification",
+      "language": "en",
+      "document_count": 4,
+      "corpus_versioning": "single_pinned_version_3.2"
+    },
+    "ingestion_manifest": {
+      "parser": "deterministic_parser_v1",
+      "ocr_used": false,
+      "table_extraction_method": "markdown_table_row_regex",
+      "structure_extraction_method": "heading_and_blank_line_rules"
+    },
+    "representation_manifest": {
+      "index_unit": "paragraph_list_item_table_row",
+      "embedding_family": null,
+      "embedding_model_identifier": null
+    },
+    "retrieval_manifest": {
+      "retriever_family": "bm25_lexical",
+      "retrieval_topology": "single_corpus_flat",
+      "retrieval_unit": "paragraph_list_item_table_row",
+      "chunking_method": "structural_segmentation_no_fixed_window",
+      "candidate_depth": 5,
+      "query_transformation_enabled": false,
+      "parent_child_expansion": false,
+      "graph_retrieval": false
+    },
+    "packing_manifest": {
+      "packing_method": "greedy_rank_order_token_budget",
+      "ordering_method": "retrieval_rank",
+      "compression_enabled": false,
+      "context_window_tokens": 600,
+      "evidence_budget_tokens": 600
+    },
+    "missing_information": [
+      "generation_manifest.generator_family",
+      "generation_manifest.model_identifier"
+    ]
+  },
+  "asteria-p2-budget-stressed": {
+    "manifest_id": "asteria-p2-budget-stressed",
+    "system_name": "asteria-controlled-corpus-demo",
+    "system_version": "0.1.0",
+    "created_at": "2026-09-16T00:00:00Z",
+    "corpus_manifest": {
+      "corpus_id": "asteria-manual",
+      "source_type": "synthetic_markdown",
+      "domain": "fictional_autonomous_systems_certification",
+      "language": "en",
+      "document_count": 4,
+      "corpus_versioning": "single_pinned_version_3.2"
+    },
+    "ingestion_manifest": {
+      "parser": "deterministic_parser_v1",
+      "ocr_used": false,
+      "table_extraction_method": "markdown_table_row_regex",
+      "structure_extraction_method": "heading_and_blank_line_rules"
+    },
+    "representation_manifest": {
+      "index_unit": "paragraph_list_item_table_row",
+      "embedding_family": null,
+      "embedding_model_identifier": null
+    },
+    "retrieval_manifest": {
+      "retriever_family": "bm25_lexical",
+      "retrieval_topology": "single_corpus_flat",
+      "retrieval_unit": "paragraph_list_item_table_row",
+      "chunking_method": "structural_segmentation_no_fixed_window",
+      "candidate_depth": 5,
+      "query_transformation_enabled": false,
+      "parent_child_expansion": false,
+      "graph_retrieval": false
+    },
+    "packing_manifest": {
+      "packing_method": "greedy_rank_order_token_budget",
+      "ordering_method": "retrieval_rank",
+      "compression_enabled": false,
+      "context_window_tokens": 60,
+      "evidence_budget_tokens": 60
+    },
+    "missing_information": [
+      "generation_manifest.generator_family",
+      "generation_manifest.model_identifier"
+    ]
+  },
+  "asteria-p4-full-context-control": {
+    "manifest_id": "asteria-p4-full-context-control",
+    "system_name": "asteria-controlled-corpus-demo",
+    "system_version": "0.1.0",
+    "created_at": "2026-09-16T00:00:00Z",
+    "corpus_manifest": {
+      "corpus_id": "asteria-manual",
+      "source_type": "synthetic_markdown",
+      "domain": "fictional_autonomous_systems_certification",
+      "language": "en",
+      "document_count": 4,
+      "corpus_versioning": "single_pinned_version_3.2"
+    },
+    "ingestion_manifest": {
+      "parser": "deterministic_parser_v1",
+      "ocr_used": false,
+      "table_extraction_method": "markdown_table_row_regex",
+      "structure_extraction_method": "heading_and_blank_line_rules"
+    },
+    "representation_manifest": {
+      "index_unit": "paragraph_list_item_table_row",
+      "embedding_family": null,
+      "embedding_model_identifier": null
+    },
+    "retrieval_manifest": {
+      "retriever_family": "bm25_lexical",
+      "retrieval_topology": "single_corpus_flat",
+      "retrieval_unit": "paragraph_list_item_table_row",
+      "chunking_method": "structural_segmentation_no_fixed_window",
+      "candidate_depth": 1,
+      "query_transformation_enabled": false,
+      "parent_child_expansion": false,
+      "graph_retrieval": false
+    },
+    "packing_manifest": {
+      "packing_method": "greedy_rank_order_token_budget",
+      "ordering_method": "retrieval_rank",
+      "compression_enabled": false,
+      "context_window_tokens": 600,
+      "evidence_budget_tokens": 600
+    },
+    "missing_information": [
+      "generation_manifest.generator_family",
+      "generation_manifest.model_identifier"
+    ]
+  }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+{
+  "manifest_id": "MANIFEST-compression-001",
+  "system_name": "synthetic-compression-enabled-rag",
+  "system_version": "0.1.0-synthetic",
+  "created_at": "2026-09-02T00:00:00Z",
+  "corpus_manifest": {
+    "corpus_id": "CORPUS-support-tickets-001",
+    "source_type": null,
+    "domain": "customer_support",
+    "language": null,
+    "document_count": 25000,
+    "corpus_versioning": null
+  },
+  "ingestion_manifest": {
+    "parser": null,
+    "ocr_used": null,
+    "table_extraction_method": null,
+    "structure_extraction_method": null
+  },
+  "representation_manifest": {
+    "index_unit": null,
+    "embedding_family": null,
+    "embedding_model_identifier": null
+  },
+  "retrieval_manifest": {
+    "retriever_family": "dense_bi_encoder",
+    "retrieval_topology": null,
+    "retrieval_unit": "chunk",
+    "chunking_method": "fixed_size",
+    "chunk_size_or_distribution": null,
+    "overlap_or_stride": null,
+    "candidate_depth": 40,
+    "query_transformation_enabled": null,
+    "query_transformation_method": null,
+    "parent_child_expansion": null,
+    "graph_retrieval": null
+  },
+  "reranking_manifest": {
+    "reranking_enabled": true,
+    "reranker_family": "cross_encoder",
+    "rerank_depth": 12
+  },
+  "selection_manifest": {
+    "selection_policy": "top_k",
+    "max_selected_items": 8
+  },
+  "packing_manifest": {
+    "packing_method": "compress_then_concatenate",
+    "ordering_method": null,
+    "compression_enabled": true,
+    "compression_type": "extractive_summarization",
+    "compression_ratio": 0.4,
+    "context_window_tokens": 4000,
+    "evidence_budget_tokens": 3000
+  },
+  "generation_manifest": {
+    "generator_family": "mid_instruct_llm",
+    "model_identifier": null,
+    "prompting_policy": null,
+    "citation_policy": null,
+    "abstention_policy": null
+  },
+  "evaluation_manifest": {
+    "evaluation_metrics": [],
+    "human_review_enabled": null
+  },
+  "missing_information": []
+}

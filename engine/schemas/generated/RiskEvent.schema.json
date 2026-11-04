@@ -1,0 +1,130 @@
+{
+  "$defs": {
+    "EpistemicStatus": {
+      "description": "How strongly a failure mechanism's real-world applicability is established.\n\nThis is the single most important guardrail enum in the system: UI-facing code\nmust never present a mechanism as more certain than this status allows.",
+      "enum": [
+        "externally_established",
+        "manifest_conditioned_transfer",
+        "trace_integrity_condition",
+        "research_hypothesis",
+        "locally_validated",
+        "unsupported_or_retired"
+      ],
+      "title": "EpistemicStatus",
+      "type": "string"
+    },
+    "PriorityTier": {
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "informational"
+      ],
+      "title": "PriorityTier",
+      "type": "string"
+    },
+    "RiskEventStatus": {
+      "enum": [
+        "open",
+        "under_review",
+        "confirmed_issue",
+        "reviewed_not_an_issue",
+        "dismissed"
+      ],
+      "title": "RiskEventStatus",
+      "type": "string"
+    },
+    "TransferLevel": {
+      "description": "How closely a manifest/trace's configuration matches an evidence record's envelope.",
+      "enum": [
+        "directly_matched",
+        "mechanistically_matched",
+        "partially_matched",
+        "not_applicable",
+        "insufficient_manifest_information"
+      ],
+      "title": "TransferLevel",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/RiskEvent.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "causal_claim_allowed": {
+      "title": "Causal Claim Allowed",
+      "type": "boolean"
+    },
+    "epistemic_status": {
+      "$ref": "#/$defs/EpistemicStatus"
+    },
+    "mechanism_id": {
+      "title": "Mechanism Id",
+      "type": "string"
+    },
+    "observed_evidence": {
+      "description": "Factual description of what was observed in the trace, stated as an observation, not a causal explanation.",
+      "title": "Observed Evidence",
+      "type": "string"
+    },
+    "priority_tier": {
+      "$ref": "#/$defs/PriorityTier"
+    },
+    "reviewer_action": {
+      "description": "ReviewAction id this event recommends.",
+      "title": "Reviewer Action",
+      "type": "string"
+    },
+    "reviewer_explanation": {
+      "title": "Reviewer Explanation",
+      "type": "string"
+    },
+    "risk_event_id": {
+      "title": "Risk Event Id",
+      "type": "string"
+    },
+    "source_evidence_links": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Evidence Links",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/RiskEventStatus",
+      "default": "open"
+    },
+    "trace_id": {
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "trace_trigger_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Trace Trigger Id"
+    },
+    "transfer_level": {
+      "$ref": "#/$defs/TransferLevel"
+    }
+  },
+  "required": [
+    "risk_event_id",
+    "trace_id",
+    "mechanism_id",
+    "observed_evidence",
+    "transfer_level",
+    "epistemic_status",
+    "priority_tier",
+    "causal_claim_allowed",
+    "reviewer_explanation",
+    "reviewer_action"
+  ],
+  "title": "RiskEvent",
+  "type": "object"
+}

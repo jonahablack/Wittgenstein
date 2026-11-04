@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "TraceObservableRequirement": {
+      "additionalProperties": false,
+      "description": "A measurable condition a query-level mechanism requires the trace to carry.",
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "trace_field_path": {
+          "title": "Trace Field Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "trace_field_path"
+      ],
+      "title": "TraceObservableRequirement",
+      "type": "object"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/TraceTrigger.schema.json",
+  "additionalProperties": false,
+  "description": "A registry-declared, measurable trace-level trigger condition for a mechanism.",
+  "properties": {
+    "causal_claim_permitted": {
+      "default": false,
+      "description": "Whether this trigger, on its own, may be described causally. True only if a linked causal evidence record or local causal validation exists.",
+      "title": "Causal Claim Permitted",
+      "type": "boolean"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "failure_mechanism_id": {
+      "title": "Failure Mechanism Id",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "required_trace_observables": {
+      "items": {
+        "$ref": "#/$defs/TraceObservableRequirement"
+      },
+      "title": "Required Trace Observables",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "failure_mechanism_id",
+    "description"
+  ],
+  "title": "TraceTrigger",
+  "type": "object"
+}

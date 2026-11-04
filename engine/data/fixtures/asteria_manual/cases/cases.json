@@ -1,0 +1,205 @@
+{
+  "cases": [
+    {
+      "case_id": "asteria-001-direct-single-span-class-s",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "What minimum clearance margin must a Class S inspection unit meet in the Structural Load Assessment?",
+      "query_constraints": {},
+      "user_intent_notes": "Well-specified: names the unit class and the exact assessment.",
+      "answer": "A Class S inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 8 centimetres.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Asteria Autonomous Systems Certification Manual -- Classification > Paragraph 5 (Article 2, paragraph 2 -- Class S clearance margin)"
+      ],
+      "pilot_coverage_labels": ["structured_document", "supported_answer"],
+      "reviewer_notes": "Also run under asteria-p4-full-context-control (whose retrieval_manifest.candidate_depth=1, read and applied as top_k by 'wittgenstein fixture run') as the segmentation-mismatch non-activation control (docs/controlled-corpus-coverage-matrix.md, case 1) -- not a second case file entry; see tests/unit/test_asteria_fixture.py.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-002-definition-plus-requirement",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "What is a Class R inspection unit, and what minimum clearance margin must it meet?",
+      "query_constraints": {},
+      "user_intent_notes": "Two-part question: a definition and a requirement.",
+      "answer": "A Class R inspection unit is an autonomous inspection unit intended for operation in restricted-access industrial zones. A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Definition D-02: Class R inspection unit",
+        "Asteria Autonomous Systems Certification Manual -- Classification > Paragraph 4 (Article 2, paragraph 1 -- Class R clearance margin)"
+      ],
+      "pilot_coverage_labels": ["structured_document", "multi_claim_answer", "supported_answer"],
+      "reviewer_notes": "",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-003-two-passage-complementary",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "How often must a registered operator renew registration, and is a registered operator subject to the renewal obligation only if the operator's inspection unit operates in a restricted-access industrial zone?",
+      "query_constraints": {},
+      "user_intent_notes": "Combines a frequency rule and a scope qualifier from two separate numbered paragraphs of the same Article.",
+      "answer": "A registered operator whose inspection unit operates in a restricted-access industrial zone must renew registration annually.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Article 5, paragraph 3 (renewal frequency)",
+        "Article 5, paragraph 4 (renewal scope qualifier)"
+      ],
+      "pilot_coverage_labels": ["structured_document", "multi_passage_evidence", "partially_supported_answer"],
+      "reviewer_notes": "Documented, verified real outcome: evidence-set construction composes both paragraphs as members but conservatively classifies the result composite_unresolved -- not composite_direct_support. Kept as an honest regression fixture of current behavior (docs/multi-passage-evidence-plan.md's own documented extraction-reliability limitation), not force-fit to a cleaner outcome.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-004-rule-plus-condition",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "According to Article 2, what must a Class R inspection unit satisfy before deployment?",
+      "query_constraints": {},
+      "user_intent_notes": "Well-specified.",
+      "answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres, provided that the unit has completed a conformity assessment.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Asteria Autonomous Systems Certification Manual -- Classification > Paragraph 4 (Article 2, paragraph 1)"
+      ],
+      "pilot_coverage_labels": ["structured_document", "conditions_and_exceptions", "supported_answer"],
+      "reviewer_notes": "Packed content carries a CONDITION Tier-2 cue ('provided that'), so this case also genuinely activates REP_SEGMENTATION_GRANULARITY_MISMATCH under asteria-p1-baseline (sub-document retrieval_unit + non-empty segment_boundary_dependency_flags) -- verified directly against matching/eligibility.py, not asserted.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-005-rule-plus-exception",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "Is an inspection unit manufactured in 2023 required to meet the Article 2 clearance margin?",
+      "query_constraints": {},
+      "user_intent_notes": "Well-specified.",
+      "answer": "An inspection unit manufactured before 1 January 2025 is exempt from the clearance margin set out in Article 2, except where the unit has been substantially modified since its original manufacture date.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Article 3 (Exception for legacy units)"
+      ],
+      "pilot_coverage_labels": ["structured_document", "conditions_and_exceptions", "cross_references", "supported_answer"],
+      "reviewer_notes": "Packed content carries an EXCEPTION cue ('except') and a cross-reference to Article 2.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-006-cross-reference-exact-target-packed",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "What must a Class R inspection unit's operator do with the Unit Registry before deployment, per Article 5(1), and what does Article 6 require in relation to that obligation?",
+      "query_constraints": {},
+      "user_intent_notes": "Explicitly names the cited paragraph.",
+      "answer": "Before deployment, the operator of a Class R inspection unit shall register the unit with the Asteria Standards Authority in the Unit Registry, as set out in Article 5(1). Article 6 requires a nonconformance report to be filed in accordance with that registration obligation set out in Article 5(1).",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Article 5, paragraph 1",
+        "Article 6"
+      ],
+      "pilot_coverage_labels": ["structured_document", "cross_references", "multi_claim_answer"],
+      "reviewer_notes": "The 'Article 5(1)' cross-reference marker resolves to exact_target_present at paragraph granularity -- the cited paragraph, not merely some part of Article 5, is packed. Claim-linking status on this compound sentence is a secondary, best-effort observation (recorded as observed, not forced) -- the primary test subject of this case is cross-reference resolution.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-007-cross-reference-budget-stressed",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "According to Article 5(1), where must a Class R inspection unit's operator register the unit?",
+      "query_constraints": {},
+      "user_intent_notes": "Names the cited paragraph; the answer's cross-reference target (Annex I) is not itself retrieved under the budget-stressed manifest.",
+      "answer": "According to Article 5(1), the operator must register the unit with the Asteria Standards Authority in the Unit Registry referenced in Annex I.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p2-budget-stressed",
+      "expected_evidence_locations": [
+        "Article 5, paragraph 1"
+      ],
+      "pilot_coverage_labels": ["structured_document", "cross_references"],
+      "reviewer_notes": "The 'Annex I' cross-reference marker resolves to in_corpus/target_missing -- Annex I exists in the corpus but is not among this query's retrieval candidates under the budget-stressed manifest. This is also the fixture's 'unresolved / requires source expansion' scenario: whether the cited Annex I content actually supports the claim cannot be determined from what is packed.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-008-distractor-same-topic",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "What minimum clearance margin must a Class R inspection unit meet in the Structural Load Assessment?",
+      "query_constraints": {},
+      "user_intent_notes": "Well-specified.",
+      "answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Asteria Autonomous Systems Certification Manual -- Classification > Paragraph 4 (Article 2, paragraph 1 -- Class R)"
+      ],
+      "pilot_coverage_labels": ["structured_document", "supported_answer"],
+      "reviewer_notes": "The Class S sentence (Article 2, paragraph 2) is retrieved into the same candidate pool as a same-topic, non-supporting distractor -- field comparison correctly classifies it unresolved (entity_binding_mismatch/value_mismatch), never direct_support_candidate, verified directly rather than asserted.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-009-numeric-threshold-mismatch",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "What minimum clearance margin must a Class R inspection unit meet in the Structural Load Assessment?",
+      "query_constraints": {},
+      "user_intent_notes": "Well-specified.",
+      "answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 20 centimetres.",
+      "answer_source_method": "controlled_perturbation_numeric_threshold_mismatch",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [
+        "Asteria Autonomous Systems Certification Manual -- Classification > Paragraph 4 (Article 2, paragraph 1 -- Class R, actually 12 centimetres)"
+      ],
+      "pilot_coverage_labels": ["structured_document", "conflict_or_unresolved"],
+      "reviewer_notes": "Controlled perturbation -- see expected/asteria-009-numeric-threshold-mismatch.expected.json for source_supported_answer, perturbation provenance, and expected outcome (contradiction_candidate, verified).",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "asteria-010-underspecified-intent",
+      "corpus": {
+        "corpus_id": "asteria-manual",
+        "source_type": "bundled_synthetic_fixture"
+      },
+      "document_version": "3.2",
+      "query": "What is the minimum clearance margin?",
+      "query_constraints": {},
+      "user_intent_notes": "Underspecified: does not name a unit class, and Class R (12 cm) and Class S (8 cm) have different thresholds -- the answer silently assumes Class R.",
+      "answer": "The minimum clearance margin is 12 centimetres.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "asteria-p1-baseline",
+      "expected_evidence_locations": [],
+      "pilot_coverage_labels": ["structured_document", "unsupported_answer"],
+      "reviewer_notes": "No packed candidate reaches direct_support_candidate for this claim (verified) -- the query's own ambiguity, not a retrieval or claim-linking defect, is the reason. Expected reviewer action is advisory-only: ask_clarifying_question (see expected/asteria-010-underspecified-intent.expected.json); never forced or highlighted in the frontend.",
+      "provenance_status": "synthetic_fictional"
+    }
+  ]
+}

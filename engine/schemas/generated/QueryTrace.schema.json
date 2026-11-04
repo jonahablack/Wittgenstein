@@ -1,0 +1,666 @@
+{
+  "$defs": {
+    "AnswerClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "extraction_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How this claim was produced: \"programmatic_rule_based\", \"llm_extracted\", or \"fallback_whole_answer\" (one claim covering the entire answer text, used when neither of the other two tiers succeeded -- the original answer text is always preserved regardless).",
+          "title": "Extraction Method"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claim_id",
+        "text"
+      ],
+      "title": "AnswerClaim",
+      "type": "object"
+    },
+    "AnswerSupportEdge": {
+      "additionalProperties": false,
+      "description": "A reviewer- or pipeline-asserted link between an answer claim and context.\n\n`support_status` is intentionally not boolean: \"supported\" / \"unsupported\" /\n\"contradicted\" / \"unknown\" are distinct outcomes with distinct reviewer-facing\nmeanings, and collapsing \"unknown\" into \"unsupported\" would misrepresent an\nunreviewed claim as a confirmed failure.",
+      "properties": {
+        "candidate_support_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClaimSupportCandidateStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A programmatic, pre-review candidate classification (see core/enums.py -- never a final correctness verdict, and independent of support_status, which remains the reviewer-facing/final field. A programmatically produced edge sets support_status='unknown', judged_by='unreviewed', and expresses its actual finding here instead."
+        },
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "context_item_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Context Item Ids",
+          "type": "array"
+        },
+        "judged_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "\"reviewer\" or \"unreviewed\".",
+          "title": "Judged By"
+        },
+        "support_status": {
+          "description": "supported | unsupported | contradicted | unknown",
+          "title": "Support Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claim_id",
+        "support_status"
+      ],
+      "title": "AnswerSupportEdge",
+      "type": "object"
+    },
+    "ClaimSupportCandidateStatus": {
+      "description": "A programmatic, pre-review classification linking one AnswerClaim to packed\nevidence (schemas/trace.py::AnswerSupportEdge.candidate_support_status) --\ndeliberately not a final correctness verdict and never rendered as \"the answer is\nfalse/faithful/hallucinated\" (docs/review-loop-implementation-plan.md, \"Answer\nclaim extraction\"). Kept as a field separate from the existing, reviewer-facing\n`AnswerSupportEdge.support_status` so a programmatic linking pass can never masquerade\nas a reviewer's judgment.",
+      "enum": [
+        "supported_candidate",
+        "partial_support_candidate",
+        "no_support_edge_found",
+        "conflict_candidate",
+        "unresolved",
+        "direct_support_candidate",
+        "qualification_required",
+        "contradiction_candidate",
+        "composite_support_candidate",
+        "composite_partial_support_candidate",
+        "composite_qualification_required",
+        "composite_conflict_candidate",
+        "composite_unresolved"
+      ],
+      "title": "ClaimSupportCandidateStatus",
+      "type": "string"
+    },
+    "ContextConflict": {
+      "additionalProperties": false,
+      "description": "A reviewer- or pipeline-normalized conflict between two or more packed items.",
+      "properties": {
+        "conflict_id": {
+          "title": "Conflict Id",
+          "type": "string"
+        },
+        "context_item_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Context Item Ids",
+          "type": "array"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "dimension": {
+          "description": "entity | predicate | value | polarity | condition | time_version | jurisdiction | authority",
+          "title": "Dimension",
+          "type": "string"
+        }
+      },
+      "required": [
+        "conflict_id",
+        "context_item_ids",
+        "dimension",
+        "description"
+      ],
+      "title": "ContextConflict",
+      "type": "object"
+    },
+    "ContextItem": {
+      "additionalProperties": false,
+      "description": "One retrieval/selection/packing-stage item. The same logical item is expected to\ncarry the same `item_id` across stage lists so lineage can be tracked.",
+      "properties": {
+        "excerpt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Excerpt"
+        },
+        "is_answer_supporting": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether this item actually supports (part of) the answer. Set by reviewer judgment or gold-label lookup, not inferred from relevance_score.",
+          "title": "Is Answer Supporting"
+        },
+        "is_query_related": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether the item is topically related to the query, independent of whether it actually supports the answer. Distinguishes a 'hard distractor' (query-related, non-supporting) from random irrelevant noise.",
+          "title": "Is Query Related"
+        },
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "omission_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "e.g. \"context_budget_exceeded\", \"compressed_away\".",
+          "title": "Omission Reason"
+        },
+        "rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rank"
+        },
+        "relevance_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relevance Score"
+        },
+        "segment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Id"
+        },
+        "source_document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Document Id"
+        },
+        "token_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Token Count"
+        }
+      },
+      "required": [
+        "item_id"
+      ],
+      "title": "ContextItem",
+      "type": "object"
+    },
+    "PromptTokenSpan": {
+      "additionalProperties": false,
+      "description": "An actual span of the final prompt attributable to one context item.",
+      "properties": {
+        "context_item_id": {
+          "title": "Context Item Id",
+          "type": "string"
+        },
+        "end_token": {
+          "title": "End Token",
+          "type": "integer"
+        },
+        "position_rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1 = earliest in the prompt. Used for position-sensitivity checks.",
+          "title": "Position Rank"
+        },
+        "start_token": {
+          "title": "Start Token",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "context_item_id",
+        "start_token",
+        "end_token"
+      ],
+      "title": "PromptTokenSpan",
+      "type": "object"
+    },
+    "QueryRewrite": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "original_query": {
+          "title": "Original Query",
+          "type": "string"
+        },
+        "rewritten_query": {
+          "title": "Rewritten Query",
+          "type": "string"
+        },
+        "step": {
+          "title": "Step",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "step",
+        "original_query",
+        "rewritten_query"
+      ],
+      "title": "QueryRewrite",
+      "type": "object"
+    },
+    "RiskEventRef": {
+      "additionalProperties": false,
+      "description": "Lightweight reference embedded in a trace; the full RiskEvent lives separately.",
+      "properties": {
+        "mechanism_id": {
+          "title": "Mechanism Id",
+          "type": "string"
+        },
+        "risk_event_id": {
+          "title": "Risk Event Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "risk_event_id",
+        "mechanism_id"
+      ],
+      "title": "RiskEventRef",
+      "type": "object"
+    },
+    "SupportRequirement": {
+      "additionalProperties": false,
+      "description": "The assessed support-set requirement for a query, if it has been assessed at all.\n\nPresence of this object does not by itself mean \"multi-hop\" -- `is_multi_hop`\ncarries that, and can be explicitly False (assessed single-span) as distinct from\nthe object being absent entirely (not assessed at all, i.e. unknown).",
+      "properties": {
+        "assessment_method": {
+          "default": "reviewer_assessed",
+          "title": "Assessment Method",
+          "type": "string"
+        },
+        "is_multi_hop": {
+          "title": "Is Multi Hop",
+          "type": "boolean"
+        },
+        "required_support_item_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Support Item Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_multi_hop"
+      ],
+      "title": "SupportRequirement",
+      "type": "object"
+    },
+    "TraceStatus": {
+      "enum": [
+        "complete",
+        "partial",
+        "malformed"
+      ],
+      "title": "TraceStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/QueryTrace.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Answer"
+    },
+    "answer_claims": {
+      "items": {
+        "$ref": "#/$defs/AnswerClaim"
+      },
+      "title": "Answer Claims",
+      "type": "array"
+    },
+    "answer_support_edges": {
+      "items": {
+        "$ref": "#/$defs/AnswerSupportEdge"
+      },
+      "title": "Answer Support Edges",
+      "type": "array"
+    },
+    "compressed_context_items": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ContextItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Compressed Context Items"
+    },
+    "conflict_ids_addressed_in_answer": {
+      "description": "conflict_id values the answer explicitly flagged or resolved with a stated rationale, as opposed to silently picking/synthesizing one side.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Conflict Ids Addressed In Answer",
+      "type": "array"
+    },
+    "context_conflicts": {
+      "items": {
+        "$ref": "#/$defs/ContextConflict"
+      },
+      "title": "Context Conflicts",
+      "type": "array"
+    },
+    "corpus_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Corpus Id"
+    },
+    "final_prompt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Final Prompt"
+    },
+    "final_prompt_evidence_budget": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Final Prompt Evidence Budget"
+    },
+    "final_prompt_token_count": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Final Prompt Token Count"
+    },
+    "generation_parameters": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Generation Parameters",
+      "type": "object"
+    },
+    "manifest_id": {
+      "title": "Manifest Id",
+      "type": "string"
+    },
+    "omitted_context_items": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ContextItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Omitted Context Items"
+    },
+    "packed_context_items": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ContextItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Packed Context Items"
+    },
+    "prompt_token_spans": {
+      "items": {
+        "$ref": "#/$defs/PromptTokenSpan"
+      },
+      "title": "Prompt Token Spans",
+      "type": "array"
+    },
+    "query": {
+      "title": "Query",
+      "type": "string"
+    },
+    "query_constraints": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Query Constraints",
+      "type": "object"
+    },
+    "query_rewrites": {
+      "items": {
+        "$ref": "#/$defs/QueryRewrite"
+      },
+      "title": "Query Rewrites",
+      "type": "array"
+    },
+    "query_timestamp": {
+      "format": "date-time",
+      "title": "Query Timestamp",
+      "type": "string"
+    },
+    "reranked_candidates": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ContextItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reranked Candidates"
+    },
+    "retrieval_candidates": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ContextItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Retrieval Candidates"
+    },
+    "risk_events": {
+      "items": {
+        "$ref": "#/$defs/RiskEventRef"
+      },
+      "title": "Risk Events",
+      "type": "array"
+    },
+    "segment_boundary_dependency_flags": {
+      "description": "Human-readable flags identifying a support/dependency relation that crosses a retrieval-segment boundary, e.g. detected during trace instrumentation.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Segment Boundary Dependency Flags",
+      "type": "array"
+    },
+    "selected_context_items": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ContextItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Selected Context Items"
+    },
+    "support_requirement": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SupportRequirement"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "trace_id": {
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "trace_status": {
+      "$ref": "#/$defs/TraceStatus"
+    }
+  },
+  "required": [
+    "trace_id",
+    "manifest_id",
+    "query",
+    "query_timestamp",
+    "trace_status"
+  ],
+  "title": "QueryTrace",
+  "type": "object"
+}

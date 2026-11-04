@@ -1,0 +1,171 @@
+{
+  "$defs": {
+    "ReviewCondition": {
+      "description": "Which of the three review conditions described in\ndocs/local-validation-protocol.md (\"Review conditions\") a given `ReviewEvent` was\ncollected under. Full retrieved evidence is available in every condition -- what\nvaries is only whether/what risk-event tooling was shown, never the underlying\nevidence content.",
+      "enum": [
+        "undifferentiated",
+        "query_scoped",
+        "manifest_conditioned"
+      ],
+      "title": "ReviewCondition",
+      "type": "string"
+    },
+    "ReviewerAction": {
+      "description": "The bounded set of actions a reviewer may take on a risk event or trace in a\nlocal-validation study (docs/local-validation-protocol.md). Never a forced\nbinary correct/incorrect judgment.",
+      "enum": [
+        "approve_sufficiently_supported",
+        "approve_with_qualification",
+        "request_additional_context",
+        "inspect_referenced_section",
+        "compare_competing_sources",
+        "check_date_version_jurisdiction",
+        "ask_clarifying_question",
+        "escalate_to_domain_expert",
+        "reject_as_unsupported",
+        "mark_unresolved",
+        "dismiss_as_low_priority",
+        "override_risk_priority"
+      ],
+      "title": "ReviewerAction",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/ReviewEvent.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "confidence": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confidence"
+    },
+    "displayed_risk_event_ids": {
+      "description": "Every risk_event_id shown to the reviewer during this event.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Displayed Risk Event Ids",
+      "type": "array"
+    },
+    "experience_measures": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Optional ad hoc experience measures for this event, named per docs/reviewer-measures.md where applicable -- not a fixed schema, since a review condition may collect only a subset.",
+      "title": "Experience Measures",
+      "type": "object"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Notes"
+    },
+    "opened_evidence_item_ids": {
+      "description": "ContextItem item_ids the reviewer actually opened/inspected.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Opened Evidence Item Ids",
+      "type": "array"
+    },
+    "review_condition": {
+      "$ref": "#/$defs/ReviewCondition"
+    },
+    "review_event_id": {
+      "title": "Review Event Id",
+      "type": "string"
+    },
+    "reviewer_action": {
+      "$ref": "#/$defs/ReviewerAction"
+    },
+    "reviewer_id": {
+      "description": "Caller-supplied, opaque reviewer identifier -- not authenticated.",
+      "title": "Reviewer Id",
+      "type": "string"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Session Id"
+    },
+    "target_claim_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Which answer claim this action applies to, if any.",
+      "title": "Target Claim Id"
+    },
+    "target_risk_event_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Which risk event this action applies to, if any.",
+      "title": "Target Risk Event Id"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "trace_id": {
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "uncertainty": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Uncertainty"
+    }
+  },
+  "required": [
+    "review_event_id",
+    "trace_id",
+    "reviewer_id",
+    "review_condition",
+    "reviewer_action",
+    "timestamp"
+  ],
+  "title": "ReviewEvent",
+  "type": "object"
+}

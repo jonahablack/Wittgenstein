@@ -1,0 +1,276 @@
+{
+  "trace_id": "TRACE-multi-passage-rerank-001",
+  "manifest_id": "MANIFEST-multi-passage-rerank-001",
+  "corpus_id": "CORPUS-policy-001",
+  "query": "How does vacation accrual work and what happens to unused days if I leave?",
+  "query_timestamp": "2026-09-02T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": null,
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-1",
+      "segment_id": null,
+      "excerpt": "Vacation accrual is 1.5 days/month.",
+      "rank": 1,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 900,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-2",
+      "segment_id": null,
+      "excerpt": "Parental leave policy overview (different topic, same department).",
+      "rank": 2,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 1100,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-3",
+      "source_document_id": "doc-3",
+      "segment_id": null,
+      "excerpt": "Vacation payout on termination rules.",
+      "rank": 3,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 950,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-4",
+      "source_document_id": "doc-4",
+      "segment_id": null,
+      "excerpt": "Office holiday calendar 2026.",
+      "rank": 4,
+      "relevance_score": null,
+      "is_query_related": false,
+      "is_answer_supporting": false,
+      "token_count": 800,
+      "omission_reason": null
+    }
+  ],
+  "reranked_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-1",
+      "segment_id": null,
+      "excerpt": "Vacation accrual is 1.5 days/month.",
+      "rank": 1,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 900,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-2",
+      "segment_id": null,
+      "excerpt": "Parental leave policy overview (different topic, same department).",
+      "rank": 2,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 1100,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-3",
+      "source_document_id": "doc-3",
+      "segment_id": null,
+      "excerpt": "Vacation payout on termination rules.",
+      "rank": 3,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 950,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-4",
+      "source_document_id": "doc-4",
+      "segment_id": null,
+      "excerpt": "Office holiday calendar 2026.",
+      "rank": 4,
+      "relevance_score": null,
+      "is_query_related": false,
+      "is_answer_supporting": false,
+      "token_count": 800,
+      "omission_reason": null
+    }
+  ],
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-1",
+      "segment_id": null,
+      "excerpt": "Vacation accrual is 1.5 days/month.",
+      "rank": 1,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 900,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-2",
+      "segment_id": null,
+      "excerpt": "Parental leave policy overview (different topic, same department).",
+      "rank": 2,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 1100,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-3",
+      "source_document_id": "doc-3",
+      "segment_id": null,
+      "excerpt": "Vacation payout on termination rules.",
+      "rank": 3,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 950,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-4",
+      "source_document_id": "doc-4",
+      "segment_id": null,
+      "excerpt": "Office holiday calendar 2026.",
+      "rank": 4,
+      "relevance_score": null,
+      "is_query_related": false,
+      "is_answer_supporting": false,
+      "token_count": 800,
+      "omission_reason": null
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-1",
+      "segment_id": null,
+      "excerpt": "Vacation accrual is 1.5 days/month.",
+      "rank": 1,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 900,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-2",
+      "segment_id": null,
+      "excerpt": "Parental leave policy overview (different topic, same department).",
+      "rank": 2,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": false,
+      "token_count": 1100,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-3",
+      "source_document_id": "doc-3",
+      "segment_id": null,
+      "excerpt": "Vacation payout on termination rules.",
+      "rank": 3,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 950,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-4",
+      "source_document_id": "doc-4",
+      "segment_id": null,
+      "excerpt": "Office holiday calendar 2026.",
+      "rank": 4,
+      "relevance_score": null,
+      "is_query_related": false,
+      "is_answer_supporting": false,
+      "token_count": 800,
+      "omission_reason": null
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "...(concatenated policy excerpts)...",
+  "final_prompt_token_count": 4200,
+  "final_prompt_evidence_budget": null,
+  "prompt_token_spans": [
+    {
+      "context_item_id": "item-1",
+      "start_token": 0,
+      "end_token": 900,
+      "position_rank": 1
+    },
+    {
+      "context_item_id": "item-2",
+      "start_token": 900,
+      "end_token": 2000,
+      "position_rank": 2
+    },
+    {
+      "context_item_id": "item-3",
+      "start_token": 2000,
+      "end_token": 2950,
+      "position_rank": 3
+    },
+    {
+      "context_item_id": "item-4",
+      "start_token": 2950,
+      "end_token": 3750,
+      "position_rank": 4
+    }
+  ],
+  "generation_parameters": {},
+  "answer": "Vacation accrues at 1.5 days/month and unused days are paid out on termination.",
+  "answer_claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "Vacation accrues at 1.5 days/month."
+    },
+    {
+      "claim_id": "claim-2",
+      "text": "Unused days are paid out on termination."
+    }
+  ],
+  "answer_support_edges": [
+    {
+      "claim_id": "claim-1",
+      "context_item_ids": [
+        "item-1"
+      ],
+      "support_status": "supported",
+      "judged_by": null
+    },
+    {
+      "claim_id": "claim-2",
+      "context_item_ids": [
+        "item-3"
+      ],
+      "support_status": "supported",
+      "judged_by": null
+    }
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [],
+  "risk_events": [],
+  "trace_status": "complete"
+}

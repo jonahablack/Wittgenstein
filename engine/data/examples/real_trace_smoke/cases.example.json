@@ -1,0 +1,170 @@
+{
+  "cases": [
+    {
+      "case_id": "smoke-001-supported-single-claim",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "What is the pass threshold for a Class I widget?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "A Class I widget must pass the Load Stress Test at a 95% threshold.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "certification-handbook > Section 3"
+      ],
+      "pilot_coverage_labels": [
+        "structured_document",
+        "long_document",
+        "multiple_sections",
+        "supported_answer"
+      ],
+      "reviewer_notes": "Baseline single-claim, well-supported case.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "smoke-002-partial-multi-claim",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "What is the pass threshold for a Class I widget, and is it exempt from inspection?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "A Class I widget must pass the Load Stress Test at a 95% threshold. It is exempt from inspection.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "certification-handbook > Section 3",
+        "inspection-procedures > Scheduling"
+      ],
+      "pilot_coverage_labels": [
+        "multi_claim_answer",
+        "partially_supported_answer",
+        "conditions_and_exceptions"
+      ],
+      "reviewer_notes": "Second sentence is a fabricated over-generalization -- no exemption from routine inspection exists for Class I widgets in the corpus. Expected to expose whether claim linking correctly separates the two claims rather than scoring the whole answer as one supported unit.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "smoke-003-unsupported-fabricated",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "How often must Class III widgets be inspected?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "Class III widgets must be inspected every 6 months regardless of findings.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "inspection-procedures > Scheduling"
+      ],
+      "pilot_coverage_labels": [
+        "unsupported_answer",
+        "temporal_or_version_information",
+        "narrative_document"
+      ],
+      "reviewer_notes": "Fabricated: the corpus specifies routine inspections once per Program Year, not every 6 months, and does not single out Class III widgets for a different cadence.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "smoke-004-conflict-negation",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "Does a Temporary Variance allow deviation from the testing standards?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "A Temporary Variance does allow deviation from the testing standards in Section 3.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "certification-handbook > Section 4"
+      ],
+      "pilot_coverage_labels": [
+        "conflict_or_unresolved",
+        "cross_references",
+        "conditions_and_exceptions"
+      ],
+      "reviewer_notes": "Directly contradicts the source: \"it does not permit deviation from the testing standards in Section 3.\" Designed to exercise the negation-mismatch conflict-candidate path.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "smoke-005-multi-passage-cross-reference",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "What exemption applies to older Class I widgets, and where is it defined?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "Exemption C applies to widgets manufactured before January 2023, allowing an 85% threshold instead of 95%, as defined in Section 4 of the Handbook.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "certification-handbook > Section 3",
+        "certification-handbook > Section 4"
+      ],
+      "pilot_coverage_labels": [
+        "multi_passage_evidence",
+        "cross_references",
+        "temporal_or_version_information",
+        "narrative_document"
+      ],
+      "reviewer_notes": "Requires combining the Section 3 threshold with the Section 4 exemption.",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "smoke-006-narrative-short-document",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "When must a Class A finding be reported?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "A Class A finding must be reported to the Certification Board within 5 business days.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "inspection-procedures > Findings"
+      ],
+      "pilot_coverage_labels": [
+        "narrative_document",
+        "short_document",
+        "supported_answer"
+      ],
+      "reviewer_notes": "Sourced from the shorter, more narrative inspection-procedures document.",
+      "provenance_status": "synthetic_fictional"
+    }
+  ]
+}

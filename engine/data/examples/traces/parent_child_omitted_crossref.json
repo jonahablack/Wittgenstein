@@ -1,0 +1,135 @@
+{
+  "trace_id": "TRACE-parent-child-crossref-001",
+  "manifest_id": "MANIFEST-parent-child-crossref-001",
+  "corpus_id": "CORPUS-regulatory-001",
+  "query": "Does a $500K-revenue filer need to submit Form 7?",
+  "query_timestamp": "2026-09-02T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": true,
+    "required_support_item_ids": [
+      "item-1",
+      "item-2"
+    ],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-12",
+      "segment_id": "doc12-seg3",
+      "excerpt": "Filers must submit Form 7 unless exempted under 12.3(a).",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 200,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-12",
+      "segment_id": "doc12-seg4",
+      "excerpt": "Exemption 12.3(a) applies to entities under $1M revenue.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 180,
+      "omission_reason": null
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-12",
+      "segment_id": "doc12-seg3",
+      "excerpt": "Filers must submit Form 7 unless exempted under 12.3(a).",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 200,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-12",
+      "segment_id": "doc12-seg4",
+      "excerpt": "Exemption 12.3(a) applies to entities under $1M revenue.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 180,
+      "omission_reason": null
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-12",
+      "segment_id": "doc12-seg3",
+      "excerpt": "Filers must submit Form 7 unless exempted under 12.3(a).",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 200,
+      "omission_reason": null
+    }
+  ],
+  "omitted_context_items": [
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-12",
+      "segment_id": "doc12-seg4",
+      "excerpt": null,
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": null,
+      "is_answer_supporting": null,
+      "token_count": null,
+      "omission_reason": "context_budget_exceeded"
+    }
+  ],
+  "compressed_context_items": [],
+  "final_prompt": "...(Form 7 requirement excerpt only, exemption clause omitted)...",
+  "final_prompt_token_count": 1800,
+  "final_prompt_evidence_budget": null,
+  "prompt_token_spans": [
+    {
+      "context_item_id": "item-1",
+      "start_token": 0,
+      "end_token": 200,
+      "position_rank": 1
+    }
+  ],
+  "generation_parameters": {},
+  "answer": "Yes, this filer must submit Form 7.",
+  "answer_claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "This filer must submit Form 7."
+    }
+  ],
+  "answer_support_edges": [
+    {
+      "claim_id": "claim-1",
+      "context_item_ids": [
+        "item-1"
+      ],
+      "support_status": "unsupported",
+      "judged_by": null
+    }
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [
+    "support proposition split between segment_id=doc12-seg3 and segment_id=doc12-seg4"
+  ],
+  "risk_events": [],
+  "trace_status": "complete"
+}

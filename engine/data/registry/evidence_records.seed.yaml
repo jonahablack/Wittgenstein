@@ -1,0 +1,616 @@
+# As of the 2026-09-09 literature-review pass (docs/literature-review-results.md)
+# followed by a same-day second-review pass (docs/literature-review-second-review-results.md),
+# all 8 records have real, primary-source-extracted quotes, metadata, and envelopes, and
+# all 8 are now verification_status: verified -- a solo-contributor second pass after a
+# time gap, disclosed as such, per docs/literature-review-protocol.md's "Single vs. dual
+# reviewer procedure". "Verified" describes extraction accuracy (the quote/metadata are
+# confirmed against the primary source), which is independent of whether a source's
+# construct actually matches its mechanism's claim (see `direction`) -- two records are
+# accurately extracted AND `direction: "null"` at the same time; that is not a
+# contradiction, see docs/literature-review-second-review-results.md. Verification does
+# NOT by itself change default_activation_policy for any mechanism -- see
+# registry/validator.py and data/registry/README.md.
+evidence_records:
+  - id: EV-RET_HARD_DISTRACTOR-001
+    failure_mechanism_id: RET_HARD_DISTRACTOR
+    full_citation: >
+      Amiraz, C., Cuconasu, F., Filice, S., and Karnin, Z. "The Distracting Effect:
+      Understanding Irrelevant Passages in RAG." Proceedings of the 63rd Annual
+      Meeting of the Association for Computational Linguistics (Volume 1: Long
+      Papers), pp. 18228-18258. ACL, 2025.
+    title: "The Distracting Effect: Understanding Irrelevant Passages in RAG"
+    authors: ["Chen Amiraz", "Florin Cuconasu", "Simone Filice", "Zohar Karnin"]
+    venue: "ACL 2025 (Volume 1: Long Papers)"
+    publication_year: 2025
+    peer_review_status: peer_reviewed
+    persistent_identifier: null
+    source_url: null
+    exact_quote: >
+      Both weak and hard distracting passages affect accuracy when compared to
+      having only a gold document in the prompt, however, the impact of hard
+      distracting passages is significantly larger, making the accuracy drop from 6
+      to 11 accuracy points, depending on the LLM. Notably, this degradation
+      persists even for larger LLMs, like Llama-3.3-70B.
+    quote_location: >
+      Section 4.4 ("Prompting with Relevant and Distracting Passages"), page 18234,
+      main text following Table 1.
+    quote_type: finding_statement
+    study_type: controlled_comparison
+    direction: supports
+    task: >
+      Open-domain question answering; LLM prompted with a gold (answer-bearing)
+      passage combined with a distracting passage. Headline result is on NQ
+      (Table 1); the paper's broader distracting-effect measurement also spans
+      TriviaQA, PopQA, and WebQA.
+    dataset_or_corpus: "Natural Questions (NQ), TriviaQA, PopQA, WebQA"
+    experimental_envelope:
+      rag_presence: true
+      generator_family: "Llama-3.2/3.1/3.3, Falcon-3, Qwen-2.5 (multiple parameter sizes, 3B-70B)"
+    intervention_or_comparison: >
+      Within-prompt comparison: gold passage only vs. gold passage + a hard
+      distracting passage (query-related, non-supporting; distracting effect > 0.8)
+      vs. gold passage + a weak distracting passage (distracting effect < 0.2),
+      averaged over both orderings (gold-first and distractor-first) to control for
+      position bias.
+    outcome_metrics: ["Answer accuracy (exact match to gold answer)"]
+    effect_size_text: >
+      Accuracy drop of 6 to 11 percentage points when a hard distracting passage is
+      added to a prompt already containing the gold passage, vs. gold-only (Table
+      1: e.g. Llama-3.2-3B 82.6% -> 71.5%; Llama-3.1-8B 80.6% -> 73.9%).
+    statistical_evidence: >
+      Wilcoxon signed-rank test, p < 0.01, reported significant for the Gold+HD vs.
+      Gold-only comparison across the LLMs in Table 1 (values not underlined in
+      Table 1 are reported as statistically significant).
+    stated_limitations: >
+      Distracting effect is measured per-LLM via a probability-of-non-abstention
+      score; the paper notes distracting-effect scores correlate strongly but not
+      perfectly across LLMs (Figure 4), so magnitude may vary by model family. The
+      quoted 6-11 point drop is the NQ result specifically; similar trends are
+      reported for TriviaQA/PopQA/WebQA but their exact accuracy-point drops were
+      not extracted in this pass. Second-review pass (2026-09-09, same day, solo
+      contributor): quote and Table 1 figures re-checked against the source images
+      captured during extraction; agreement_status=verified_agreement, no
+      corrections.
+    evidence_grade: A2_strong_comparative_peer_reviewed
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified
+
+  - id: EV-RET_MULTIHOP_SUPPORT_INCOMPLETE-001
+    failure_mechanism_id: RET_MULTIHOP_SUPPORT_INCOMPLETE
+    full_citation: >
+      Tang, Y. and Yang, Y. "MultiHop-RAG: Benchmarking Retrieval-Augmented
+      Generation for Multi-Hop Queries." arXiv:2401.15391 (2024). Publicly reported
+      as accepted at COLM 2024, but that acceptance is not confirmed within the
+      arXiv preprint PDF examined in this pass -- treated conservatively as an
+      unconfirmed-peer-review preprint (see peer_review_status/evidence_grade).
+    title: "MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries"
+    authors: ["Yixuan Tang", "Yi Yang"]
+    venue: "arXiv preprint (COLM 2024 acceptance publicly reported but not confirmed from this document)"
+    publication_year: 2024
+    peer_review_status: preprint
+    persistent_identifier: "arXiv:2401.15391"
+    source_url: null
+    exact_quote: >
+      the response accuracy rate using the retrieved chunks is not satisfactory,
+      with the state-of-the-art GPT-4 model achieving only 0.56 accuracy. This is
+      expected, because the retrieval component falls short in retrieving relevant
+      evidences from the knowledge base.
+    quote_location: >
+      Section 4.2 ("Generation-related Task"), page 6, main text following Table 6.
+    quote_type: finding_statement
+    study_type: controlled_comparison
+    direction: supports
+    task: >
+      Multi-hop question answering over a RAG pipeline (LlamaIndex), comparing
+      generation accuracy when fed retrieved (imperfect) evidence vs. ground-truth
+      (complete) evidence for the same multi-hop queries.
+    dataset_or_corpus: >
+      MultiHop-RAG (this paper's own dataset: English news-article knowledge base,
+      2,556 multi-hop queries requiring 2-4 evidence pieces per Table 4).
+    experimental_envelope:
+      rag_presence: true
+      task_type: "multi_hop_question_answering"
+      generator_family: "GPT-4, ChatGPT (GPT-3.5), Claude-2.1, Google-PaLM, Llama2-70b-chat, Mixtral-8x7B-Instruct"
+      retriever_family: "dense embedding retrieval (voyage-02 best-performing) with bge-reranker-large"
+      candidate_depth: 6
+    intervention_or_comparison: >
+      Same multi-hop queries answered under two evidence conditions: (1) top-6
+      retrieved chunks from the full RAG pipeline, vs. (2) the ground-truth
+      supporting evidence set for the query (a ceiling/oracle condition).
+    outcome_metrics:
+      - "Response accuracy (Table 6)"
+      - "MRR@10 / MAP@10 / Hits@10 / Hits@4 (Table 5, retrieval quality)"
+    effect_size_text: >
+      GPT-4 generation accuracy: 0.56 with retrieved chunks vs. 0.89 with
+      ground-truth chunks (Table 6) -- a 0.33 absolute accuracy gap attributable to
+      incomplete/imperfect retrieved support. Best retrieval configuration
+      (voyage-02 + bge-reranker-large) reaches only Hits@10=0.7467, Hits@4=0.6625
+      (Table 5).
+    statistical_evidence: null
+    stated_limitations: >
+      Benchmark/observational comparison across two evidence conditions, not a
+      per-item randomized intervention; ground-truth evidence for a query is capped
+      at 4 pieces (paper's own stated Limitations section), so may understate
+      difficulty of queries needing more evidence. Peer-review status of this
+      specific document could not be confirmed (see venue note above) --
+      evidence_grade lowered from the seed's original A2 to C accordingly, per this
+      project's rule that A1/A2 require peer_review_status=peer_reviewed
+      (schemas/evidence.py::EvidenceRecord._a_grade_requires_peer_review).
+      Second-review pass (2026-09-09, same day, solo contributor): the full
+      14-page document (not just the pages sampled in the first pass) was
+      re-read specifically to search for a COLM 2024 proceedings/camera-ready
+      marking; none was found anywhere in the paper, including its final page.
+      This re-confirms, rather than merely repeats, the preprint classification.
+      agreement_status=verified_agreement, no corrections.
+    evidence_grade: C_preprint_empirical
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified
+
+  - id: EV-CTX_POSITION_SENSITIVE_USE-001
+    failure_mechanism_id: CTX_POSITION_SENSITIVE_USE
+    full_citation: >
+      Liu, N.F., Lin, K., Hewitt, J., Paranjape, A., Bevilacqua, M., Petroni, F., and
+      Liang, P. "Lost in the Middle: How Language Models Use Long Contexts."
+      Transactions of the Association for Computational Linguistics, vol. 12, pp.
+      157-173, 2024. https://doi.org/10.1162/tacl_a_00638
+    title: "Lost in the Middle: How Language Models Use Long Contexts"
+    authors: ["Nelson F. Liu", "Kevin Lin", "John Hewitt", "Ashwin Paranjape", "Michele Bevilacqua", "Fabio Petroni", "Percy Liang"]
+    venue: "Transactions of the Association for Computational Linguistics (TACL), vol. 12"
+    publication_year: 2024
+    peer_review_status: peer_reviewed
+    persistent_identifier: "10.1162/tacl_a_00638"
+    source_url: null
+    exact_quote: >
+      We find that changing the position of relevant information in the input
+      context can substantially affect model performance, indicating that current
+      language models do not robustly access and use information in long input
+      contexts. Furthermore, we observe a distinctive U-shaped performance curve
+      (Figure 1); language model performance is highest when relevant information
+      occurs at the very beginning (primacy bias) or end of its input context
+      (recency bias), and performance significantly degrades when models must
+      access and use information located in the middle of their input context.
+    quote_location: "Section 1 (Introduction), page 158."
+    quote_type: finding_statement
+    study_type: causal_intervention
+    direction: supports
+    task: >
+      Multi-document question answering (controlled placement of the single
+      answer-bearing document within a fixed-size input context) and a synthetic
+      key-value retrieval task.
+    dataset_or_corpus: >
+      NaturalQuestions-Open (2,655 queries with paragraph-length annotated long
+      answers); k-1 distractor Wikipedia passages retrieved via Contriever
+      fine-tuned on MS-MARCO.
+    experimental_envelope:
+      rag_presence: false
+      task_type: "long_context_question_answering"
+      generator_family: "MPT-30B-Instruct, LongChat-13B (16K), GPT-3.5-Turbo, Claude-1.3"
+    intervention_or_comparison: >
+      Position of the single answer-bearing document is systematically placed at
+      the beginning, middle, or end of a fixed set of k documents, with k varied to
+      control input context length. The distractor documents are retrieved, but the
+      position manipulation itself is a controlled placement, not a retrieval
+      outcome -- hence a causal intervention on position specifically.
+    outcome_metrics:
+      - "Multi-document QA accuracy as a function of answer-document position"
+      - "Synthetic key-value retrieval accuracy"
+    effect_size_text: >
+      With relevant information in the middle of the input context,
+      GPT-3.5-Turbo's multi-document QA accuracy is lower than its closed-book
+      (no-documents) accuracy of 56.1%. With 20 total retrieved documents (~4K
+      tokens), accuracy peaks near the y-axis maximum (~75%) when the answer
+      document is 1st and falls back toward the closed-book baseline (~56-57%) for
+      middle positions (Figure 1).
+    statistical_evidence: null
+    stated_limitations: >
+      Direct long-context finding using a fixed, non-retrieved document set
+      (rag_presence=false) -- not a RAG-specific experiment. Extended-context
+      models were found "not necessarily better" at this task than shorter-context
+      counterparts; encoder-decoder models were relatively robust only within their
+      training-time sequence length. A separate retriever-reader case study
+      (Section 5) on NaturalQuestions-Open finds performance saturates before
+      retriever recall saturates (~1.5% gain from 20 to 50 documents for
+      GPT-3.5-Turbo, ~1% for Claude-1.3) -- RAG-flavored but distinct from the core
+      controlled-position experiment, and not the finding quoted above.
+      Second-review pass (2026-09-09, same day, solo contributor): quote,
+      DOI, and rag_presence=false classification re-checked against the source
+      images captured during extraction; agreement_status=verified_agreement, no
+      corrections.
+    evidence_grade: A1_direct_causal_peer_reviewed
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified
+
+  - id: EV-REP_SEGMENTATION_GRANULARITY_MISMATCH-001
+    failure_mechanism_id: REP_SEGMENTATION_GRANULARITY_MISMATCH
+    full_citation: >
+      Chen, T., Wang, H., Chen, S., Yu, W., Ma, K., Zhao, X., Zhang, H., and Yu, D.
+      "Dense X Retrieval: What Retrieval Granularity Should We Use?" Proceedings of
+      the 2024 Conference on Empirical Methods in Natural Language Processing
+      (EMNLP 2024), pp. 15159-15177.
+    title: "Dense X Retrieval: What Retrieval Granularity Should We Use?"
+    authors: ["Tong Chen", "Hongwei Wang", "Sihao Chen", "Wenhao Yu", "Kaixin Ma", "Xinran Zhao", "Hongming Zhang", "Dong Yu"]
+    venue: "EMNLP 2024"
+    publication_year: 2024
+    peer_review_status: peer_reviewed
+    persistent_identifier: null
+    source_url: null
+    exact_quote: >
+      Using propositions rather than passages in the prompts, the four dense
+      retrievers -- SimCSE, Contriever, DPR, and GTR -- improve by +4.1, +3.2,
+      +2.7, and +2.8 in the EM@500 score.
+    quote_location: "Section 6.1 (\"Open-domain QA Performance\"), page 15165."
+    quote_type: finding_statement
+    study_type: controlled_comparison
+    direction: supports
+    task: >
+      Open-domain QA with retrieval-augmented LLaMA-2-7B, comparing retrieval unit
+      granularity (passage/sentence/proposition) for both passage retrieval and
+      downstream generation.
+    dataset_or_corpus: >
+      FactoidWiki (English Wikipedia dump, 2021-10-13, segmented into
+      passages/sentences/propositions); five open-domain QA datasets: NQ, TQA,
+      WebQ, SQuAD, EntityQuestions.
+    experimental_envelope:
+      rag_presence: true
+      retrieval_unit: "proposition (compared against passage and sentence)"
+      generator_family: "LLaMA-2-7B"
+      retriever_family: "SimCSE, Contriever, DPR, GTR (four dual-encoder dense retrievers)"
+    intervention_or_comparison: >
+      Same corpus indexed at three granularities (passage/sentence/proposition);
+      same four retrievers and same generator; prompt token budget held fixed
+      (l=100 or 500 tokens) across conditions -- an isolated-variable comparison of
+      retrieval-unit granularity.
+    outcome_metrics:
+      - "EM@100 / EM@500 (open-domain QA exact match)"
+      - "Recall@l (gold-answer recall within first l retrieved words, Figure 4)"
+    effect_size_text: >
+      EM@500 improvement from passage to proposition granularity: +4.1 (SimCSE),
+      +3.2 (Contriever), +2.7 (DPR), +2.8 (GTR), averaged across NQ/TQA/WebQ/SQuAD/EQ
+      (Table 5).
+    statistical_evidence: null
+    stated_limitations: >
+      Paper's own stated limitations: corpus restricted to English Wikipedia; only
+      6 dense dual/bi-encoder retriever types evaluated (no sparse/hybrid);
+      English-only. This record's evidence_grade was raised from the seed's
+      original B1 (mechanistic_transfer) to A2 (strong_comparative) during the
+      2026-09-09 literature-review pass: B1 is for evidence requiring an extra
+      transfer argument (e.g. a non-RAG finding applied to RAG), but this study
+      directly and RAG-natively measures retrieval and downstream QA metrics under
+      controlled granularity variation, which is what A2 describes. Second-review
+      pass (2026-09-09, same day, solo contributor): re-checked for independence
+      from EV-REP_SEGMENTATION_GRANULARITY_MISMATCH-002 specifically (see that
+      mechanism's known_boundary_conditions) -- no overlapping authors or
+      institutions between the two papers; agreement_status=verified_agreement, no
+      corrections.
+    evidence_grade: A2_strong_comparative_peer_reviewed
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified
+
+  - id: EV-REP_SEGMENTATION_GRANULARITY_MISMATCH-002
+    failure_mechanism_id: REP_SEGMENTATION_GRANULARITY_MISMATCH
+    full_citation: >
+      Wang, Z., Gao, C., Xiao, C., Huang, Y., Si, S., Luo, K., Bai, Y., Li, W.,
+      Duan, T., Lv, C., Lu, G., Chen, G., Qi, F., and Sun, M. "Document
+      Segmentation Matters for Retrieval-Augmented Generation." Findings of the
+      Association for Computational Linguistics: ACL 2025, pp. 8063-8075.
+    title: "Document Segmentation Matters for Retrieval-Augmented Generation"
+    authors: ["Zhitong Wang", "Cheng Gao", "Chaojun Xiao", "Yufei Huang", "Shuzheng Si", "Kangyang Luo", "Yuzhuo Bai", "Wenhao Li", "Tangjian Duan", "Chuancheng Lv", "Guoshan Lu", "Gang Chen", "Fanchao Qi", "Maosong Sun"]
+    venue: "Findings of ACL 2025"
+    publication_year: 2025
+    peer_review_status: peer_reviewed
+    persistent_identifier: null
+    source_url: null
+    exact_quote: >
+      PIC achieves the highest average retrieval performance across six datasets,
+      with the highest 2-point increase on WebQ. This suggests that our PIC method
+      captures semantic information more effectively, leading to superior
+      retrieval outcomes.
+    quote_location: "Section 5.1 (\"Retrieval Performance\"), page 8067."
+    quote_type: finding_statement
+    study_type: controlled_comparison
+    direction: supports
+    task: >
+      Open-domain QA with retrieval-augmented generation, comparing 5 document
+      chunking methods (sentence/paragraph/fixed-size/semantic/proposition)
+      against the authors' proposed PIC method for both retrieval and end-to-end
+      QA.
+    dataset_or_corpus: >
+      PICWiki (English WikiDump processed by the paper's own method) plus six
+      OpenQA benchmarks: NQ, TriviaQA, WebQ, SQuAD, EntityQuestions, PopQA.
+    experimental_envelope:
+      rag_presence: true
+      chunking_method: "PIC (pseudo-instruction-guided semantic chunking), compared against sentence/paragraph/fixed-size/semantic/proposition baselines"
+      retriever_family: "bge-large-en-v1.5"
+      generator_family: "Qwen2.5-7B-Instruct, Meta-Llama-3-8B-Instruct"
+    intervention_or_comparison: >
+      Same corpus, retriever, and generators; only the chunking/segmentation
+      method varied (6 methods compared: Table 1 for retrieval, Table 2 for
+      end-to-end QA).
+    outcome_metrics:
+      - "Hits@5 / Hits@20 (retrieval, Table 1)"
+      - "Exact Match (end-to-end QA, Table 2)"
+    effect_size_text: >
+      Average Hits@k across 6 datasets: PIC 58.4/69.5 (Top5/Top20) vs. the
+      strongest baseline (Proposition) 57.7/68.9 -- a modest ~0.6-0.7 point average
+      retrieval-level gain (the paper's own headline callout is a 2-point increase
+      specifically on WebQ). End-to-end QA (Table 2, Qwen2.5-7B-Instruct): PIC
+      averages 45.7/48.0 (Top5/Top20) vs. Proposition baseline 42.5/44.3 -- a
+      larger QA-level gain than the retrieval-level gain, and PIC shows a smaller
+      Top20-to-Top5 QA-accuracy drop than the baselines.
+    statistical_evidence: null
+    stated_limitations: >
+      This evaluates the authors' own proposed method (PIC) against baselines, not
+      a neutral isolated-variable sweep; the retrieval-level improvement over the
+      strongest baseline (proposition-based chunking) is modest (<1 point average).
+      This record's direction was changed from the seed's original speculative
+      "mixed" to "supports" during the 2026-09-09 literature-review pass: after
+      reading both this paper and EV-REP_SEGMENTATION_GRANULARITY_MISMATCH-001
+      (Chen et al.), they test different specific techniques (chunking-boundary
+      placement vs. retrieval-unit type) but do not contradict each other -- both
+      support the same mechanism-level claim that segmentation/granularity choice
+      measurably affects RAG retrieval and QA reliability. Which specific method is
+      "best" remains unresolved across the literature and is not what this
+      registry claims. Second-review pass (2026-09-09, same day, solo
+      contributor): confirmed the "Proposition" baseline in this paper's own Table
+      1 is a comparison against Chen et al.'s method, not a collaboration between
+      the two author groups -- this is normal independent-baseline scientific
+      practice and does not undermine the two records' independence (no
+      overlapping authors/institutions); agreement_status=verified_agreement, no
+      corrections.
+    evidence_grade: A2_strong_comparative_peer_reviewed
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified
+
+  - id: EV-PACK_OMISSION_OR_TRUNCATION-001
+    failure_mechanism_id: PACK_OMISSION_OR_TRUNCATION
+    full_citation: >
+      Gabin, J., Perez, A., and Parapar, J. "Lost in the Evidence? Reproducing
+      Document Position and Context Size Effects in RAG." Proceedings of the 49th
+      International ACM SIGIR Conference on Research and Development in
+      Information Retrieval (SIGIR '26), Melbourne, VIC, Australia.
+      https://doi.org/10.1145/3805712.3808569
+    title: "Lost in the Evidence? Reproducing Document Position and Context Size Effects in RAG"
+    authors: ["Jorge Gabin", "Anxo Perez", "Javier Parapar"]
+    venue: "SIGIR '26"
+    publication_year: 2026
+    peer_review_status: peer_reviewed
+    persistent_identifier: "10.1145/3805712.3808569"
+    source_url: null
+    exact_quote: >
+      both oracle-passages (all gold-relevant passages) and oracle-sents (only the
+      sentences containing the answer) form the upper bound, clustering a bit
+      above 0.70 F1 across k. This isolates the upper bound attributable to
+      evidence quality, not the LLM capacity.
+    quote_location: >
+      Section 5.2 ("Impact of Retrieval Quality and Reranking", RQ2), page 6.
+    quote_type: finding_statement
+    study_type: controlled_comparison
+    direction: supports
+    task: >
+      Question answering under a RAG pipeline, comparing model accuracy across
+      evidence-quality conditions ranging from closed-book, through realistic
+      BM25/reranked retrieval, up to oracle (complete gold-evidence) context, and
+      across varied context sizes (number of retrieved passages).
+    dataset_or_corpus: "Natural Questions (NQ) and HotpotQA (via their KILT-formatted and standard releases)."
+    experimental_envelope:
+      rag_presence: true
+      generator_family: "LLaMA-3.1:8B, Mistral-Nemo:12B"
+      retriever_family: "BM25; BM25+E5 dense reranking"
+      candidate_depth: 100
+    intervention_or_comparison: >
+      Same queries and generator, evidence condition varied from closed-book (no
+      retrieval) through BM25-retrieved top-k (k in {5,10,25,50,75,100}) up to
+      oracle-passages/oracle-sents (complete gold-relevant evidence), isolating how
+      much of the accuracy gap is attributable to incomplete/imperfect evidence
+      versus generator capability.
+    outcome_metrics: ["Token-level F1 (primary metric)"]
+    effect_size_text: >
+      On HotpotQA, oracle conditions (complete gold evidence) cluster just above
+      0.70 F1 across all context sizes, while realistic BM25 retrieval remains
+      substantially lower (roughly 0.45-0.50 F1, Figure 7) -- a large, persistent
+      gap attributable to incomplete evidence reaching the generator, not model
+      capacity.
+    statistical_evidence: null
+    stated_limitations: >
+      This is an explicitly reproducibility-focused study: the authors find that
+      context-size and ordering effects are more variable and topic-sample-
+      dependent than prior work reported, and that "conclusions drawn from
+      idealised setups do not always transfer to real-world RAG pipelines" (their
+      own conclusion). It studies evidence completeness/quality broadly (oracle
+      vs. realistic retrieval) rather than specifically instrumenting a
+      selected-but-then-omitted-before-packing trace event; used here as
+      motivating/background support for why omission matters, not as a direct
+      trace-level replication. PACK_OMISSION_OR_TRUNCATION's own epistemic_status
+      remains trace_integrity_condition regardless of this record's grade -- see
+      docs/evidence-grading.md. Second-review pass (2026-09-09, same day, solo
+      contributor): quote and DOI re-checked against the source images captured
+      during extraction; the B2 grade (component evidence, not A-tier) was
+      re-confirmed appropriate given the paper's own reproducibility-focused
+      framing; agreement_status=verified_agreement, no corrections.
+    evidence_grade: B2_component_evidence_peer_reviewed
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified
+
+  - id: EV-GEN_CONTEXT_CONFLICT_UNRESOLVED-001
+    failure_mechanism_id: GEN_CONTEXT_CONFLICT_UNRESOLVED
+    full_citation: >
+      Jin, Z., Yuan, H., Men, T., Cao, P., Chen, Y., Xu, J., Li, H., Jiang, X.,
+      Liu, K., and Zhao, J. "RAG-RewardBench: Benchmarking Reward Models in
+      Retrieval Augmented Generation for Preference Alignment." Findings of the
+      Association for Computational Linguistics: ACL 2025, pp. 17061-17090.
+    title: "RAG-RewardBench: Benchmarking Reward Models in Retrieval Augmented Generation for Preference Alignment"
+    authors: ["Zhuoran Jin", "Hongbang Yuan", "Tianyi Men", "Pengfei Cao", "Yubo Chen", "Jiexin Xu", "Huaijun Li", "Xiaojian Jiang", "Kang Liu", "Jun Zhao"]
+    venue: "Findings of ACL 2025"
+    publication_year: 2025
+    peer_review_status: peer_reviewed
+    persistent_identifier: null
+    source_url: null
+    exact_quote: >
+      Given the prevalence of misleading and outdated information, RALMs often
+      struggle with conflicting knowledge (Xie et al., 2024). The reward model
+      should robustly distinguish between correct responses and those misled by
+      inaccurate information.
+    quote_location: >
+      Section 3.1 ("Design of Well-Crafted RAG Scenarios"), "(4) Conflict
+      Robustness", page 17065.
+    quote_type: finding_statement
+    study_type: observational_benchmark
+    direction: "null"
+    task: >
+      Benchmarking reward models' (RMs) ability to score/prefer RALM response
+      pairs correctly across eight RAG-specific evaluation subsets, one of which
+      ("conflict robustness") targets responses to retrieved context containing
+      injected counterfactual/conflicting documents.
+    dataset_or_corpus: >
+      18 RAG subsets built on NQ, SimpleQA, ASQA, BioASQ, FreshQA, ExpertQA,
+      MultiFieldQA, HotpotQA, MuSiQue, MultiHop-RAG, ELI5, RobustQA, CRAG, and
+      GPT-4o-synthesized counterfactual documents (for the conflict robustness
+      subset specifically, built on NQ/TriviaQA/PopQA).
+    experimental_envelope:
+      rag_presence: true
+      task_type: "reward_model_benchmark_for_rag_preference_alignment"
+    intervention_or_comparison: >
+      45 reward models (discriminative/generative/implicit) are scored on their
+      ability to correctly rank pairs of RALM-generated responses, per subset,
+      including the conflict-robustness subset (GPT-4o-synthesized counterfactual
+      documents injected as retrieved context).
+    outcome_metrics:
+      - "Reward-model preference accuracy per subset (Table 2)"
+      - "Consistency with human annotations (Pearson correlation, Table 1)"
+    effect_size_text: >
+      Best-performing reward model (Skywork-Critic-Llama-3.1-70B) reaches 78.3%
+      overall accuracy across all RAG-RewardBench subsets; on the harmlessness
+      "Conflict" column specifically it scores 82.3/100 (Table 2) -- short of
+      perfect even for the strongest model tested, indicating conflict-robustness
+      judgment remains an unsolved evaluation dimension.
+    statistical_evidence: >
+      Pearson correlation coefficient of 0.79 between judgment models used for
+      preference annotation (page 17066); inter-annotator consistency with human
+      preferences averaged 0.864 (Table 1) across three graduate-level annotators.
+    stated_limitations: >
+      This is a reward-model benchmark, not a direct measurement of production
+      RALM conflict-resolution failure rates: the "conflict robustness" subset
+      evaluates whether a reward model can correctly judge/prefer a response that
+      handles a synthesized (GPT-4o-generated counterfactual) conflict well -- one
+      step removed from measuring how often RALM-generated answers themselves fail
+      to surface/resolve genuinely conflicting retrieved evidence. direction is
+      recorded as "null" rather than "supports" for this reason: the paper is
+      directly on-topic and motivates its conflict-robustness subset by citing
+      that RALMs struggle with conflicting knowledge (that specific claim is
+      attributed to Xie et al., not independently measured here), but it does not
+      itself report a RALM-response-level conflict-resolution failure rate that
+      would let this record directly support the mechanism's causal claim. A more
+      directly on-point primary source (measuring RALM response behavior, not
+      reward-model judgment accuracy, against naturally-occurring multi-source
+      conflicts rather than synthesized counterfactuals) remains an open
+      literature-search task. Second-review pass (2026-09-09, same day, solo
+      contributor): specifically checked the paper's Table 3 ("Evaluation results
+      of RALMs on RAG-RewardBench, employing the same usage as implicit RMs"),
+      which does report RALM-level scores on the Conflict column (e.g.
+      ChatQA-2-8B: 46.2) -- but confirmed this still measures RALM response
+      probabilities used AS an implicit reward/preference signal, not the RALM's
+      own generated-answer conflict-resolution behavior, so it does not change the
+      direction="null" classification. agreement_status=evidence_does_not_fit_mechanism
+      (extraction itself is accurate and verified; the source's construct does not
+      match the mechanism's exact claim) -- see
+      docs/literature-review-second-review-results.md.
+    evidence_grade: B2_component_evidence_peer_reviewed
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified
+
+  - id: EV-GEN_UNSUPPORTED_DESPITE_CONTEXT-001
+    failure_mechanism_id: GEN_UNSUPPORTED_DESPITE_CONTEXT
+    full_citation: >
+      Wallat, J., Heuss, M., de Rijke, M., and Anand, A. "Correctness is not
+      Faithfulness in RAG Attributions." arXiv:2412.18004 (2024).
+    title: "Correctness is not Faithfulness in RAG Attributions"
+    authors: ["Jonas Wallat", "Maria Heuss", "Maarten de Rijke", "Avishek Anand"]
+    venue: "arXiv preprint (no confirmed peer-reviewed proceedings version found in the PDF examined)"
+    publication_year: 2024
+    peer_review_status: preprint
+    persistent_identifier: "arXiv:2412.18004"
+    source_url: null
+    exact_quote: >
+      the number of adversarial documents cited is much higher when forging
+      relevant but uncited documents (57%) and documents cited for different
+      reasons (55%). Based on our results, we conjecture post-rationalization to
+      be a common phenomenon.
+    quote_location: >
+      Section 5 ("Post-Rationalization - A Study of Unfaithful Behavior"),
+      Results, page 11.
+    quote_type: finding_statement
+    study_type: causal_intervention
+    direction: "null"
+    task: >
+      Attributed question answering with a RAG-optimized LLM (Cohere
+      Command-R+), studying whether citations reflect genuine causal reliance on
+      the cited document ("citation faithfulness") as opposed to merely being
+      textually correct ("citation correctness").
+    dataset_or_corpus: >
+      NaturalQuestions QA (1,444 real user questions); temporally-aligned KILT
+      Wikipedia dump, split into 100-token chunks, BM25 top-30 reranked by
+      ColBERT v2 to a final top-5 packed into the prompt.
+    experimental_envelope:
+      rag_presence: true
+      generator_family: "Cohere Command-R+ (104B parameters, 128k context, 4-bit quantized)"
+      retriever_family: "BM25 + ColBERT v2 reranking"
+      packing_method: "top-5 reranked chunks"
+    intervention_or_comparison: >
+      A short factual statement previously cited from one document is
+      adversarially appended to a different document (three conditions: random
+      document, a relevant-but-never-cited document, a document cited for a
+      different reason), the answer is regenerated, and the model's new citation
+      behavior toward the adversarial document is observed.
+    outcome_metrics:
+      - "Rate of citing the adversarial document, among cases where the original statement was recovered in the regenerated answer (Figure 3)"
+    effect_size_text: >
+      Adversarial document cited in 12% (116/936) of random-document cases, 57%
+      (273/476) of relevant-but-not-originally-cited cases, and 55% (290/525) of
+      cited-for-other-reason cases -- the much higher rates for the latter two
+      conditions are the paper's evidence for common post-rationalization (a
+      citation that is textually correct but was not the actual cause of the
+      generated statement).
+    statistical_evidence: null
+    stated_limitations: >
+      Scope mismatch, recorded honestly rather than forced to fit: this paper's
+      "post-rationalization" phenomenon (an EXISTING citation that looks textually
+      correct but is not causally faithful) is adjacent to, not the same as,
+      GEN_UNSUPPORTED_DESPITE_CONTEXT's current definition (an answer claim with
+      NO support edge at all despite genuinely supporting material being packed).
+      It reveals a related blind spot in this project's own
+      AnswerSupportEdge.support_status field (schemas/trace.py), which currently
+      only asks whether a citation is correct/supported, not whether it is
+      causally faithful -- worth a future registry-governance discussion, not
+      implemented in this pass. direction is set to "null" (not "supports")
+      because this record does not itself demonstrate the mechanism's exact
+      claim. Single-model (Command-R+), single-dataset (NaturalQuestions) study;
+      the authors themselves call the empirical analysis limited and call for
+      replication across models/datasets (Section 7). Peer-review status could
+      not be confirmed from the PDF in hand (arXiv:2412.18004v1, no proceedings
+      footer found in the pages examined) -- graded conservatively as preprint. A
+      primary source directly measuring "answer claim with zero support edge
+      despite available supporting material" remains an open literature-search
+      task. Second-review pass (2026-09-09, same day, solo contributor): the
+      complete 19-page document (all pages, not just those sampled in the first
+      pass) was re-read; no proceedings/camera-ready marking was found anywhere,
+      including the bibliography's final page -- this re-confirms the preprint
+      classification. Page 8 (not read in the first pass) further reinforces the
+      scope-mismatch finding: it explicitly contrasts "faithful (right for the
+      right reason)" against "post-rationalized but correct (right for the wrong
+      reason)," confirming this paper's phenomenon is about existing citations
+      being right-for-the-wrong-reason, not about zero-support-edge claims.
+      agreement_status=evidence_does_not_fit_mechanism (extraction itself is
+      accurate and verified; the source's construct does not match the
+      mechanism's exact claim) -- see
+      docs/literature-review-second-review-results.md.
+    evidence_grade: C_preprint_empirical
+    extraction_reviewer: "Claude Code literature-review pass, 2026-09-09"
+    extraction_date: "2026-09-09"
+    verification_status: verified

@@ -1,0 +1,79 @@
+{
+  "trace_id": "LV-TRACE-10-unnecessary-escalation-risk",
+  "manifest_id": "LV-MANIFEST-segmented-rag",
+  "corpus_id": "CORPUS-widget-cert-001",
+  "query": "Who publishes the widget certification handbook?",
+  "query_timestamp": "2026-09-09T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": true,
+    "required_support_item_ids": ["item-1", "item-2"],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-2",
+      "segment_id": "doc2-seg1",
+      "excerpt": "This handbook is published by the Widget Certification Program Office.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 60
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-2",
+      "segment_id": "doc2-seg2",
+      "excerpt": "Formatting note: page footers use 9-point type for this edition.",
+      "is_query_related": false,
+      "is_answer_supporting": false,
+      "token_count": 40
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-2",
+      "segment_id": "doc2-seg1",
+      "excerpt": "This handbook is published by the Widget Certification Program Office.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 60
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-2",
+      "segment_id": "doc2-seg1",
+      "excerpt": "This handbook is published by the Widget Certification Program Office.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 60
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "...(publisher stated cleanly; the flagged 'dependency' is a formatting footer, not substantive content)...",
+  "final_prompt_token_count": 300,
+  "prompt_token_spans": [
+    {"context_item_id": "item-1", "start_token": 0, "end_token": 60, "position_rank": 1}
+  ],
+  "generation_parameters": {},
+  "answer": "The Widget Certification Program Office publishes the handbook.",
+  "answer_claims": [
+    {"claim_id": "claim-1", "text": "The Widget Certification Program Office publishes the handbook."}
+  ],
+  "answer_support_edges": [
+    {"claim_id": "claim-1", "context_item_ids": ["item-1"], "support_status": "supported", "judged_by": "reviewer"}
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [
+    "a required_support_item_ids entry (item-2, a page-footer formatting note) is split from item-1, but item-2 is a formatting artifact with no bearing on the publisher question -- illustrates why every flag should be reviewed for materiality, not escalated by default"
+  ],
+  "risk_events": [],
+  "trace_status": "complete"
+}

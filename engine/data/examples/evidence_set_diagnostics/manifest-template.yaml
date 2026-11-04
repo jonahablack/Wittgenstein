@@ -1,0 +1,88 @@
+# PipelineManifest authoring template -- docs/real-corpus-diagnostic-runbook.md step 4.
+#
+# Fill in every field you actually know; leave the rest at `null`. Never guess a
+# value you don't actually know -- an unknown field is `null`, which the matching
+# engine reads as "insufficient_manifest_information," never as "assume satisfied" or
+# "assume violated" (CLAUDE.md). `missing_information` at the bottom should list every
+# field you deliberately left null, so the gap is explicit rather than silent.
+#
+# Validate with: uv run wittgenstein manifest validate <this file>
+# Then add it as one entry to your manifests.json registry -- see the runbook step 4
+# for the exact conversion command (this harness loads manifests from a
+# {manifest_id: PipelineManifest} JSON registry, not per-file YAML).
+
+manifest_id: "<REPLACE: e.g. my-real-corpus-manifest>"
+system_name: "<REPLACE: e.g. my-diagnostic-pass>"
+system_version: "0.1.0"
+created_at: "<REPLACE: ISO-8601 timestamp, e.g. 2026-01-15T00:00:00Z>"
+
+corpus_manifest:
+  corpus_id: "<REPLACE: must match your CorpusReference.corpus_id>"
+  source_type: "<REPLACE: e.g. plain_text, html_extracted, pdf_extracted -- describe how the local_corpora/ files were produced>"
+  domain: "<REPLACE: a short label for the subject matter, e.g. 'public_standards_document'>"
+  language: "en"
+  document_count: null
+  corpus_versioning: null
+
+ingestion_manifest:
+  parser: "deterministic_parser_v1"
+  ocr_used: false
+  table_extraction_method: "markdown_table_row_regex"
+  structure_extraction_method: "heading_and_blank_line_rules"
+
+representation_manifest:
+  index_unit: "paragraph_list_item_table_row"
+  embedding_family: null
+  embedding_model_identifier: null
+
+retrieval_manifest:
+  retriever_family: "bm25_lexical"
+  retrieval_topology: "single_corpus_flat"
+  retrieval_unit: "paragraph_list_item_table_row"
+  chunking_method: "structural_segmentation_no_fixed_window"
+  chunk_size_or_distribution: null
+  overlap_or_stride: null
+  candidate_depth: 5
+  query_transformation_enabled: false
+  query_transformation_method: null
+  parent_child_expansion: null
+  graph_retrieval: null
+
+reranking_manifest:
+  reranking_enabled: false
+  reranker_family: null
+  rerank_depth: null
+
+selection_manifest:
+  selection_policy: null
+  max_selected_items: null
+
+packing_manifest:
+  packing_method: "greedy_rank_order_token_budget"
+  ordering_method: "retrieval_rank"
+  compression_enabled: false
+  compression_type: null
+  compression_ratio: null
+  # Increase these for longer/denser real documents than the bundled demo corpus --
+  # a token budget too small will omit evidence that would otherwise be packed, which
+  # is a legitimate thing to diagnose (category 8: target available but omitted) but
+  # should be a deliberate choice, not an accident of the default.
+  context_window_tokens: 300
+  evidence_budget_tokens: 300
+
+generation_manifest:
+  generator_family: null
+  model_identifier: null
+  prompting_policy: null
+  citation_policy: null
+  abstention_policy: null
+
+evaluation_manifest:
+  evaluation_metrics: []
+  human_review_enabled: true
+
+missing_information:
+  - "generation_manifest.generator_family"
+  - "generation_manifest.model_identifier"
+  # Add every other field you left null above, e.g.:
+  # - "corpus_manifest.document_count"

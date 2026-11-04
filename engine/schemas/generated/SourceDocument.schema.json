@@ -1,0 +1,68 @@
+{
+  "$id": "https://wittgenstein-rag-reliability/schemas/SourceDocument.schema.json",
+  "additionalProperties": false,
+  "description": "One corpus-time-indexed document. `content_hash` is what makes corpus-time\ncaching possible (docs/efficiency-and-processing-architecture.md \u00a73): a document\nwhose hash and `parser_version` are unchanged from a prior index run is not\nreparsed or re-segmented.",
+  "properties": {
+    "char_length": {
+      "title": "Char Length",
+      "type": "integer"
+    },
+    "content_hash": {
+      "description": "sha256 of the raw document bytes/text.",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "corpus_id": {
+      "title": "Corpus Id",
+      "type": "string"
+    },
+    "ingested_at": {
+      "format": "date-time",
+      "title": "Ingested At",
+      "type": "string"
+    },
+    "parser_version": {
+      "title": "Parser Version",
+      "type": "string"
+    },
+    "source_document_id": {
+      "title": "Source Document Id",
+      "type": "string"
+    },
+    "source_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Author/publisher-declared version or revision identifier, if any -- distinct from content_hash, which is derived, not declared.",
+      "title": "Source Version"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "source_document_id",
+    "corpus_id",
+    "content_hash",
+    "parser_version",
+    "char_length",
+    "ingested_at"
+  ],
+  "title": "SourceDocument",
+  "type": "object"
+}

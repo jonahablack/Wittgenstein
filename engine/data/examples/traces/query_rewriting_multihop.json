@@ -1,0 +1,205 @@
+{
+  "trace_id": "TRACE-query-rewrite-multihop-001",
+  "manifest_id": "MANIFEST-query-rewrite-multihop-001",
+  "corpus_id": "CORPUS-product-docs-001",
+  "query": "What would 5 seats on Plan A cost per month?",
+  "query_timestamp": "2026-09-02T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": true,
+    "required_support_item_ids": [
+      "item-1",
+      "item-2",
+      "item-3"
+    ],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [
+    {
+      "step": 1,
+      "original_query": "What would 5 seats on Plan A cost per month?",
+      "rewritten_query": "Plan A seat capacity",
+      "method": "decomposition"
+    },
+    {
+      "step": 2,
+      "original_query": "What would 5 seats on Plan A cost per month?",
+      "rewritten_query": "Plan A price per seat",
+      "method": "decomposition"
+    }
+  ],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-a",
+      "segment_id": null,
+      "excerpt": "Plan A supports up to 5 seats.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 200,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-b",
+      "segment_id": null,
+      "excerpt": "Plan A pricing was $20/seat/month as of the March 2025 price sheet.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 220,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-3",
+      "source_document_id": "doc-c",
+      "segment_id": null,
+      "excerpt": "Plan A pricing is $25/seat/month as of the January 2026 price sheet.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 225,
+      "omission_reason": null
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-a",
+      "segment_id": null,
+      "excerpt": "Plan A supports up to 5 seats.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 200,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-b",
+      "segment_id": null,
+      "excerpt": "Plan A pricing was $20/seat/month as of the March 2025 price sheet.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 220,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-3",
+      "source_document_id": "doc-c",
+      "segment_id": null,
+      "excerpt": "Plan A pricing is $25/seat/month as of the January 2026 price sheet.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 225,
+      "omission_reason": null
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-a",
+      "segment_id": null,
+      "excerpt": "Plan A supports up to 5 seats.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 200,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-b",
+      "segment_id": null,
+      "excerpt": "Plan A pricing was $20/seat/month as of the March 2025 price sheet.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 220,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-3",
+      "source_document_id": "doc-c",
+      "segment_id": null,
+      "excerpt": "Plan A pricing is $25/seat/month as of the January 2026 price sheet.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 225,
+      "omission_reason": null
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "...(all three excerpts concatenated)...",
+  "final_prompt_token_count": 2100,
+  "final_prompt_evidence_budget": null,
+  "prompt_token_spans": [
+    {
+      "context_item_id": "item-1",
+      "start_token": 0,
+      "end_token": 200,
+      "position_rank": 1
+    },
+    {
+      "context_item_id": "item-2",
+      "start_token": 200,
+      "end_token": 420,
+      "position_rank": 2
+    },
+    {
+      "context_item_id": "item-3",
+      "start_token": 420,
+      "end_token": 645,
+      "position_rank": 3
+    }
+  ],
+  "generation_parameters": {},
+  "answer": "5 seats on Plan A would cost $125/month.",
+  "answer_claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "5 seats on Plan A would cost $125/month."
+    }
+  ],
+  "answer_support_edges": [
+    {
+      "claim_id": "claim-1",
+      "context_item_ids": [
+        "item-1",
+        "item-3"
+      ],
+      "support_status": "supported",
+      "judged_by": null
+    }
+  ],
+  "context_conflicts": [
+    {
+      "conflict_id": "conflict-1",
+      "context_item_ids": [
+        "item-2",
+        "item-3"
+      ],
+      "dimension": "time_version",
+      "description": "Two different effective price-sheet dates give different per-seat prices."
+    }
+  ],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [],
+  "risk_events": [],
+  "trace_status": "complete"
+}

@@ -1,0 +1,21 @@
+{
+  "case_id": "asteria-006-cross-reference-exact-target-packed",
+  "fixture_category": "cross_reference_exact_target_packed",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d3-registration-seg9", "d3-registration-seg16"],
+  "expected_claim_link_relationship": "best_effort_observed_not_forced",
+  "expected_claim_link_note": "Claim-linking status on this compound, two-sentence answer is recorded as observed rather than engineered to a specific target -- the primary assertion of this case is cross-reference resolution, checked independently below.",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": {
+    "marker_text": "Article 5(1)",
+    "reference_type": "article",
+    "target_identifier": "article:5:paragraph:1",
+    "expected_coarse_target_state": "packed",
+    "expected_resolution_granularity": "paragraph",
+    "expected_exact_target_status": "exact_target_present",
+    "note": "d3-registration-seg9 (Article 5, paragraph 1 -- the exact cited paragraph) is packed for this query, independently confirmed via review/cross_reference_diagnostics.py::detect_cross_reference_markers against the actual trace, not asserted from the query text alone."
+  },
+  "expected_reviewer_action": "approve_sufficiently_supported",
+  "expected_reviewer_action_is_advisory_only": true,
+  "known_limitations": []
+}

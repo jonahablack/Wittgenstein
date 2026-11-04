@@ -1,0 +1,159 @@
+# Corpus catalog for the real-corpus evidence-set diagnostic pass --
+# docs/corpus-selection-rationale.md, docs/real-corpus-diagnostic-runbook.md.
+#
+# This file is onboarding metadata only. No document has been downloaded, scraped, or
+# committed by this file -- `raw_content_committed: false` on every entry is a
+# statement of fact about this repository's contents, not a policy switch a human
+# still has to honor. Populating `data/examples/evidence_set_diagnostics/local_corpora/
+# <corpus_id>/` with real source text is a manual step the human running the
+# diagnostic pass performs -- see each corpus's own README.md and
+# docs/real-corpus-diagnostic-runbook.md.
+#
+# None of the three corpora below are used to give medical or legal advice. They are
+# used only to diagnose this pipeline's software behavior (extraction, comparison,
+# evidence-set construction, cross-reference detection, context packing, human-review
+# workflow) on realistically structured real-world text.
+
+corpora:
+  - corpus_id: eu-ai-act-2024
+    corpus_type: policy_regulatory
+    domain: ai_regulation
+    official_source_urls:
+      - "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng"
+      - "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401689"
+    source_format_options: [html, pdf]
+    version_or_effective_date: "Regulation (EU) 2024/1689, entered into force 2024-08-01"
+    public_access_or_license_note: >
+      Official EU legislation published via EUR-Lex; EU legal texts are generally
+      reusable for non-commercial/informational purposes, but reuse terms should be
+      confirmed against EUR-Lex's own notice at the time of access -- record the
+      access date and the specific notice you relied on in local_corpora metadata
+      (docs/real-corpus-diagnostic-runbook.md step 2), not just this catalog entry.
+    initial_slice: >
+      Relevant definitions from Article 3; Articles 6, 13, 50, and 113; any directly
+      referenced definitions/articles required to interpret the selected sections;
+      optionally a small relevant Annex excerpt only if needed for a cross-reference
+      case.
+    structural_features:
+      - numbered_articles
+      - definitions
+      - cross_references
+      - scope_conditions
+      - obligations
+      - temporal_applicability
+      - exceptions
+      - source_version_handling
+    intended_failure_or_trace_conditions:
+      - claim_linking_across_definition_and_obligation
+      - cross_reference_target_state_variation
+      - scope_condition_extraction
+      - temporal_applicability_extraction
+    diagnostic_question_types:
+      - definition_plus_obligation
+      - scope_condition
+      - temporal_applicability
+      - cross_reference_target
+      - exception
+      - same_topic_non_supporting_evidence
+      - multi_article_evidence_set
+    local_storage_path: data/examples/evidence_set_diagnostics/local_corpora/eu-ai-act-2024/
+    raw_content_committed: false
+    source_provenance_required: true
+    medical_or_legal_advice_warning: >
+      This corpus is used for software diagnostics only. No output derived from it
+      may be presented as legal advice or as an authoritative statement of what the
+      EU AI Act requires in any real situation.
+    status: onboarding_required
+
+  - corpus_id: hipaa-privacy-rule
+    corpus_type: policy_regulatory
+    domain: health_privacy_regulation
+    official_source_urls:
+      - "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-E"
+      - "https://www.hhs.gov/hipaa/for-professionals/privacy/index.html"
+    source_format_options: [html]
+    version_or_effective_date: "Current eCFR Title 45, Part 164, Subpart E (record the eCFR 'current as of' date at access time)"
+    public_access_or_license_note: >
+      US federal regulatory text (eCFR) is a US government work and is in the public
+      domain; HHS explanatory material may carry its own terms of use -- confirm and
+      record which specific page/notice you relied on and its access date.
+    initial_slice: >
+      45 CFR sections 164.502, 164.506, 164.508, and 164.512; definitional context
+      from section 164.501 or the relevant Part 160 definitions; only direct
+      cross-references necessary for a selected diagnostic case.
+    structural_features:
+      - definitions
+      - permitted_versus_required_actions
+      - exceptions
+      - covered_entity_scope
+      - conditional_disclosures
+      - section_cross_references
+      - regulatory_hierarchy
+    intended_failure_or_trace_conditions:
+      - permitted_vs_required_polarity_extraction
+      - covered_entity_scope_extraction
+      - conditional_disclosure_extraction
+      - cross_reference_target_state_variation
+    diagnostic_question_types:
+      - definition_plus_permitted_disclosure
+      - condition_or_exception
+      - covered_entity_scope
+      - cross_reference
+      - multiple_nearby_sections_similar_terminology
+      - unresolved_applicability
+    local_storage_path: data/examples/evidence_set_diagnostics/local_corpora/hipaa-privacy-rule/
+    raw_content_committed: false
+    source_provenance_required: true
+    medical_or_legal_advice_warning: >
+      This corpus is used for software diagnostics only. No output derived from it
+      may be presented as legal advice, a compliance determination, or an
+      authoritative statement of what HIPAA requires in any real situation.
+    status: onboarding_required
+
+  - corpus_id: ada-standards-2026
+    corpus_type: clinical_guidance
+    domain: diabetes_clinical_guidance
+    official_source_urls:
+      - "https://professional.diabetes.org/standards-of-care"
+    source_format_options: [html, pdf]
+    version_or_effective_date: "ADA Standards of Care, 2026 edition -- record the exact chapter/section and access date; this is a living/annually revised document"
+    public_access_or_license_note: >
+      Published by the American Diabetes Association; copyrighted professional
+      clinical guidance -- confirm the specific access/use terms in effect for the
+      section(s) you use (e.g. individual-use, subscription, or open-access chapter
+      status) before storing any local excerpt, and record that basis explicitly.
+      Do not assume public-domain status for this corpus.
+    initial_slice: >
+      One or two complete sections only; associated tables/algorithms only where
+      source access and extraction are permitted. Recommended starting chapters:
+      pharmacologic treatment, cardiovascular risk management, or chronic kidney
+      disease -- but use the exact accessible 2026 source section(s) you actually
+      have rights to, not necessarily these three.
+    structural_features:
+      - recommendation_strength_modality
+      - eligibility_population_conditions
+      - numeric_thresholds
+      - temporal_follow_up
+      - table_text_dependencies
+      - clinical_guideline_hierarchy
+    intended_failure_or_trace_conditions:
+      - modality_strength_extraction
+      - population_condition_extraction
+      - numeric_threshold_unit_extraction
+      - table_text_dependency_closure
+    diagnostic_question_types:
+      - recommendation_plus_population_condition
+      - modality_strength_comparison
+      - numeric_threshold
+      - table_text_dependency
+      - temporal_follow_up
+      - unresolved_insufficient_evidence
+    local_storage_path: data/examples/evidence_set_diagnostics/local_corpora/ada-standards-2026/
+    raw_content_committed: false
+    source_provenance_required: true
+    medical_or_legal_advice_warning: >
+      This corpus is used for software diagnostics only. No output derived from it
+      may be presented as medical advice, a clinical recommendation, or an
+      authoritative statement of current standard-of-care guidance for any real
+      patient or situation.
+    status: onboarding_required

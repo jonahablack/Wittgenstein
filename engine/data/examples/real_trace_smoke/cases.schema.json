@@ -1,0 +1,207 @@
+{
+  "$defs": {
+    "CorpusReference": {
+      "additionalProperties": false,
+      "properties": {
+        "corpus_id": {
+          "title": "Corpus Id",
+          "type": "string"
+        },
+        "document_hashes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "source_document_id -> sha256 of its text, recorded so drift in a git-excluded local document can be detected even though the text itself is never committed.",
+          "title": "Document Hashes",
+          "type": "object"
+        },
+        "local_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required (and only meaningful) when source_type=local_path_excluded_from_git. Never committed as document text -- this field holds a path, not content.",
+          "title": "Local Path"
+        },
+        "source_metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "e.g. title, publisher, license, access_date -- metadata only, never raw text.",
+          "title": "Source Metadata",
+          "type": "object"
+        },
+        "source_type": {
+          "description": "One of: bundled_synthetic_fixture, local_path_excluded_from_git.",
+          "title": "Source Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "corpus_id",
+        "source_type"
+      ],
+      "title": "CorpusReference",
+      "type": "object"
+    },
+    "PilotCoverageLabel": {
+      "description": "Which pilot-variation category(ies) a real-trace smoke-test case is designed to\nexercise (docs/real-trace-smoke-test-plan.md's required pilot-variation list) -- a\ncase may carry more than one. This is a case-authoring/coverage-tracking label, not\na post-hoc diagnostic outcome -- contrast with `RetrievalDiagnosticLabel` etc. below.",
+      "enum": [
+        "structured_document",
+        "narrative_document",
+        "short_document",
+        "long_document",
+        "multiple_sections",
+        "conditions_and_exceptions",
+        "cross_references",
+        "temporal_or_version_information",
+        "multi_claim_answer",
+        "multi_passage_evidence",
+        "supported_answer",
+        "partially_supported_answer",
+        "unsupported_answer",
+        "conflict_or_unresolved"
+      ],
+      "title": "PilotCoverageLabel",
+      "type": "string"
+    },
+    "ProvenanceStatus": {
+      "description": "How a real-trace smoke-test case's source document(s) were obtained -- gates\nwhether the document text itself may ever be committed to this repository\n(docs/real-trace-smoke-test-plan.md \u00a72, \"Provenance and licensing requirements\").\nOnly `SYNTHETIC_FICTIONAL` content (e.g. the existing widget-certification corpus)\nis safe to redistribute in `cases.example.json`; every other status implies the\ndocument text lives only at a git-excluded local path.",
+      "enum": [
+        "synthetic_fictional",
+        "user_provided_license_confirmed",
+        "user_provided_license_unknown",
+        "public_domain_or_open_license",
+        "pending_provenance_review"
+      ],
+      "title": "ProvenanceStatus",
+      "type": "string"
+    },
+    "SmokeTestCase": {
+      "additionalProperties": false,
+      "description": "One real-trace smoke-test case. `expected_evidence_locations` is a researcher\nannotation used to diagnose retrieval/linking behavior -- never treated as\nuniversal factual ground truth (docs/real-trace-smoke-test-plan.md).",
+      "properties": {
+        "answer": {
+          "title": "Answer",
+          "type": "string"
+        },
+        "answer_source_method": {
+          "description": "How the answer was obtained, e.g. \"human_authored_for_pilot\", \"existing_production_trace\", \"manual_transcription_from_document\".",
+          "title": "Answer Source Method",
+          "type": "string"
+        },
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "corpus": {
+          "$ref": "#/$defs/CorpusReference"
+        },
+        "document_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Version"
+        },
+        "expected_evidence_locations": {
+          "description": "Researcher-annotated locations (e.g. 'Section 3 > Table 1') believed relevant -- a diagnostic aid for this smoke test, not a claim of universal factual ground truth.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Expected Evidence Locations",
+          "type": "array"
+        },
+        "pilot_coverage_labels": {
+          "description": "Which required pilot-variation categories this case exercises.",
+          "items": {
+            "$ref": "#/$defs/PilotCoverageLabel"
+          },
+          "title": "Pilot Coverage Labels",
+          "type": "array"
+        },
+        "pipeline_manifest_id": {
+          "description": "Looked up in the accompanying manifests registry.",
+          "title": "Pipeline Manifest Id",
+          "type": "string"
+        },
+        "provenance_status": {
+          "$ref": "#/$defs/ProvenanceStatus"
+        },
+        "query": {
+          "title": "Query",
+          "type": "string"
+        },
+        "query_constraints": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Query Constraints",
+          "type": "object"
+        },
+        "reviewer_notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewer Notes"
+        },
+        "user_intent_notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Intent Notes"
+        }
+      },
+      "required": [
+        "case_id",
+        "corpus",
+        "query",
+        "answer",
+        "answer_source_method",
+        "pipeline_manifest_id",
+        "provenance_status"
+      ],
+      "title": "SmokeTestCase",
+      "type": "object"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/real_trace_smoke/cases.schema.json",
+  "additionalProperties": false,
+  "description": "The top-level shape of a cases file (e.g. cases.example.json).",
+  "properties": {
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/SmokeTestCase"
+      },
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "title": "SmokeTestCaseFile",
+  "type": "object"
+}

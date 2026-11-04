@@ -1,0 +1,18 @@
+{
+  "case_id": "asteria-005-rule-plus-exception",
+  "fixture_category": "rule_plus_exception",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d2-classification-seg15"],
+  "expected_claim_link_relationship": "direct_support_candidate",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": {
+    "marker_text": "Article 2",
+    "reference_type": "article",
+    "target_identifier": "article:2",
+    "expected_target_state": "unknown_or_in_corpus_depending_on_packed_set",
+    "note": "This case's primary purpose is the EXCEPTION Tier-2 cue, not cross-reference exactness -- the 'Article 2' mention inside Article 3's text is a secondary, incidentally-detected marker, recorded here for completeness rather than as the case's main assertion."
+  },
+  "expected_reviewer_action": "approve_with_qualification",
+  "expected_reviewer_action_is_advisory_only": true,
+  "known_limitations": []
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "asteria-002-definition-plus-requirement",
+  "fixture_category": "definition_plus_requirement",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d1-definitions-seg10", "d2-classification-seg9"],
+  "expected_claim_link_relationship": "direct_support_candidate",
+  "expected_claim_link_note": "Two separate answer-claim fragments, each individually reaching direct_support_candidate against its own source: the definition claim against d1-definitions-seg10 (Definition D-02), the requirement claim against d2-classification-seg9 (Article 2, paragraph 1).",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": null,
+  "expected_reviewer_action": "approve_sufficiently_supported",
+  "expected_reviewer_action_is_advisory_only": true,
+  "known_limitations": []
+}

@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "SegmentType": {
+      "description": "Structural type of a Tier-0 SourceSegment, per\ndocs/efficiency-and-processing-architecture.md -- created programmatically from\nexisting document structure, never by an LLM.",
+      "enum": [
+        "heading",
+        "paragraph",
+        "sentence",
+        "list_item",
+        "table_row",
+        "table_cell",
+        "caption",
+        "footnote"
+      ],
+      "title": "SegmentType",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/SourceSegment.schema.json",
+  "additionalProperties": false,
+  "description": "A Tier-0 structural segment, created programmatically from existing document\nstructure -- never by an LLM. Offsets and provenance are always preserved\n(docs/efficiency-and-processing-architecture.md \u00a75).",
+  "properties": {
+    "char_end": {
+      "title": "Char End",
+      "type": "integer"
+    },
+    "char_start": {
+      "description": "Always present -- character offsets are always computable.",
+      "title": "Char Start",
+      "type": "integer"
+    },
+    "corpus_id": {
+      "title": "Corpus Id",
+      "type": "string"
+    },
+    "cross_reference_targets": {
+      "description": "Raw Tier-2 pattern matches (e.g. 'Section 4.2') -- not resolved to ids.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Cross Reference Targets",
+      "type": "array"
+    },
+    "legal_annex_identifier": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Set only when this segment's document contains an explicit 'Annex <roman numeral>' title paragraph, carried forward the same way as legal_article_number.",
+      "title": "Legal Annex Identifier"
+    },
+    "legal_article_number": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Set only when this segment's document contains an explicit 'Article <N>' title paragraph, carried forward to later segments in the same document. Never inferred from source_document_id/filename -- see docs/cross-reference-granularity-resolution-plan.md \u00a74.",
+      "title": "Legal Article Number"
+    },
+    "legal_paragraph_number": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Set only when this segment's own leading marker (or, for a carried-forward continuation/point, the most recent preceding marker in document order) is an explicit bare-number list marker ('1. ', '2. ', ...) -- never inferred from position/filename alone.",
+      "title": "Legal Paragraph Number"
+    },
+    "legal_point_identifier": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Set only when this segment's own text begins with an explicit '(<letter>) ' marker. Always paired with whatever legal_paragraph_number is in force at that point.",
+      "title": "Legal Point Identifier"
+    },
+    "location": {
+      "description": "Human-readable structural path, e.g. \"Section 2 > Paragraph 3\".",
+      "title": "Location",
+      "type": "string"
+    },
+    "parent_segment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Segment Id"
+    },
+    "parser_version": {
+      "title": "Parser Version",
+      "type": "string"
+    },
+    "segment_id": {
+      "title": "Segment Id",
+      "type": "string"
+    },
+    "segment_type": {
+      "$ref": "#/$defs/SegmentType"
+    },
+    "source_document_id": {
+      "title": "Source Document Id",
+      "type": "string"
+    },
+    "source_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Version"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "token_end": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Token End"
+    },
+    "token_start": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Present only when a tokenizer actually ran; never inferred from char offsets.",
+      "title": "Token Start"
+    }
+  },
+  "required": [
+    "segment_id",
+    "source_document_id",
+    "corpus_id",
+    "segment_type",
+    "location",
+    "text",
+    "char_start",
+    "char_end",
+    "parser_version"
+  ],
+  "title": "SourceSegment",
+  "type": "object"
+}

@@ -1,0 +1,44 @@
+{
+  "corpus_id": "CORPUS-policy-001",
+  "source_type": "internal_wiki_export",
+  "domain": "hr_policy",
+  "language": "en",
+  "corpus_version": "2026-08-01",
+  "index_timestamp": "2026-09-01T00:00:00Z",
+  "document_count": 4000,
+  "section_count": 18500,
+  "token_count": 6200000,
+  "document_length_distribution": {
+    "minimum": 80,
+    "p50": 950,
+    "p90": 3200,
+    "maximum": 12000,
+    "mean": 1550,
+    "sample_size": 4000
+  },
+  "hierarchy_depth_distribution": {
+    "minimum": 1,
+    "p50": 2,
+    "p90": 4,
+    "maximum": 6,
+    "mean": 2.3,
+    "sample_size": 4000
+  },
+  "table_density": 0.12,
+  "list_density": 0.34,
+  "cross_reference_density": 0.41,
+  "citation_density": 0.02,
+  "version_or_effective_date_density": 0.28,
+  "redundancy_metrics": {
+    "near_duplicate_section_fraction": 0.06
+  },
+  "topic_heterogeneity_metrics": {
+    "distinct_top_level_categories": 14
+  },
+  "terminology_variability_metrics": {
+    "synonym_cluster_count_per_1k_tokens": 3.1
+  },
+  "structured_content_notes": "Roughly a third of sections are bulleted policy lists; tables are mostly PTO/benefit accrual schedules.",
+  "profiling_method": "full_corpus_scan_v0",
+  "measurement_confidence": "high"
+}

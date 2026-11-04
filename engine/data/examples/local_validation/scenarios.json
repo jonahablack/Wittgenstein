@@ -1,0 +1,136 @@
+{
+  "scenarios": [
+    {
+      "id": "01_cross_boundary_genuine_dependency",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "01_cross_boundary_genuine_dependency.json",
+      "description": "Matching segmented-RAG trace with a genuine cross-boundary support dependency: an exemption clause needed to correctly qualify the answer is retrieved and selected but not packed.",
+      "mechanism_should_activate": true,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "unsupported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["inspect_referenced_section", "approve_with_qualification", "reject_as_unsupported"],
+      "notes": "The clean positive case: a real, material dependency crosses the boundary and never reaches the generator."
+    },
+    {
+      "id": "02_segmented_no_relevant_dependency",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "02_segmented_no_relevant_dependency.json",
+      "description": "Segmented-RAG trace with a single self-contained supporting segment and no cross-boundary dependency at all.",
+      "mechanism_should_activate": false,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "supported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["approve_sufficiently_supported"],
+      "notes": "Clean negative case: chunking exists, but there is no dependency to split. Must not activate merely because chunking is present."
+    },
+    {
+      "id": "03_whole_document_inapplicable",
+      "manifest_file": "whole_document_rag.json",
+      "trace_file": "03_whole_document_inapplicable.json",
+      "description": "Whole-document retrieval (no sub-document segmentation exists) -- the mechanism is structurally inapplicable even though the trace deliberately (and incorrectly) carries a boundary-dependency flag.",
+      "mechanism_should_activate": false,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "supported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["approve_sufficiently_supported"],
+      "notes": "Disqualifying manifest gate (retrieval_unit=whole_document) takes precedence over any trace content."
+    },
+    {
+      "id": "04_unknown_segmentation_metadata",
+      "manifest_file": "segmented_rag_unknown_metadata.json",
+      "trace_file": "04_unknown_segmentation_metadata.json",
+      "description": "chunking_method and retrieval_unit are both unknown in the manifest; the mechanism must report insufficient information rather than assume either way.",
+      "mechanism_should_activate": false,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "insufficient_evidence",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["request_additional_context", "mark_unresolved"],
+      "notes": "Gate outcome is unknown_insufficient_data, distinct from both activation and clean disqualification."
+    },
+    {
+      "id": "05_boundary_present_complete_support_packed",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "05_boundary_present_complete_support_packed.json",
+      "description": "A support relation crosses a segment boundary, but both segments were retrieved, selected, and packed together -- full support reached the generator despite the boundary crossing.",
+      "mechanism_should_activate": true,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "supported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["approve_sufficiently_supported", "inspect_referenced_section"],
+      "notes": "Deliberately ambiguous: the trace-level trigger fires (a boundary was crossed) but the outcome is benign -- informative for false-reassurance and unnecessary-escalation analysis, since the mechanism does not itself assess completeness beyond the flag's presence."
+    },
+    {
+      "id": "06_boundary_present_dependency_omitted",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "06_boundary_present_dependency_omitted.json",
+      "description": "A support relation crosses a segment boundary and the dependent segment is explicitly omitted before generation (context_budget_exceeded).",
+      "mechanism_should_activate": true,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "unsupported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["inspect_referenced_section", "reject_as_unsupported", "approve_with_qualification"],
+      "notes": "Fullest-detail positive case, with an explicit omission_reason -- the clearest scenario for measuring whether the warning helps reviewers notice a traceable, material omission."
+    },
+    {
+      "id": "07_boundary_present_alternate_source_supports",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "07_boundary_present_alternate_source_supports.json",
+      "description": "A support relation crosses a segment boundary and the dependent segment is omitted, but a different, complete, self-contained source independently supports the same answer and was packed.",
+      "mechanism_should_activate": true,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "supported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["approve_sufficiently_supported", "compare_competing_sources"],
+      "notes": "Redundant-support case: the mechanism fires (a real omission occurred) but the answer remains supported via an independent source -- tests whether the warning leads to unnecessary rejection."
+    },
+    {
+      "id": "08_clarification_needed_underspecified_intent",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "08_clarification_needed_underspecified_intent.json",
+      "description": "The query omits the weight-class and region parameters that determine the answer; the system answered with an assumption instead of asking.",
+      "mechanism_should_activate": false,
+      "adjudication_applicable": false,
+      "expected_adjudication_outcome": "requires_clarification",
+      "intent_source": "unresolved",
+      "appropriate_reviewer_actions": ["ask_clarifying_question", "request_additional_context"],
+      "notes": "No defensible single gold label exists until the missing parameters are known -- adjudication_applicable is False by design, not a gap. Illustrates user-intent responsiveness independent of the segmentation mechanism."
+    },
+    {
+      "id": "09_conflicting_sources_unresolved",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "09_conflicting_sources_unresolved.json",
+      "description": "Two versions of the handbook give different processing times; the answer silently picked one without surfacing the conflict.",
+      "mechanism_should_activate": false,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "source_conflict",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["compare_competing_sources", "mark_unresolved", "check_date_version_jurisdiction"],
+      "notes": "Distinct mechanism (GEN_CONTEXT_CONFLICT_UNRESOLVED-adjacent), included to give the reviewer-study material where 'unresolved'/'version_dependent' is the correct outcome, not a factual miss."
+    },
+    {
+      "id": "10_unnecessary_escalation_risk",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "10_unnecessary_escalation_risk.json",
+      "description": "A required-support-item split is flagged, but the split-off segment is a page-footer formatting note with no bearing on the answer.",
+      "mechanism_should_activate": true,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "supported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["approve_sufficiently_supported"],
+      "notes": "The mechanism fires on an immaterial split -- a case for measuring unnecessary_escalation_count and whether reviewers correctly recognize low materiality rather than escalating by default."
+    },
+    {
+      "id": "11_low_priority_false_reassurance_risk",
+      "manifest_file": "segmented_rag.json",
+      "trace_file": "11_low_priority_false_reassurance_risk.json",
+      "description": "A safety-relevant carve-out (lithium sub-assembly exception) is split across a segment boundary and omitted before generation; under manifest_conditioned the resulting risk event's priority is capped below HIGH regardless of this case's real materiality.",
+      "mechanism_should_activate": true,
+      "adjudication_applicable": true,
+      "expected_adjudication_outcome": "unsupported",
+      "intent_source": "user_stated",
+      "appropriate_reviewer_actions": ["inspect_referenced_section", "reject_as_unsupported", "escalate_to_domain_expert"],
+      "notes": "Structurally identical to case 06 but framed to probe false reassurance specifically: does a capped-priority warning still get the scrutiny this genuinely material omission deserves?"
+    }
+  ]
+}

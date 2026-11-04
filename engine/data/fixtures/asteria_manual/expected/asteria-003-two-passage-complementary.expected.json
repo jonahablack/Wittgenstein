@@ -1,0 +1,16 @@
+{
+  "case_id": "asteria-003-two-passage-complementary",
+  "fixture_category": "two_passage_complementary_support",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d3-registration-seg11", "d3-registration-seg12"],
+  "expected_claim_link_relationship": "unresolved",
+  "expected_evidence_set_status": "composite_unresolved",
+  "expected_evidence_set_members": ["d3-registration-seg12", "d3-registration-seg11"],
+  "expected_evidence_set_note": "Evidence-set construction is attempted (never skipped) and composes both the frequency paragraph (Article 5, paragraph 3) and the scope-qualifier paragraph (Article 5, paragraph 4) as members, but the conservative composition engine classifies the result composite_unresolved rather than composite_direct_support -- verified directly, not asserted. Documented as a real, current limitation of regex-based multi-passage composition on this sentence pair (docs/multi-passage-evidence-plan.md's own documented extraction-reliability limitation), kept as an honest regression fixture rather than rewritten until it reaches a cleaner classification.",
+  "expected_cross_reference": null,
+  "expected_reviewer_action": "request_additional_context",
+  "expected_reviewer_action_is_advisory_only": true,
+  "known_limitations": [
+    "This case does not demonstrate composite_direct_support -- it demonstrates that evidence-set construction is genuinely attempted across two complementary passages and records the engine's real, conservative outcome on that attempt."
+  ]
+}

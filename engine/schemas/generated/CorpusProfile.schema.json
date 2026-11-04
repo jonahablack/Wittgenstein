@@ -1,0 +1,346 @@
+{
+  "$defs": {
+    "DistributionSummary": {
+      "additionalProperties": false,
+      "description": "A minimal, honest distribution summary -- not a single scalar.",
+      "properties": {
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        },
+        "mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mean"
+        },
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        },
+        "p50": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P50"
+        },
+        "p90": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P90"
+        },
+        "sample_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Size"
+        }
+      },
+      "title": "DistributionSummary",
+      "type": "object"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/CorpusProfile.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "citation_density": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Citation Density"
+    },
+    "corpus_id": {
+      "title": "Corpus Id",
+      "type": "string"
+    },
+    "corpus_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Corpus Version"
+    },
+    "cross_reference_density": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Cross-references per document, or per 1k tokens.",
+      "title": "Cross Reference Density"
+    },
+    "document_count": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Document Count"
+    },
+    "document_length_distribution": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DistributionSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "domain": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Domain"
+    },
+    "evidence_dispersion_metrics": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "How spread out the support for a typical answer is across the corpus, e.g. documents per answer, or a computed dispersion index. A profiling variable only -- see docs/registry-governance.md on when a corpus property may become its own mechanism.",
+      "title": "Evidence Dispersion Metrics",
+      "type": "object"
+    },
+    "hierarchy_depth_distribution": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DistributionSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "index_timestamp": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Index Timestamp"
+    },
+    "language": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Language"
+    },
+    "list_density": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "List Density"
+    },
+    "measurement_confidence": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "e.g. \"high\" (full corpus scan), \"low\" (sampled).",
+      "title": "Measurement Confidence"
+    },
+    "profiling_method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "How this profile was computed, e.g. tool name/version.",
+      "title": "Profiling Method"
+    },
+    "redundancy_metrics": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Redundancy Metrics",
+      "type": "object"
+    },
+    "section_count": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Section Count"
+    },
+    "source_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Type"
+    },
+    "structured_content_notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Structured Content Notes"
+    },
+    "table_density": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Fraction of documents/sections containing tables.",
+      "title": "Table Density"
+    },
+    "terminology_variability_metrics": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Terminology Variability Metrics",
+      "type": "object"
+    },
+    "token_count": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Token Count"
+    },
+    "topic_heterogeneity_metrics": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Topic Heterogeneity Metrics",
+      "type": "object"
+    },
+    "version_or_effective_date_density": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Density of version/effective-date markers (regulatory/legal corpora).",
+      "title": "Version Or Effective Date Density"
+    }
+  },
+  "required": [
+    "corpus_id"
+  ],
+  "title": "CorpusProfile",
+  "type": "object"
+}

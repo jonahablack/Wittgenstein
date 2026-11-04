@@ -1,0 +1,1346 @@
+{
+  "$defs": {
+    "AdjudicatedTraceEvidence": {
+      "additionalProperties": false,
+      "description": "Layer A: evidence/factual adjudication -- used only where a defensible\nadjudication target exists. Never required to provide a universal gold label for\nevery task; `applicable=False` is a normal, honest outcome for contested or\nversion-/jurisdiction-dependent material. See `core/enums.py::AdjudicationOutcome`\nfor the per-case outcome vocabulary this layer's rates are computed over.",
+      "properties": {
+        "adjudication_target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What was being adjudicated (claim-level statement, query-level answer, etc.).",
+          "title": "Adjudication Target"
+        },
+        "adjudicator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Who adjudicated (role, not necessarily name).",
+          "title": "Adjudicator"
+        },
+        "applicable": {
+          "description": "Whether a defensible adjudication target existed for this study/case set at all. False is a normal, honest outcome, not a gap to fill in.",
+          "title": "Applicable",
+          "type": "boolean"
+        },
+        "appropriate_unresolved_escalation_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rate at which a genuinely contested/incomplete case was correctly left unresolved or escalated, rather than forced into a false supported/unsupported call.",
+          "title": "Appropriate Unresolved Escalation Rate"
+        },
+        "contradiction_recognition_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contradiction Recognition Rate"
+        },
+        "disagreement_handling": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How disagreement between adjudicators was represented, not silently resolved.",
+          "title": "Disagreement Handling"
+        },
+        "false_approval_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rate at which reviewers approved a claim that adjudication found unsupported.",
+          "title": "False Approval Rate"
+        },
+        "false_rejection_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rate at which reviewers rejected a claim that adjudication found supported.",
+          "title": "False Rejection Rate"
+        },
+        "governing_source_or_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Which source/version was treated as authoritative for this adjudication pass.",
+          "title": "Governing Source Or Version"
+        },
+        "label_granularity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "\"claim_level\" or \"query_level\".",
+          "title": "Label Granularity"
+        },
+        "material_issue_definition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What counted as a material issue for this study, stated in advance.",
+          "title": "Material Issue Definition"
+        },
+        "material_support_issue_detection_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Material Support Issue Detection Rate"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "qualification_preservation_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualification Preservation Rate"
+        },
+        "support_set_completeness_recognition_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Support Set Completeness Recognition Rate"
+        },
+        "unresolved_or_contested_case_handling": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unresolved Or Contested Case Handling"
+        },
+        "unsupported_claim_detection_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unsupported Claim Detection Rate"
+        }
+      },
+      "required": [
+        "applicable"
+      ],
+      "title": "AdjudicatedTraceEvidence",
+      "type": "object"
+    },
+    "AlertFatigueEvidence": {
+      "additionalProperties": false,
+      "description": "Alert fatigue and AI burnout, tracked as an explicit evaluation dimension, not an\ninformal motivation only. A low alert volume does not by itself mean low fatigue --\na warning can be low-volume but still opaque, repetitive, or unhelpful; that is why\n`actionable_alert_rate` and the perception measures are reported alongside raw\ncounts, not instead of them.",
+      "properties": {
+        "actionable_alert_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "alerts_leading_to_meaningful_action_count / alerts_displayed_count. Reported directly (not silently inferred from the counts) so a study can report it even when only aggregate rates, not raw counts, were collected -- but see _actionable_rate_consistent_with_counts for the cross-check when both are given.",
+          "title": "Actionable Alert Rate"
+        },
+        "alerts_dismissed_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alerts Dismissed Count"
+        },
+        "alerts_displayed_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alerts Displayed Count"
+        },
+        "alerts_leading_to_meaningful_action_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A meaningful action includes: opening a dependency, inspecting omitted context, checking a competing source, requesting clarification, qualifying the answer, escalating, or marking unresolved.",
+          "title": "Alerts Leading To Meaningful Action Count"
+        },
+        "applicable": {
+          "default": true,
+          "title": "Applicable",
+          "type": "boolean"
+        },
+        "fatigue_after_block_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fatigue After Block Mean"
+        },
+        "frustration_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frustration Mean"
+        },
+        "mental_workload_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mental Workload Mean"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "perceived_alert_actionability_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Perceived Alert Actionability Mean"
+        },
+        "perceived_alert_volume_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Perceived Alert Volume Mean"
+        },
+        "perceived_repetitiveness_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Perceived Repetitiveness Mean"
+        },
+        "repeated_warning_annoyance_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repeated Warning Annoyance Mean"
+        },
+        "unnecessary_escalation_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Escalations that increased review burden without improving reviewer-perceived understanding or usefulness -- a distinct risk from a mechanism simply having a low actionable_alert_rate.",
+          "title": "Unnecessary Escalation Count"
+        }
+      },
+      "title": "AlertFatigueEvidence",
+      "type": "object"
+    },
+    "AutonomyAndTrustEvidence": {
+      "additionalProperties": false,
+      "description": "Layer D: human autonomy and trust calibration.",
+      "properties": {
+        "applicable": {
+          "default": true,
+          "title": "Applicable",
+          "type": "boolean"
+        },
+        "confidence_in_answer_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence In Answer Mean"
+        },
+        "confidence_in_evidence_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence In Evidence Mean"
+        },
+        "confidence_in_tool_warning_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence In Tool Warning Mean"
+        },
+        "encouraged_blind_acceptance_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Higher is worse: the tool encouraged blind acceptance rather than review.",
+          "title": "Encouraged Blind Acceptance Mean"
+        },
+        "felt_pressured_to_follow_tool_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Felt Pressured To Follow Tool Mean"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "override_or_reject_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rate at which reviewers overrode or rejected the tool's prioritization.",
+          "title": "Override Or Reject Rate"
+        },
+        "perceived_autonomy_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Perceived Autonomy Mean"
+        },
+        "recognized_need_for_more_information_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recognized Need For More Information Rate"
+        },
+        "supported_independent_judgment_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Supported Independent Judgment Mean"
+        }
+      },
+      "title": "AutonomyAndTrustEvidence",
+      "type": "object"
+    },
+    "BehavioralWorkflowEvidence": {
+      "additionalProperties": false,
+      "description": "Layer C: reviewer experience and workflow behavior. `willingness_to_continue_mean`\nand `willingness_to_reuse_mean` live here as their one canonical home -- the\nalert-fatigue layer (`AlertFatigueEvidence`) reads these rather than duplicating\nthem, to avoid two fields describing the same measure drifting out of sync\n(CLAUDE.md, \"General engineering lessons\").",
+      "properties": {
+        "applicable": {
+          "default": true,
+          "title": "Applicable",
+          "type": "boolean"
+        },
+        "clarification_request_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clarification Request Rate"
+        },
+        "dependency_links_followed_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dependency Links Followed Rate"
+        },
+        "ease_of_verification_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ease Of Verification Mean"
+        },
+        "escalation_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Escalation Rate"
+        },
+        "evidence_navigation_effort_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Navigation Effort Mean"
+        },
+        "full_context_request_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Full Context Request Rate"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "perceived_alert_relevance_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Perceived Alert Relevance Mean"
+        },
+        "perceived_review_burden_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Perceived Review Burden Mean"
+        },
+        "perceived_usefulness_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Perceived Usefulness Mean"
+        },
+        "review_time_seconds_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Review Time Seconds Mean"
+        },
+        "source_text_opened_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Text Opened Rate"
+        },
+        "willingness_to_continue_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Willingness To Continue Mean"
+        },
+        "willingness_to_reuse_mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Willingness To Reuse Mean"
+        }
+      },
+      "title": "BehavioralWorkflowEvidence",
+      "type": "object"
+    },
+    "ContextualJudgmentEvidence": {
+      "additionalProperties": false,
+      "description": "Layer B: whether reviewers noticed context-sensitivity signals in the material\n(population, jurisdiction, date, version, ... applicability boundaries) -- distinct\nfrom whether they reached the \"right\" factual answer.",
+      "properties": {
+        "applicability_boundary_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Applicability Boundary Awareness Rate"
+        },
+        "applicable": {
+          "default": true,
+          "title": "Applicable",
+          "type": "boolean"
+        },
+        "condition_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition Awareness Rate"
+        },
+        "conflicting_source_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Conflicting Source Awareness Rate"
+        },
+        "cross_reference_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cross Reference Awareness Rate"
+        },
+        "date_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Awareness Rate"
+        },
+        "exception_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exception Awareness Rate"
+        },
+        "jurisdiction_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Jurisdiction Awareness Rate"
+        },
+        "missing_dependency_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Missing Dependency Awareness Rate"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "population_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population Awareness Rate"
+        },
+        "source_authority_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Authority Awareness Rate"
+        },
+        "threshold_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold Awareness Rate"
+        },
+        "version_awareness_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Awareness Rate"
+        }
+      },
+      "title": "ContextualJudgmentEvidence",
+      "type": "object"
+    },
+    "EpistemicStatus": {
+      "description": "How strongly a failure mechanism's real-world applicability is established.\n\nThis is the single most important guardrail enum in the system: UI-facing code\nmust never present a mechanism as more certain than this status allows.",
+      "enum": [
+        "externally_established",
+        "manifest_conditioned_transfer",
+        "trace_integrity_condition",
+        "research_hypothesis",
+        "locally_validated",
+        "unsupported_or_retired"
+      ],
+      "title": "EpistemicStatus",
+      "type": "string"
+    },
+    "FalseReassuranceAnalysis": {
+      "additionalProperties": false,
+      "description": "Whether the tool made reviewers prematurely comfortable or less likely to\ninvestigate when investigation remained warranted -- tracked as its own named risk,\nnever inferred from a low disagreement rate or a high usefulness score alone. A\ntool that reduces review time but increases false reassurance is not a success --\ndocs/local-validation-protocol.md.",
+      "properties": {
+        "cases_identified": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cases Identified"
+        },
+        "definition": {
+          "default": "The tool appears to make reviewers prematurely comfortable or less likely to investigate when investigation remains warranted.",
+          "title": "Definition",
+          "type": "string"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How false reassurance was operationally detected.",
+          "title": "Method"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "observed": {
+          "description": "Whether this study looked for false reassurance at all.",
+          "title": "Observed",
+          "type": "boolean"
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rate"
+        }
+      },
+      "required": [
+        "observed"
+      ],
+      "title": "FalseReassuranceAnalysis",
+      "type": "object"
+    },
+    "LocalValidationStatus": {
+      "description": "Lifecycle status of a LocalValidationRecord, independent of the mechanism's\nglobal epistemic_status -- see docs/registry-governance.md (\"Local validation\").",
+      "enum": [
+        "proposed",
+        "in_progress",
+        "completed_supports",
+        "completed_does_not_support",
+        "inconclusive"
+      ],
+      "title": "LocalValidationStatus",
+      "type": "string"
+    },
+    "PriorityTier": {
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "informational"
+      ],
+      "title": "PriorityTier",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/LocalValidationRecord.schema.json",
+  "additionalProperties": false,
+  "description": "A result from this project's own controlled tests or human-review study.\n\nLocal evidence can improve triage priority *in the deployment it was collected\nfrom*, but must never be used to raise a mechanism's global epistemic_status to\nexternally_established -- see docs/registry-governance.md. `external_evidence_status`,\n`local_validation_status`, and `deployment_priority` are kept as three deliberately\nseparate fields (never merged into one \"confidence\") so a local result can move\ntriage priority for this deployment without ever silently touching the mechanism's\nglobal, externally-reviewed status.",
+  "properties": {
+    "adjudicated_trace_evidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AdjudicatedTraceEvidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "alert_fatigue_evidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AlertFatigueEvidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "autonomy_and_trust_evidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AutonomyAndTrustEvidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "behavioral_workflow_evidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BehavioralWorkflowEvidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Alias field for callers that distinguish 'self-reported experience' (reviewer_experience_evidence) from 'observed behavior' (this field) even though both use the same BehavioralWorkflowEvidence shape; a study may populate either or both."
+    },
+    "causal_or_correlational": {
+      "description": "\"causal\" or \"correlational\".",
+      "title": "Causal Or Correlational",
+      "type": "string"
+    },
+    "contextual_judgment_evidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ContextualJudgmentEvidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "corpus_description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Corpus Description"
+    },
+    "corpus_slices": {
+      "description": "Named corpus slices or task types this study covered, e.g. for the TRIAGE_ENABLED replication-across-slices criterion (docs/registry-governance.md).",
+      "items": {
+        "type": "string"
+      },
+      "title": "Corpus Slices",
+      "type": "array"
+    },
+    "date": {
+      "format": "date",
+      "title": "Date",
+      "type": "string"
+    },
+    "deployment_priority": {
+      "$ref": "#/$defs/PriorityTier",
+      "description": "How this record should weight triage priority within deployment_scope only. Never read as, or converted into, a global priority/status signal."
+    },
+    "deployment_scope": {
+      "description": "The specific deployment/dataset this validation applies to. Local validation is scoped, not a universal external claim.",
+      "title": "Deployment Scope",
+      "type": "string"
+    },
+    "evaluation_split": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Description of the held-out or preregistered evaluation split used.",
+      "title": "Evaluation Split"
+    },
+    "external_evidence_status": {
+      "$ref": "#/$defs/EpistemicStatus",
+      "description": "A frozen snapshot of the mechanism's global epistemic_status at the time this record was created -- an audit trail, not a live pointer. If the mechanism's global status later changes, this field is not retroactively updated."
+    },
+    "false_reassurance_analysis": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FalseReassuranceAnalysis"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "label_source": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "How ground-truth labels were produced.",
+      "title": "Label Source"
+    },
+    "limitations": {
+      "title": "Limitations",
+      "type": "string"
+    },
+    "local_validation_status": {
+      "$ref": "#/$defs/LocalValidationStatus",
+      "default": "proposed"
+    },
+    "manifest_description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Manifest Description"
+    },
+    "mechanism_id": {
+      "title": "Mechanism Id",
+      "type": "string"
+    },
+    "method": {
+      "title": "Method",
+      "type": "string"
+    },
+    "outcome_definitions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Operational definition per reported outcome measure name -- the study's documented instrument, cross-referenced with docs/reviewer-measures.md.",
+      "title": "Outcome Definitions",
+      "type": "object"
+    },
+    "precision": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Precision"
+    },
+    "preregistered": {
+      "default": false,
+      "description": "Whether the flag/outcome being tested was specified before the evaluation ran (a predefined flag and outcome), as opposed to selected after seeing results.",
+      "title": "Preregistered",
+      "type": "boolean"
+    },
+    "query_distribution_description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Query Distribution Description"
+    },
+    "recall": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recall"
+    },
+    "replication_notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Replication across corpus slices or task types, where feasible.",
+      "title": "Replication Notes"
+    },
+    "result_summary": {
+      "title": "Result Summary",
+      "type": "string"
+    },
+    "reviewer_experience_evidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BehavioralWorkflowEvidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reviewer_population": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Who the reviewers were (role/expertise/count) -- distinct from `reviewers`, which lists reviewer ids/names, not a population description.",
+      "title": "Reviewer Population"
+    },
+    "reviewer_yield": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Fraction of reviewed items that were confirmed true positives.",
+      "title": "Reviewer Yield"
+    },
+    "reviewers": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reviewers",
+      "type": "array"
+    },
+    "sample_size": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sample Size"
+    },
+    "study_design": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Narrative design description: review conditions used (see docs/local-validation-protocol.md), between/within-subjects, primary comparison.",
+      "title": "Study Design"
+    },
+    "uncertainty": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "e.g. a confidence interval or qualitative uncertainty statement.",
+      "title": "Uncertainty"
+    },
+    "uncertainty_or_intervals": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Uncertainty reporting across the reported multidimensional outcome measures (means/rates in the evidence layers below) -- broader in scope than `uncertainty`, which is the legacy field for the core precision/recall adjudication metrics only. Kept separate rather than merged, per this project's rule against two fields silently describing the same thing.",
+      "title": "Uncertainty Or Intervals"
+    },
+    "unresolved_limitations": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "What remains open or unresolved even after this study -- distinct from `limitations` (methodological caveats on the study as designed); this field is what a promotion-review reader checks first to see what is NOT yet known.",
+      "title": "Unresolved Limitations"
+    }
+  },
+  "required": [
+    "id",
+    "mechanism_id",
+    "deployment_scope",
+    "method",
+    "result_summary",
+    "causal_or_correlational",
+    "reviewers",
+    "date",
+    "limitations",
+    "external_evidence_status",
+    "deployment_priority"
+  ],
+  "title": "LocalValidationRecord",
+  "type": "object"
+}

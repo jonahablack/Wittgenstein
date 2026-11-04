@@ -1,0 +1,19 @@
+{
+  "case_id": "asteria-001-direct-single-span-class-s",
+  "fixture_category": "direct_single_span_support",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d2-classification-seg10"],
+  "expected_claim_link_relationship": "direct_support_candidate",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": null,
+  "expected_reviewer_action": "approve_sufficiently_supported",
+  "expected_reviewer_action_is_advisory_only": true,
+  "non_activation_control": {
+    "manifest_id": "asteria-p4-full-context-control",
+    "note": "Under asteria-p4-full-context-control (retrieval_manifest.candidate_depth=1), only d2-classification-seg10 is retrieved and packed -- no CONDITION/EXCEPTION/CROSS_REFERENCE Tier-2 cue is present, so trace.segment_boundary_dependency_flags is empty and REP_SEGMENTATION_GRANULARITY_MISMATCH's trace-observable gate (TO_REP_SEG_boundary_flags) is VIOLATED -- verified directly against matching/eligibility.py::evaluate_eligibility, not asserted.",
+    "expected_segmentation_mismatch_activation": false
+  },
+  "known_limitations": [
+    "Under the default asteria-p1-baseline manifest (candidate_depth=5), the top-5 candidate pool also includes condition/cross-reference-bearing content from elsewhere in the corpus -- the non-activation control specifically requires the narrower asteria-p4-full-context-control manifest to isolate a genuinely clean packed set."
+  ]
+}

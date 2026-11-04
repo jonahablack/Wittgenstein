@@ -1,0 +1,9 @@
+{
+  "name": "wittgenstein-rag-reliability-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Documented stub only -- see README.md. No build tooling is wired up yet.",
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {}
+}

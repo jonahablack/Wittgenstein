@@ -1,0 +1,17 @@
+{
+  "case_id": "asteria-009-numeric-threshold-mismatch",
+  "fixture_category": "numeric_threshold_mismatch",
+  "controlled_perturbation": true,
+  "source_supported_answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 12 centimetres.",
+  "perturbed_answer": "A Class R inspection unit shall pass the Structural Load Assessment at a minimum clearance margin of 20 centimetres.",
+  "perturbation_type": "numeric_threshold_mismatch",
+  "changed_claim_component": "numeric_value",
+  "expected_claim_linking_status": "contradiction_candidate",
+  "expected_reviewer_action": "reject_as_unsupported",
+  "expected_reviewer_action_is_advisory_only": true,
+  "minimum_evidence_set": ["d2-classification-seg9"],
+  "verification_note": "Both the source-supported (12 cm, reaches direct_support_candidate) and the perturbed (20 cm, reaches contradiction_candidate with numeric_mismatch/value_mismatch field outcomes) variants were run through review.imported_answer.import_answer against the same packed candidate (d2-classification-seg9) and independently confirmed to diverge exactly as expected -- see tests/unit/test_asteria_fixture.py.",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": null,
+  "known_limitations": []
+}

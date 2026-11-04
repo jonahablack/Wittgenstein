@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "ConfidenceTier": {
+      "description": "Deterministic, rule-derived confidence in an ApplicabilityAssessment.\n\nNever a fitted/opaque probability -- computed from the ratio of known to unknown\nenvelope dimensions and the gate results, per `matching/transferability.py`. This\nis confidence in *how well the manifest/trace matches the evidence envelope*, not\na \"probability of hallucination.\"",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "insufficient_data"
+      ],
+      "title": "ConfidenceTier",
+      "type": "string"
+    },
+    "EligibilityGateResult": {
+      "additionalProperties": false,
+      "description": "The result of evaluating one declared ManifestGate/TraceTrigger predicate.",
+      "properties": {
+        "gate_id": {
+          "title": "Gate Id",
+          "type": "string"
+        },
+        "gate_kind": {
+          "$ref": "#/$defs/GateKind"
+        },
+        "reason": {
+          "description": "Human-readable reason, citing the specific field checked.",
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/GateResultStatus"
+        }
+      },
+      "required": [
+        "gate_id",
+        "gate_kind",
+        "status",
+        "reason"
+      ],
+      "title": "EligibilityGateResult",
+      "type": "object"
+    },
+    "GateKind": {
+      "enum": [
+        "required_manifest",
+        "disqualifying",
+        "strengthening",
+        "trace_observable"
+      ],
+      "title": "GateKind",
+      "type": "string"
+    },
+    "GateResultStatus": {
+      "description": "Outcome of evaluating a single manifest gate or trace observable predicate.\n\nDeliberately three-valued (not boolean): a predicate can be satisfied, violated,\nor unevaluable because the manifest/trace does not carry the field it needs. That\nthird case must never be silently coerced into \"satisfied\" or \"violated.\"",
+      "enum": [
+        "satisfied",
+        "violated",
+        "unknown_insufficient_data"
+      ],
+      "title": "GateResultStatus",
+      "type": "string"
+    },
+    "TransferLevel": {
+      "description": "How closely a manifest/trace's configuration matches an evidence record's envelope.",
+      "enum": [
+        "directly_matched",
+        "mechanistically_matched",
+        "partially_matched",
+        "not_applicable",
+        "insufficient_manifest_information"
+      ],
+      "title": "TransferLevel",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/ApplicabilityAssessment.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "allowed_claim_language": {
+      "description": "The exact reviewer-facing phrasing this assessment is permitted to use.",
+      "title": "Allowed Claim Language",
+      "type": "string"
+    },
+    "assessment_id": {
+      "title": "Assessment Id",
+      "type": "string"
+    },
+    "confidence": {
+      "$ref": "#/$defs/ConfidenceTier"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "eligibility_gate_results": {
+      "items": {
+        "$ref": "#/$defs/EligibilityGateResult"
+      },
+      "title": "Eligibility Gate Results",
+      "type": "array"
+    },
+    "evidence_record_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Record Ids",
+      "type": "array"
+    },
+    "explanation": {
+      "title": "Explanation",
+      "type": "string"
+    },
+    "failure_mechanism_id": {
+      "title": "Failure Mechanism Id",
+      "type": "string"
+    },
+    "manifest_id": {
+      "title": "Manifest Id",
+      "type": "string"
+    },
+    "matching_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Matching Dimensions",
+      "type": "array"
+    },
+    "mismatching_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mismatching Dimensions",
+      "type": "array"
+    },
+    "recommended_review_action_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Recommended Review Action Ids",
+      "type": "array"
+    },
+    "trace_id_optional": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Trace Id Optional"
+    },
+    "transfer_level": {
+      "$ref": "#/$defs/TransferLevel"
+    },
+    "unknown_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unknown Dimensions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "assessment_id",
+    "failure_mechanism_id",
+    "manifest_id",
+    "transfer_level",
+    "explanation",
+    "allowed_claim_language",
+    "confidence",
+    "created_at"
+  ],
+  "title": "ApplicabilityAssessment",
+  "type": "object"
+}

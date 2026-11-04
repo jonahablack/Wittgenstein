@@ -1,0 +1,643 @@
+{
+  "$defs": {
+    "CorpusManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "corpus_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corpus Id"
+        },
+        "corpus_versioning": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corpus Versioning"
+        },
+        "document_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Count"
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Domain"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language"
+        },
+        "source_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Type"
+        }
+      },
+      "title": "CorpusManifest",
+      "type": "object"
+    },
+    "EvaluationManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "evaluation_metrics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evaluation Metrics",
+          "type": "array"
+        },
+        "human_review_enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Human Review Enabled"
+        }
+      },
+      "title": "EvaluationManifest",
+      "type": "object"
+    },
+    "GenerationManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "abstention_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Abstention Policy"
+        },
+        "citation_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation Policy"
+        },
+        "generator_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generator Family"
+        },
+        "model_identifier": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Identifier"
+        },
+        "prompting_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompting Policy"
+        }
+      },
+      "title": "GenerationManifest",
+      "type": "object"
+    },
+    "IngestionManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "ocr_used": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ocr Used"
+        },
+        "parser": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parser"
+        },
+        "structure_extraction_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Structure Extraction Method"
+        },
+        "table_extraction_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table Extraction Method"
+        }
+      },
+      "title": "IngestionManifest",
+      "type": "object"
+    },
+    "PackingManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "compression_enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Enabled"
+        },
+        "compression_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Ratio"
+        },
+        "compression_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Type"
+        },
+        "context_window_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Window Tokens"
+        },
+        "evidence_budget_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Budget Tokens"
+        },
+        "ordering_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ordering Method"
+        },
+        "packing_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Packing Method"
+        }
+      },
+      "title": "PackingManifest",
+      "type": "object"
+    },
+    "RepresentationManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "embedding_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Embedding Family"
+        },
+        "embedding_model_identifier": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Embedding Model Identifier"
+        },
+        "index_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Index Unit"
+        }
+      },
+      "title": "RepresentationManifest",
+      "type": "object"
+    },
+    "RerankingManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "rerank_depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Depth"
+        },
+        "reranker_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reranker Family"
+        },
+        "reranking_enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reranking Enabled"
+        }
+      },
+      "title": "RerankingManifest",
+      "type": "object"
+    },
+    "RetrievalManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candidate Depth"
+        },
+        "chunk_size_or_distribution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunk Size Or Distribution"
+        },
+        "chunking_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunking Method"
+        },
+        "graph_retrieval": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Graph Retrieval"
+        },
+        "overlap_or_stride": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Overlap Or Stride"
+        },
+        "parent_child_expansion": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Child Expansion"
+        },
+        "query_transformation_enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Transformation Enabled"
+        },
+        "query_transformation_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Transformation Method"
+        },
+        "retrieval_topology": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Topology"
+        },
+        "retrieval_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Unit"
+        },
+        "retriever_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retriever Family"
+        }
+      },
+      "title": "RetrievalManifest",
+      "type": "object"
+    },
+    "SelectionManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "max_selected_items": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Selected Items"
+        },
+        "selection_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selection Policy"
+        }
+      },
+      "title": "SelectionManifest",
+      "type": "object"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/PipelineManifest.schema.json",
+  "additionalProperties": false,
+  "description": "Declares the shape of a deployed (or synthetic) RAG system for a given run.",
+  "properties": {
+    "corpus_manifest": {
+      "$ref": "#/$defs/CorpusManifest"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "evaluation_manifest": {
+      "$ref": "#/$defs/EvaluationManifest"
+    },
+    "generation_manifest": {
+      "$ref": "#/$defs/GenerationManifest"
+    },
+    "ingestion_manifest": {
+      "$ref": "#/$defs/IngestionManifest"
+    },
+    "manifest_id": {
+      "title": "Manifest Id",
+      "type": "string"
+    },
+    "missing_information": {
+      "description": "Dotted paths the manifest author explicitly asserts are unknown.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Information",
+      "type": "array"
+    },
+    "packing_manifest": {
+      "$ref": "#/$defs/PackingManifest"
+    },
+    "representation_manifest": {
+      "$ref": "#/$defs/RepresentationManifest"
+    },
+    "reranking_manifest": {
+      "$ref": "#/$defs/RerankingManifest"
+    },
+    "retrieval_manifest": {
+      "$ref": "#/$defs/RetrievalManifest"
+    },
+    "selection_manifest": {
+      "$ref": "#/$defs/SelectionManifest"
+    },
+    "system_name": {
+      "title": "System Name",
+      "type": "string"
+    },
+    "system_version": {
+      "title": "System Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "manifest_id",
+    "system_name",
+    "system_version",
+    "created_at"
+  ],
+  "title": "PipelineManifest",
+  "type": "object"
+}

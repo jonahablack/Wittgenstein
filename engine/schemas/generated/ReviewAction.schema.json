@@ -1,0 +1,41 @@
+{
+  "$id": "https://wittgenstein-rag-reliability/schemas/ReviewAction.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "action_type": {
+      "description": "e.g. \"compare_with_and_without_item\", \"confirm_support_status\", \"check_conflict_resolution\".",
+      "title": "Action Type",
+      "type": "string"
+    },
+    "applicable_mechanism_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Applicable Mechanism Ids",
+      "type": "array"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "instructs_acceptance": {
+      "default": false,
+      "description": "Must always be False. Present as an explicit field (rather than omitted) so a reviewer/linter can grep for and reject any attempt to set it True.",
+      "title": "Instructs Acceptance",
+      "type": "boolean"
+    },
+    "prompt_text": {
+      "description": "The bounded question/comparison a human reviewer is asked to perform.",
+      "title": "Prompt Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "applicable_mechanism_ids",
+    "prompt_text",
+    "action_type"
+  ],
+  "title": "ReviewAction",
+  "type": "object"
+}

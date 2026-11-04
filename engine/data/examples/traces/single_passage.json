@@ -1,0 +1,89 @@
+{
+  "trace_id": "TRACE-single-passage-001",
+  "manifest_id": "MANIFEST-single-passage-001",
+  "corpus_id": "CORPUS-faq-001",
+  "query": "How long do refunds take?",
+  "query_timestamp": "2026-09-02T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": null,
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-42",
+      "segment_id": null,
+      "excerpt": "Refunds are processed within 5 business days.",
+      "rank": 1,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 14,
+      "omission_reason": null
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-42",
+      "segment_id": null,
+      "excerpt": "Refunds are processed within 5 business days.",
+      "rank": 1,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 14,
+      "omission_reason": null
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-42",
+      "segment_id": null,
+      "excerpt": "Refunds are processed within 5 business days.",
+      "rank": 1,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 14,
+      "omission_reason": null
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "Context: Refunds are processed within 5 business days.\nQ: How long do refunds take?",
+  "final_prompt_token_count": 40,
+  "final_prompt_evidence_budget": null,
+  "prompt_token_spans": [
+    {
+      "context_item_id": "item-1",
+      "start_token": 0,
+      "end_token": 14,
+      "position_rank": 1
+    }
+  ],
+  "generation_parameters": {},
+  "answer": "Refunds take 5 business days.",
+  "answer_claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "Refunds take 5 business days."
+    }
+  ],
+  "answer_support_edges": [
+    {
+      "claim_id": "claim-1",
+      "context_item_ids": [
+        "item-1"
+      ],
+      "support_status": "supported",
+      "judged_by": null
+    }
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [],
+  "risk_events": [],
+  "trace_status": "complete"
+}

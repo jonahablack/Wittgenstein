@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "case_id": "diag-001-cross-reference-packed",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "What exemption applies to older Class I widgets, and where is it defined?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "Exemption C applies to widgets manufactured before January 2023, allowing an 85% threshold instead of 95%, as defined in Section 4 of the Handbook.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "certification-handbook > Section 3",
+        "certification-handbook > Section 4"
+      ],
+      "pilot_coverage_labels": [
+        "multi_passage_evidence",
+        "cross_references",
+        "temporal_or_version_information",
+        "narrative_document"
+      ],
+      "reviewer_notes": "Demonstrates the cross-reference diagnostic: 'Section 4' resolves to a packed segment (no warning); 'Exemption C' is a body-text phrase, not a heading, so it does not match any segment location and reports UNKNOWN (see docs/cross-reference-diagnostic-spec.md's location-text-heuristic limitation).",
+      "provenance_status": "synthetic_fictional"
+    },
+    {
+      "case_id": "diag-002-compound-claim-real-corpus-conflict",
+      "corpus": {
+        "corpus_id": "widget-certification-demo",
+        "source_type": "bundled_synthetic_fixture",
+        "local_path": null,
+        "document_hashes": {},
+        "source_metadata": {}
+      },
+      "document_version": null,
+      "query": "What must a manufacturer show for eligibility, and what threshold must a Class I widget pass?",
+      "query_constraints": {},
+      "user_intent_notes": null,
+      "answer": "A manufacturer is eligible for Standard Certification if it has held a valid Facility Registration for at least 12 months, and a Class I widget must pass the Load Stress Test at a 95% threshold.",
+      "answer_source_method": "human_authored_for_pilot",
+      "pipeline_manifest_id": "widget-certification-demo-manifest",
+      "expected_evidence_locations": [
+        "certification-handbook > Section 1",
+        "certification-handbook > Section 3"
+      ],
+      "pilot_coverage_labels": [
+        "multi_passage_evidence",
+        "multi_claim_answer",
+        "structured_document"
+      ],
+      "reviewer_notes": "Demonstrates the conflict-diagnostic instrumentation: this genuinely compound eligibility+threshold claim retrieves two independently relevant real-corpus passages that compose into a composite_conflict_candidate over ENTITY (moderate confidence, not a low-confidence artifact) -- a real finding for a researcher to adjudicate via conflict_quality_labels, not a bug to silently fix.",
+      "provenance_status": "synthetic_fictional"
+    }
+  ]
+}

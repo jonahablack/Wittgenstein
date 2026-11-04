@@ -1,0 +1,103 @@
+{
+  "trace_id": "LV-TRACE-09-conflicting-sources-unresolved",
+  "manifest_id": "LV-MANIFEST-segmented-rag",
+  "corpus_id": "CORPUS-widget-cert-001",
+  "query": "How many days does Tier-2 recertification take?",
+  "query_timestamp": "2026-09-09T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": false,
+    "required_support_item_ids": [],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-6",
+      "segment_id": "doc6-seg1",
+      "excerpt": "Tier-2 recertification takes 30 business days (2025 program handbook).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 90
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-20",
+      "segment_id": "doc20-seg1",
+      "excerpt": "Tier-2 recertification takes 15 business days (2026 program handbook, effective program year 4).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 95
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-6",
+      "segment_id": "doc6-seg1",
+      "excerpt": "Tier-2 recertification takes 30 business days (2025 program handbook).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 90
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-20",
+      "segment_id": "doc20-seg1",
+      "excerpt": "Tier-2 recertification takes 15 business days (2026 program handbook, effective program year 4).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 95
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-6",
+      "segment_id": "doc6-seg1",
+      "excerpt": "Tier-2 recertification takes 30 business days (2025 program handbook).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 90
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-20",
+      "segment_id": "doc20-seg1",
+      "excerpt": "Tier-2 recertification takes 15 business days (2026 program handbook, effective program year 4).",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 95
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "...(two handbook versions give different processing times; the answer picks one without flagging the discrepancy)...",
+  "final_prompt_token_count": 500,
+  "prompt_token_spans": [
+    {"context_item_id": "item-1", "start_token": 0, "end_token": 90, "position_rank": 1},
+    {"context_item_id": "item-2", "start_token": 90, "end_token": 185, "position_rank": 2}
+  ],
+  "generation_parameters": {},
+  "answer": "Tier-2 recertification takes 30 business days.",
+  "answer_claims": [
+    {"claim_id": "claim-1", "text": "Tier-2 recertification takes 30 business days."}
+  ],
+  "answer_support_edges": [
+    {"claim_id": "claim-1", "context_item_ids": ["item-1"], "support_status": "supported", "judged_by": "reviewer"}
+  ],
+  "context_conflicts": [
+    {
+      "conflict_id": "conflict-1",
+      "context_item_ids": ["item-1", "item-2"],
+      "dimension": "time_version",
+      "description": "doc-6 (2025 handbook) states 30 business days; doc-20 (2026 handbook, effective program year 4) states 15 business days."
+    }
+  ],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [],
+  "risk_events": [],
+  "trace_status": "complete"
+}

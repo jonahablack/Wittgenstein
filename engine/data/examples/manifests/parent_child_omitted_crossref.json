@@ -1,0 +1,68 @@
+{
+  "manifest_id": "MANIFEST-parent-child-crossref-001",
+  "system_name": "synthetic-parent-child-proposition-rag",
+  "system_version": "0.1.0-synthetic",
+  "created_at": "2026-09-02T00:00:00Z",
+  "corpus_manifest": {
+    "corpus_id": "CORPUS-regulatory-001",
+    "source_type": null,
+    "domain": "regulatory_filings",
+    "language": null,
+    "document_count": 900,
+    "corpus_versioning": null
+  },
+  "ingestion_manifest": {
+    "parser": null,
+    "ocr_used": null,
+    "table_extraction_method": null,
+    "structure_extraction_method": null
+  },
+  "representation_manifest": {
+    "index_unit": null,
+    "embedding_family": null,
+    "embedding_model_identifier": null
+  },
+  "retrieval_manifest": {
+    "retriever_family": "dense_bi_encoder",
+    "retrieval_topology": null,
+    "retrieval_unit": "proposition",
+    "chunking_method": "proposition_segmentation",
+    "chunk_size_or_distribution": null,
+    "overlap_or_stride": null,
+    "candidate_depth": 30,
+    "query_transformation_enabled": null,
+    "query_transformation_method": null,
+    "parent_child_expansion": true,
+    "graph_retrieval": null
+  },
+  "reranking_manifest": {
+    "reranking_enabled": true,
+    "reranker_family": "cross_encoder",
+    "rerank_depth": 8
+  },
+  "selection_manifest": {
+    "selection_policy": "top_k",
+    "max_selected_items": 5
+  },
+  "packing_manifest": {
+    "packing_method": "concatenate_ranked",
+    "ordering_method": null,
+    "compression_enabled": null,
+    "compression_type": null,
+    "compression_ratio": null,
+    "context_window_tokens": 6000,
+    "evidence_budget_tokens": null
+  },
+  "generation_manifest": {
+    "generator_family": "large_instruct_llm",
+    "model_identifier": null,
+    "prompting_policy": null,
+    "citation_policy": null,
+    "abstention_policy": null
+  },
+  "evaluation_manifest": {
+    "evaluation_metrics": [],
+    "human_review_enabled": null
+  },
+  "missing_information": []
+}

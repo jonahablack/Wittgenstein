@@ -1,0 +1,661 @@
+{
+  "$defs": {
+    "EvidenceDirection": {
+      "description": "Whether one EvidenceRecord supports, refutes, or is mixed/non-committal on its\nmechanism's causal claim. `NULL` is an explicit value (a record that speaks to the\nmechanism's setting without taking a clear position), distinct from omitting the\nfield entirely -- this field is always required, never left unset.",
+      "enum": [
+        "supports",
+        "refutes",
+        "mixed",
+        "null"
+      ],
+      "title": "EvidenceDirection",
+      "type": "string"
+    },
+    "EvidenceGrade": {
+      "description": "Grade of a single evidence record, independent of the mechanism's overall status.",
+      "enum": [
+        "A1_direct_causal_peer_reviewed",
+        "A2_strong_comparative_peer_reviewed",
+        "B1_mechanistic_transfer_peer_reviewed",
+        "B2_component_evidence_peer_reviewed",
+        "C_preprint_empirical",
+        "D_local_empirical",
+        "E_hypothesis"
+      ],
+      "title": "EvidenceGrade",
+      "type": "string"
+    },
+    "ExperimentalEnvelope": {
+      "additionalProperties": false,
+      "description": "Experimental preconditions/setting needed to assess transfer.\n\nEvery field is optional at the type level because either side (a study's reported\nsetting, or a manifest-derived setting) may not specify it -- but `None` must be\nread as \"unknown,\" never coerced into a default. See docs/manifest-spec.md.",
+      "properties": {
+        "abstention_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Abstention Policy"
+        },
+        "candidate_depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candidate Depth"
+        },
+        "chunk_size_or_distribution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunk Size Or Distribution"
+        },
+        "chunking_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunking Method"
+        },
+        "citation_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation Policy"
+        },
+        "compression_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Ratio"
+        },
+        "compression_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Type"
+        },
+        "context_window_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Window Tokens"
+        },
+        "corpus_size": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corpus Size"
+        },
+        "corpus_versioning": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corpus Versioning"
+        },
+        "document_structure": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Structure"
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Domain"
+        },
+        "embedding_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Embedding Family"
+        },
+        "evidence_budget_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Budget Tokens"
+        },
+        "experimental_intervention": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experimental Intervention"
+        },
+        "generator_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generator Family"
+        },
+        "graph_retrieval": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Graph Retrieval"
+        },
+        "model_identifier": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Identifier"
+        },
+        "ordering_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ordering Method"
+        },
+        "overlap_or_stride": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Overlap Or Stride"
+        },
+        "packed_item_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Packed Item Count"
+        },
+        "packing_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Packing Method"
+        },
+        "parent_child_expansion": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Child Expansion"
+        },
+        "prompting_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompting Policy"
+        },
+        "query_transformation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Transformation"
+        },
+        "question_structure": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question Structure"
+        },
+        "rag_presence": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rag Presence"
+        },
+        "rerank_depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rerank Depth"
+        },
+        "reranker_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reranker Family"
+        },
+        "retrieval_topology": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Topology"
+        },
+        "retrieval_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Unit"
+        },
+        "retriever_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retriever Family"
+        },
+        "task_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Task Type"
+        }
+      },
+      "title": "ExperimentalEnvelope",
+      "type": "object"
+    },
+    "PeerReviewStatus": {
+      "enum": [
+        "peer_reviewed",
+        "preprint",
+        "workshop",
+        "technical_report",
+        "unknown"
+      ],
+      "title": "PeerReviewStatus",
+      "type": "string"
+    },
+    "QuoteType": {
+      "enum": [
+        "finding_statement",
+        "method_description",
+        "limitation_statement",
+        "definition",
+        "result_table_caption"
+      ],
+      "title": "QuoteType",
+      "type": "string"
+    },
+    "StudyType": {
+      "enum": [
+        "causal_intervention",
+        "controlled_comparison",
+        "observational_benchmark",
+        "ablation",
+        "case_study",
+        "survey_or_meta_analysis"
+      ],
+      "title": "StudyType",
+      "type": "string"
+    },
+    "VerificationStatus": {
+      "description": "Whether the exact_quote and metadata on an EvidenceRecord have been checked\nagainst the primary source by a human reviewer.",
+      "enum": [
+        "verified",
+        "unverified",
+        "disputed",
+        "retracted_source"
+      ],
+      "title": "VerificationStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/EvidenceRecord.schema.json",
+  "additionalProperties": false,
+  "description": "One paper/study's support for a mechanism.\n\n`exact_quote` must be verbatim from the primary source. It is never autogenerated\nor paraphrased -- if a quote has not yet been personally verified against the\nprimary source, the seed convention is to leave the literal string\n\"TODO: verify against primary source\" here and set\nverification_status=UNVERIFIED, rather than inventing plausible-sounding text.",
+  "properties": {
+    "authors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Authors",
+      "type": "array"
+    },
+    "dataset_or_corpus": {
+      "title": "Dataset Or Corpus",
+      "type": "string"
+    },
+    "direction": {
+      "$ref": "#/$defs/EvidenceDirection",
+      "description": "Whether this record supports, refutes, or is mixed/null on its mechanism's causal claim. Required and never inferred -- see docs/registry-governance.md (\"Conflicting studies\"). Contradictory records are kept as separate, independently directioned EvidenceRecords, never merged or averaged into one."
+    },
+    "effect_size_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effect Size Text"
+    },
+    "evidence_grade": {
+      "$ref": "#/$defs/EvidenceGrade"
+    },
+    "exact_quote": {
+      "title": "Exact Quote",
+      "type": "string"
+    },
+    "experimental_envelope": {
+      "$ref": "#/$defs/ExperimentalEnvelope"
+    },
+    "extraction_date": {
+      "format": "date",
+      "title": "Extraction Date",
+      "type": "string"
+    },
+    "extraction_reviewer": {
+      "title": "Extraction Reviewer",
+      "type": "string"
+    },
+    "failure_mechanism_id": {
+      "title": "Failure Mechanism Id",
+      "type": "string"
+    },
+    "full_citation": {
+      "title": "Full Citation",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "intervention_or_comparison": {
+      "title": "Intervention Or Comparison",
+      "type": "string"
+    },
+    "outcome_metrics": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Outcome Metrics",
+      "type": "array"
+    },
+    "peer_review_status": {
+      "$ref": "#/$defs/PeerReviewStatus"
+    },
+    "persistent_identifier": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "DOI, arXiv ID, or other persistent identifier.",
+      "title": "Persistent Identifier"
+    },
+    "publication_year": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "None only when the primary source itself is not yet confirmed.",
+      "title": "Publication Year"
+    },
+    "quote_location": {
+      "description": "Precise location, e.g. \"Abstract\", \"Table 3\", \"Section 5.2\".",
+      "title": "Quote Location",
+      "type": "string"
+    },
+    "quote_type": {
+      "$ref": "#/$defs/QuoteType"
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Url"
+    },
+    "stated_limitations": {
+      "title": "Stated Limitations",
+      "type": "string"
+    },
+    "statistical_evidence": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Statistical Evidence"
+    },
+    "study_type": {
+      "$ref": "#/$defs/StudyType"
+    },
+    "task": {
+      "title": "Task",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "venue": {
+      "title": "Venue",
+      "type": "string"
+    },
+    "verification_status": {
+      "$ref": "#/$defs/VerificationStatus"
+    }
+  },
+  "required": [
+    "id",
+    "failure_mechanism_id",
+    "full_citation",
+    "title",
+    "authors",
+    "venue",
+    "peer_review_status",
+    "exact_quote",
+    "quote_location",
+    "quote_type",
+    "study_type",
+    "direction",
+    "task",
+    "dataset_or_corpus",
+    "experimental_envelope",
+    "intervention_or_comparison",
+    "outcome_metrics",
+    "stated_limitations",
+    "evidence_grade",
+    "extraction_reviewer",
+    "extraction_date",
+    "verification_status"
+  ],
+  "title": "EvidenceRecord",
+  "type": "object"
+}

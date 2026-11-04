@@ -1,0 +1,49 @@
+{
+  "$id": "https://wittgenstein-rag-reliability/schemas/PropositionCandidate.schema.json",
+  "additionalProperties": false,
+  "description": "A Tier-1 candidate proposition: a programmatically derived span within a\nSourceSegment. The original segment is never rewritten -- `source_segment_id`\nalways points at the untouched Tier-0 text; `char_start`/`char_end` are offsets\n*within that segment's text*, not into the whole document.",
+  "properties": {
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "char_end": {
+      "title": "Char End",
+      "type": "integer"
+    },
+    "char_start": {
+      "title": "Char Start",
+      "type": "integer"
+    },
+    "is_ambiguous": {
+      "default": false,
+      "description": "Set when the rule-based splitter could not confidently separate multiple clauses/claims -- a Tier-3 escalation trigger, not a Tier-1 semantic judgment.",
+      "title": "Is Ambiguous",
+      "type": "boolean"
+    },
+    "source_segment_id": {
+      "title": "Source Segment Id",
+      "type": "string"
+    },
+    "split_method": {
+      "description": "Which rule produced this candidate, e.g. \"sentence_boundary\", \"semicolon\", \"conjunction\", \"relative_clause\", \"condition_marker\", \"list_item\".",
+      "title": "Split Method",
+      "type": "string"
+    },
+    "text": {
+      "description": "The derived candidate span's own text, for convenience -- never rewritten.",
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "source_segment_id",
+    "text",
+    "char_start",
+    "char_end",
+    "split_method"
+  ],
+  "title": "PropositionCandidate",
+  "type": "object"
+}

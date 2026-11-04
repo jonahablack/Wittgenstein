@@ -1,0 +1,73 @@
+{
+  "widget-certification-demo-manifest": {
+    "manifest_id": "widget-certification-demo-manifest",
+    "system_name": "wittgenstein-vertical-slice-demo",
+    "system_version": "0.1.0",
+    "created_at": "2026-09-10T19:18:06.871624Z",
+    "corpus_manifest": {
+      "corpus_id": "widget-certification-demo",
+      "source_type": "synthetic_markdown",
+      "domain": "widget_certification",
+      "language": null,
+      "document_count": null,
+      "corpus_versioning": null
+    },
+    "ingestion_manifest": {
+      "parser": "deterministic_parser_v1",
+      "ocr_used": false,
+      "table_extraction_method": "markdown_table_row_regex",
+      "structure_extraction_method": "heading_and_blank_line_rules"
+    },
+    "representation_manifest": {
+      "index_unit": "paragraph_list_item_table_row",
+      "embedding_family": null,
+      "embedding_model_identifier": null
+    },
+    "retrieval_manifest": {
+      "retriever_family": "bm25_lexical",
+      "retrieval_topology": "single_corpus_flat",
+      "retrieval_unit": "paragraph_list_item_table_row",
+      "chunking_method": "structural_segmentation_no_fixed_window",
+      "chunk_size_or_distribution": null,
+      "overlap_or_stride": null,
+      "candidate_depth": 5,
+      "query_transformation_enabled": false,
+      "query_transformation_method": null,
+      "parent_child_expansion": null,
+      "graph_retrieval": null
+    },
+    "reranking_manifest": {
+      "reranking_enabled": null,
+      "reranker_family": null,
+      "rerank_depth": null
+    },
+    "selection_manifest": {
+      "selection_policy": null,
+      "max_selected_items": null
+    },
+    "packing_manifest": {
+      "packing_method": "greedy_rank_order_token_budget",
+      "ordering_method": "retrieval_rank",
+      "compression_enabled": false,
+      "compression_type": null,
+      "compression_ratio": null,
+      "context_window_tokens": 300,
+      "evidence_budget_tokens": 300
+    },
+    "generation_manifest": {
+      "generator_family": null,
+      "model_identifier": null,
+      "prompting_policy": null,
+      "citation_policy": null,
+      "abstention_policy": null
+    },
+    "evaluation_manifest": {
+      "evaluation_metrics": [],
+      "human_review_enabled": null
+    },
+    "missing_information": [
+      "generation_manifest.generator_family",
+      "generation_manifest.model_identifier"
+    ]
+  }
+}

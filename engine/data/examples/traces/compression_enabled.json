@@ -1,0 +1,126 @@
+{
+  "trace_id": "TRACE-compression-001",
+  "manifest_id": "MANIFEST-compression-001",
+  "corpus_id": "CORPUS-support-tickets-001",
+  "query": "How do I reset my password?",
+  "query_timestamp": "2026-09-02T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": null,
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-7",
+      "segment_id": null,
+      "excerpt": "Reset your password via Settings > Security.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 600,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-8",
+      "segment_id": null,
+      "excerpt": "If SSO is enabled, password reset must go through your identity provider instead.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 500,
+      "omission_reason": null
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-7",
+      "segment_id": null,
+      "excerpt": "Reset your password via Settings > Security.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 600,
+      "omission_reason": null
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-8",
+      "segment_id": null,
+      "excerpt": "If SSO is enabled, password reset must go through your identity provider instead.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 500,
+      "omission_reason": null
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-7",
+      "segment_id": null,
+      "excerpt": "Reset your password via Settings > Security.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 600,
+      "omission_reason": null
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-8",
+      "segment_id": null,
+      "excerpt": "If SSO is enabled, password reset must go through your identity provider instead.",
+      "rank": null,
+      "relevance_score": null,
+      "is_query_related": null,
+      "is_answer_supporting": null,
+      "token_count": null,
+      "omission_reason": "compressed_away_below_relevance_threshold"
+    }
+  ],
+  "final_prompt": "...(password reset via Settings > Security only; SSO caveat compressed away)...",
+  "final_prompt_token_count": 700,
+  "final_prompt_evidence_budget": null,
+  "prompt_token_spans": [
+    {
+      "context_item_id": "item-1",
+      "start_token": 0,
+      "end_token": 600,
+      "position_rank": 1
+    }
+  ],
+  "generation_parameters": {},
+  "answer": "Go to Settings > Security to reset your password.",
+  "answer_claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "Go to Settings > Security to reset your password."
+    }
+  ],
+  "answer_support_edges": [
+    {
+      "claim_id": "claim-1",
+      "context_item_ids": [
+        "item-1"
+      ],
+      "support_status": "supported",
+      "judged_by": null
+    }
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [],
+  "risk_events": [],
+  "trace_status": "complete"
+}

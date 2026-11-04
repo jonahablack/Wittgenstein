@@ -1,0 +1,129 @@
+# Declarative, human-readable form of each mechanism's manifest-level predicates.
+# The executable evaluator lives in src/wittgenstein/matching/eligibility.py and is
+# written to reference these gate ids in its EligibilityGateResult output, so a
+# reviewer can always trace "why did/didn't this fire" back to this text.
+# field_path values are documentation, pointing at PipelineManifest section fields;
+# tests/unit/test_eligibility_gates.py assert the code stays behaviorally consistent
+# with what's described here.
+manifest_gates:
+  - id: MG_RET_HARD_DISTRACTOR_01
+    failure_mechanism_id: RET_HARD_DISTRACTOR
+    description: >
+      Can activate only if the system's selection policy allows more than one context
+      item to be packed -- a distractor cannot coexist with the supporting passage in a
+      single-item context.
+    required_manifest_predicates:
+      - id: MP_RET_HARD_DISTRACTOR_max_items
+        description: "More than one context item can be packed."
+        field_path: selection_manifest.max_selected_items
+        operator: greater_than
+        expected_value: 1
+    disqualifying_predicates: []
+    strengthening_predicates:
+      - id: MP_RET_HARD_DISTRACTOR_no_rerank
+        description: "Reranking is disabled, so a distractor is less likely to have been filtered before packing."
+        field_path: reranking_manifest.reranking_enabled
+        operator: is_false
+    unknown_manifest_behavior: >
+      If selection_manifest.max_selected_items is unknown, the gate result is
+      unknown_insufficient_data, not assumed satisfied or violated.
+
+  - id: MG_RET_MULTIHOP_SUPPORT_INCOMPLETE_01
+    failure_mechanism_id: RET_MULTIHOP_SUPPORT_INCOMPLETE
+    description: >
+      No manifest-level precondition beyond the system being a RAG pipeline; the
+      operative conditions for this mechanism are all trace-level (see the linked
+      TraceTrigger).
+    required_manifest_predicates: []
+    disqualifying_predicates: []
+    strengthening_predicates: []
+    unknown_manifest_behavior: >
+      Not applicable at the manifest level; see TT_RET_MULTIHOP_SUPPORT_INCOMPLETE_01
+      for the trace-level unknown-data behavior.
+
+  - id: MG_CTX_POSITION_SENSITIVE_USE_01
+    failure_mechanism_id: CTX_POSITION_SENSITIVE_USE
+    description: >
+      Can activate only if the system is even capable of packing more than one item and
+      the configured context window is known, so a position-length threshold can be
+      evaluated at all.
+    required_manifest_predicates:
+      - id: MP_CTX_POSITION_context_window_known
+        description: "Configured context window token budget is known."
+        field_path: packing_manifest.context_window_tokens
+        operator: is_known
+    disqualifying_predicates:
+      - id: MP_CTX_POSITION_single_item_cap
+        description: "System never packs more than a single context item."
+        field_path: selection_manifest.max_selected_items
+        operator: equals
+        expected_value: 1
+    strengthening_predicates: []
+    unknown_manifest_behavior: >
+      If packing_manifest.context_window_tokens is unknown, the gate result is
+      unknown_insufficient_data.
+
+  - id: MG_REP_SEGMENTATION_GRANULARITY_MISMATCH_01
+    failure_mechanism_id: REP_SEGMENTATION_GRANULARITY_MISMATCH
+    description: >
+      Can activate only if the corpus is retrieved via independently retrievable
+      segments, and chunking method/retrieval unit are known.
+    required_manifest_predicates:
+      - id: MP_REP_SEG_chunking_known
+        description: "Chunking method is known."
+        field_path: retrieval_manifest.chunking_method
+        operator: is_known
+      - id: MP_REP_SEG_retrieval_unit_known
+        description: "Retrieval unit is known."
+        field_path: retrieval_manifest.retrieval_unit
+        operator: is_known
+    disqualifying_predicates:
+      - id: MP_REP_SEG_whole_document_unit
+        description: "Retrieval unit is the whole document, i.e. no sub-document segmentation exists."
+        field_path: retrieval_manifest.retrieval_unit
+        operator: equals
+        expected_value: whole_document
+    strengthening_predicates: []
+    unknown_manifest_behavior: >
+      If chunking_method or retrieval_unit is unknown, the gate result is
+      unknown_insufficient_data.
+
+  - id: MG_PACK_OMISSION_OR_TRUNCATION_01
+    failure_mechanism_id: PACK_OMISSION_OR_TRUNCATION
+    description: >
+      No manifest-level precondition beyond a RAG pipeline being present; whether
+      candidate/selected/packed stages are actually logged, and whether an omission
+      occurred, are trace-level facts (see the linked TraceTrigger).
+    required_manifest_predicates: []
+    disqualifying_predicates: []
+    strengthening_predicates: []
+    unknown_manifest_behavior: >
+      Not applicable at the manifest level; see TT_PACK_OMISSION_OR_TRUNCATION_01.
+
+  - id: MG_GEN_CONTEXT_CONFLICT_UNRESOLVED_01
+    failure_mechanism_id: GEN_CONTEXT_CONFLICT_UNRESOLVED
+    description: >
+      Can activate only if the system can pack more than one item (a conflict needs at
+      least two conflicting sources present together).
+    required_manifest_predicates:
+      - id: MP_GEN_CONFLICT_max_items
+        description: "More than one context item can be packed."
+        field_path: selection_manifest.max_selected_items
+        operator: greater_than
+        expected_value: 1
+    disqualifying_predicates: []
+    strengthening_predicates: []
+    unknown_manifest_behavior: >
+      If selection_manifest.max_selected_items is unknown, the gate result is
+      unknown_insufficient_data.
+
+  - id: MG_GEN_UNSUPPORTED_DESPITE_CONTEXT_01
+    failure_mechanism_id: GEN_UNSUPPORTED_DESPITE_CONTEXT
+    description: >
+      No manifest-level precondition beyond a RAG pipeline being present with a
+      generation stage; the operative conditions are trace-level answer-support facts.
+    required_manifest_predicates: []
+    disqualifying_predicates: []
+    strengthening_predicates: []
+    unknown_manifest_behavior: >
+      Not applicable at the manifest level; see TT_GEN_UNSUPPORTED_DESPITE_CONTEXT_01.

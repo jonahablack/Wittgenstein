@@ -1,0 +1,76 @@
+{
+  "$defs": {
+    "AnnotationCueType": {
+      "description": "Tier-2 lightweight annotation cue types (schemas/proposition.py::PropositionAnnotation).\nCandidate cues only -- never a guaranteed semantic interpretation. See \"RISK\nANALYSIS\" in docs/efficiency-and-processing-architecture.md: these back\n`research_hypothesis`/`experimental_review_cue` labels only, never a proof of error.",
+      "enum": [
+        "negation",
+        "modality_hedge",
+        "condition",
+        "exception",
+        "attribution",
+        "temporal",
+        "numeric_unit",
+        "cross_reference"
+      ],
+      "title": "AnnotationCueType",
+      "type": "string"
+    },
+    "CueEpistemicLabel": {
+      "description": "How a programmatic risk cue (Tier 2) is allowed to be labeled -- never as proof\nof model error. See \"RISK ANALYSIS\",\ndocs/efficiency-and-processing-architecture.md.",
+      "enum": [
+        "research_hypothesis",
+        "experimental_review_cue"
+      ],
+      "title": "CueEpistemicLabel",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/PropositionAnnotation.schema.json",
+  "additionalProperties": false,
+  "description": "A Tier-2 lightweight annotation: a candidate risk cue or dependency link, never a\nguaranteed semantic interpretation (docs/efficiency-and-processing-architecture.md\n\u00a71). `epistemic_label` is always `research_hypothesis` or `experimental_review_cue`\n-- this type structurally cannot assert a confirmed error, matching the registry's\nown epistemic-status discipline for the mechanisms these cues might feed into.",
+  "properties": {
+    "annotation_id": {
+      "title": "Annotation Id",
+      "type": "string"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "char_end": {
+      "title": "Char End",
+      "type": "integer"
+    },
+    "char_start": {
+      "description": "Offset within the PropositionCandidate's text.",
+      "title": "Char Start",
+      "type": "integer"
+    },
+    "cue_type": {
+      "$ref": "#/$defs/AnnotationCueType"
+    },
+    "detector_version": {
+      "title": "Detector Version",
+      "type": "string"
+    },
+    "epistemic_label": {
+      "$ref": "#/$defs/CueEpistemicLabel",
+      "default": "experimental_review_cue"
+    },
+    "matched_text": {
+      "title": "Matched Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "annotation_id",
+    "candidate_id",
+    "cue_type",
+    "matched_text",
+    "char_start",
+    "char_end",
+    "detector_version"
+  ],
+  "title": "PropositionAnnotation",
+  "type": "object"
+}

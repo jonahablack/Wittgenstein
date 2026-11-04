@@ -1,0 +1,17 @@
+{
+  "case_id": "asteria-004-rule-plus-condition",
+  "fixture_category": "rule_plus_condition",
+  "controlled_perturbation": false,
+  "minimum_evidence_set": ["d2-classification-seg9"],
+  "expected_claim_link_relationship": "direct_support_candidate",
+  "expected_evidence_set_status": null,
+  "expected_cross_reference": null,
+  "expected_reviewer_action": "approve_sufficiently_supported",
+  "expected_reviewer_action_is_advisory_only": true,
+  "segmentation_mismatch_activation": {
+    "manifest_id": "asteria-p1-baseline",
+    "expected_activation": true,
+    "note": "Packed content includes d2-classification-seg9, whose text contains the CONDITION cue 'provided that' -- import_answer's corpus-branch (via demo/pipeline.py::run_demo_query, unmodified) already populates trace.segment_boundary_dependency_flags from this cue. Combined with asteria-p1-baseline's sub-document retrieval_unit and non-None chunking_method, REP_SEGMENTATION_GRANULARITY_MISMATCH's full eligibility (matching/eligibility.py::evaluate_eligibility) is SATISFIED -- verified directly, not asserted. This is a trace-observable/manifest-gate fact about this codebase's current deterministic gate logic on this one designed case, never a claim about segmentation-mismatch prevalence in real deployments."
+  },
+  "known_limitations": []
+}

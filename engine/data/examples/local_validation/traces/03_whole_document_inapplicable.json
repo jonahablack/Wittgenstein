@@ -1,0 +1,70 @@
+{
+  "trace_id": "LV-TRACE-03-whole-document-inapplicable",
+  "manifest_id": "LV-MANIFEST-whole-document",
+  "corpus_id": "CORPUS-widget-cert-001",
+  "query": "Does a Tier-2 widget need the extended durability test?",
+  "query_timestamp": "2026-09-09T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": true,
+    "required_support_item_ids": ["item-1"],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-9",
+      "segment_id": null,
+      "excerpt": "Full text of Document 9, including both the durability-test requirement and the exemption clause.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 4000
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-9",
+      "segment_id": null,
+      "excerpt": "Full text of Document 9, including both the durability-test requirement and the exemption clause.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 4000
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-9",
+      "segment_id": null,
+      "excerpt": "Full text of Document 9, including both the durability-test requirement and the exemption clause.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 4000
+    }
+  ],
+  "omitted_context_items": [],
+  "compressed_context_items": [],
+  "final_prompt": "...(entire Document 9, no sub-document segmentation applied)...",
+  "final_prompt_token_count": 4000,
+  "prompt_token_spans": [
+    {"context_item_id": "item-1", "start_token": 0, "end_token": 4000, "position_rank": 1}
+  ],
+  "generation_parameters": {},
+  "answer": "Yes, a Tier-2 widget needs the extended durability test, unless exempted under 4.1(b).",
+  "answer_claims": [
+    {"claim_id": "claim-1", "text": "A Tier-2 widget needs the extended durability test unless exempted under 4.1(b)."}
+  ],
+  "answer_support_edges": [
+    {"claim_id": "claim-1", "context_item_ids": ["item-1"], "support_status": "supported", "judged_by": "reviewer"}
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [
+    "spurious flag: no sub-document segmentation exists in this manifest, so this label should never be produced by a correctly instrumented pipeline -- included to prove the mechanism is disqualified by retrieval_unit=whole_document regardless of trace content"
+  ],
+  "risk_events": [],
+  "trace_status": "complete"
+}

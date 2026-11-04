@@ -1,0 +1,184 @@
+{
+  "$defs": {
+    "ActivationPolicy": {
+      "description": "Default posture for whether a mechanism may fire in production triage.\n\n`SHADOW` / `MANIFEST_CONDITIONED` / `TRIAGE_ENABLED` are a three-stage graduation\npath added for mechanisms whose evidence has cleared the registry's epistemic\nthreshold (`externally_established`) but whose *deployment-trust* level has not yet\nbeen separately earned -- reaching `externally_established` is necessary but never\nsufficient for full activation (see docs/registry-governance.md, \"Externally\nestablished is necessary but not sufficient\"). `ENABLED_BY_DEFAULT` and\n`ENABLED_WITH_MANIFEST_GATES` are the original, still-valid values (e.g.\n`PACK_OMISSION_OR_TRUNCATION` uses the latter) and are unaffected by this addition.\n\n- `SHADOW`: evaluated and logged (appears in audit output) but never contributes a\n  priority-bearing `RiskEvent` -- observability only.\n- `MANIFEST_CONDITIONED`: contributes a `RiskEvent` once its manifest and trace\n  gates all pass, but its priority is capped below `PriorityTier.HIGH` -- displayed,\n  not yet fully trusted for queue ordering.\n- `TRIAGE_ENABLED`: full priority weight, once a `LocalValidationRecord` has\n  established `reviewer_yield` for this mechanism in a specific deployment -- see\n  docs/registry-governance.md.",
+      "enum": [
+        "enabled_by_default",
+        "enabled_with_manifest_gates",
+        "shadow",
+        "manifest_conditioned",
+        "triage_enabled",
+        "disabled_by_default_or_research_mode",
+        "retired"
+      ],
+      "title": "ActivationPolicy",
+      "type": "string"
+    },
+    "EpistemicStatus": {
+      "description": "How strongly a failure mechanism's real-world applicability is established.\n\nThis is the single most important guardrail enum in the system: UI-facing code\nmust never present a mechanism as more certain than this status allows.",
+      "enum": [
+        "externally_established",
+        "manifest_conditioned_transfer",
+        "trace_integrity_condition",
+        "research_hypothesis",
+        "locally_validated",
+        "unsupported_or_retired"
+      ],
+      "title": "EpistemicStatus",
+      "type": "string"
+    },
+    "EvidenceGrade": {
+      "description": "Grade of a single evidence record, independent of the mechanism's overall status.",
+      "enum": [
+        "A1_direct_causal_peer_reviewed",
+        "A2_strong_comparative_peer_reviewed",
+        "B1_mechanistic_transfer_peer_reviewed",
+        "B2_component_evidence_peer_reviewed",
+        "C_preprint_empirical",
+        "D_local_empirical",
+        "E_hypothesis"
+      ],
+      "title": "EvidenceGrade",
+      "type": "string"
+    },
+    "EvidenceSynthesis": {
+      "description": "How a mechanism's linked evidence records, taken together, agree or disagree.\n\nSet on `FailureMechanism`, computed by a human reviewer from the set of linked\n`EvidenceRecord.direction` values -- never averaged into a single confidence number.\nSee docs/registry-governance.md (\"Conflicting studies\").",
+      "enum": [
+        "convergent",
+        "mixed",
+        "limited",
+        "unresolved"
+      ],
+      "title": "EvidenceSynthesis",
+      "type": "string"
+    },
+    "PipelineFailureObject": {
+      "description": "What kind of thing the failure mechanism ultimately degrades.",
+      "enum": [
+        "retrieval_quality",
+        "context_utilization",
+        "context_integrity",
+        "answer_correctness",
+        "answer_attribution",
+        "answer_consistency"
+      ],
+      "title": "PipelineFailureObject",
+      "type": "string"
+    },
+    "PipelineStage": {
+      "description": "Ordered RAG pipeline lineage. Order matters: index position is used for lineage checks.\n\nDo not collapse adjacent stages -- \"retrieved\" (RETRIEVAL_CANDIDATES) is not\n\"available to the generator\" (PACKED_CONTEXT_ITEMS) is not \"used correctly by the\ngenerator\" (ANSWER_TO_EVIDENCE_SUPPORT_EDGES).",
+      "enum": [
+        "corpus_available",
+        "parsed_representation",
+        "index_units",
+        "retrieval_candidates",
+        "reranked_candidates",
+        "selected_context_items",
+        "packed_context_items",
+        "actual_prompt_token_spans",
+        "answer_claims",
+        "answer_to_evidence_support_edges",
+        "reviewer_judgments"
+      ],
+      "title": "PipelineStage",
+      "type": "string"
+    }
+  },
+  "$id": "https://wittgenstein-rag-reliability/schemas/FailureMechanism.schema.json",
+  "additionalProperties": false,
+  "description": "A stable, mechanism-level claim about how a RAG pipeline can fail.\n\nNot a paper, not a detector, not a UI warning, not a specific answer failure --\nsee docs/architecture.md section on entity separation.",
+  "properties": {
+    "canonical_name": {
+      "title": "Canonical Name",
+      "type": "string"
+    },
+    "causal_claim": {
+      "description": "The precise mechanism-level causal claim, stated conservatively.",
+      "title": "Causal Claim",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "default_activation_policy": {
+      "$ref": "#/$defs/ActivationPolicy"
+    },
+    "default_evidence_grade": {
+      "$ref": "#/$defs/EvidenceGrade"
+    },
+    "epistemic_status": {
+      "$ref": "#/$defs/EpistemicStatus"
+    },
+    "evidence_synthesis": {
+      "$ref": "#/$defs/EvidenceSynthesis",
+      "description": "How this mechanism's linked evidence records, taken together, agree or disagree: convergent (independent studies broadly agree) | mixed (studies genuinely disagree, e.g. REP_SEGMENTATION_GRANULARITY_MISMATCH) | limited (one study, or too few/weak to call convergent) | unresolved (no qualifying evidence yet, including every research_hypothesis mechanism). Never averaged into a single confidence score -- see docs/registry-governance.md."
+    },
+    "failure_object": {
+      "$ref": "#/$defs/PipelineFailureObject"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "known_boundary_conditions": {
+      "description": "Documented conditions under which the mechanism does NOT apply.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Known Boundary Conditions",
+      "type": "array"
+    },
+    "necessary_causal_ingredients": {
+      "description": "Conditions that must all hold for the mechanism to be able to fire.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Necessary Causal Ingredients",
+      "type": "array"
+    },
+    "pipeline_stage": {
+      "$ref": "#/$defs/PipelineStage"
+    },
+    "registry_version": {
+      "title": "Registry Version",
+      "type": "string"
+    },
+    "short_description": {
+      "title": "Short Description",
+      "type": "string"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "canonical_name",
+    "short_description",
+    "causal_claim",
+    "pipeline_stage",
+    "failure_object",
+    "necessary_causal_ingredients",
+    "known_boundary_conditions",
+    "epistemic_status",
+    "default_evidence_grade",
+    "default_activation_policy",
+    "evidence_synthesis",
+    "created_at",
+    "updated_at",
+    "registry_version"
+  ],
+  "title": "FailureMechanism",
+  "type": "object"
+}

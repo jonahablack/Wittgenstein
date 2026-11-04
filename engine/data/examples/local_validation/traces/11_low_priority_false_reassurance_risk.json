@@ -1,0 +1,99 @@
+{
+  "trace_id": "LV-TRACE-11-low-priority-false-reassurance-risk",
+  "manifest_id": "LV-MANIFEST-segmented-rag",
+  "corpus_id": "CORPUS-widget-cert-001",
+  "query": "Is a Tier-3 widget safe to ship without additional review?",
+  "query_timestamp": "2026-09-09T00:00:00Z",
+  "query_constraints": {},
+  "support_requirement": {
+    "is_multi_hop": true,
+    "required_support_item_ids": ["item-1", "item-2"],
+    "assessment_method": "reviewer_assessed"
+  },
+  "query_rewrites": [],
+  "retrieval_candidates": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-11",
+      "segment_id": "doc11-seg1",
+      "excerpt": "Tier-3 widgets may ship without additional review.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 80
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-11",
+      "segment_id": "doc11-seg2",
+      "excerpt": "This exception does not apply to Tier-3 widgets containing a lithium sub-assembly, which require mandatory pre-ship inspection.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 130
+    }
+  ],
+  "reranked_candidates": null,
+  "selected_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-11",
+      "segment_id": "doc11-seg1",
+      "excerpt": "Tier-3 widgets may ship without additional review.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 80
+    },
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-11",
+      "segment_id": "doc11-seg2",
+      "excerpt": "This exception does not apply to Tier-3 widgets containing a lithium sub-assembly, which require mandatory pre-ship inspection.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 130
+    }
+  ],
+  "packed_context_items": [
+    {
+      "item_id": "item-1",
+      "source_document_id": "doc-11",
+      "segment_id": "doc11-seg1",
+      "excerpt": "Tier-3 widgets may ship without additional review.",
+      "is_query_related": true,
+      "is_answer_supporting": true,
+      "token_count": 80
+    }
+  ],
+  "omitted_context_items": [
+    {
+      "item_id": "item-2",
+      "source_document_id": "doc-11",
+      "segment_id": "doc11-seg2",
+      "excerpt": null,
+      "is_query_related": null,
+      "is_answer_supporting": null,
+      "token_count": null,
+      "omission_reason": "context_budget_exceeded"
+    }
+  ],
+  "compressed_context_items": [],
+  "final_prompt": "...(the general shipping exception is packed; the safety-critical carve-out for lithium sub-assemblies is omitted)...",
+  "final_prompt_token_count": 900,
+  "prompt_token_spans": [
+    {"context_item_id": "item-1", "start_token": 0, "end_token": 80, "position_rank": 1}
+  ],
+  "generation_parameters": {},
+  "answer": "Yes, a Tier-3 widget may ship without additional review.",
+  "answer_claims": [
+    {"claim_id": "claim-1", "text": "A Tier-3 widget may ship without additional review."}
+  ],
+  "answer_support_edges": [
+    {"claim_id": "claim-1", "context_item_ids": ["item-1"], "support_status": "unsupported", "judged_by": null}
+  ],
+  "context_conflicts": [],
+  "conflict_ids_addressed_in_answer": [],
+  "segment_boundary_dependency_flags": [
+    "safety-carve-out relation split between segment_id=doc11-seg1 and segment_id=doc11-seg2; seg2 (the lithium-sub-assembly exception, materially changing the answer) was omitted for budget reasons -- illustrates the false-reassurance risk of a capped-priority warning: this case is exactly as material as case 06 despite its priority never reaching HIGH under manifest_conditioned (docs/registry-governance.md)"
+  ],
+  "risk_events": [],
+  "trace_status": "complete"
+}

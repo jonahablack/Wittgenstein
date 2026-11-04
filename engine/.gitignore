@@ -1,0 +1,29 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.db
+*.sqlite3
+/data/dev.db
+node_modules/
+frontend/dist/
+.DS_Store
+
+# Real-trace smoke-test source documents (docs/real-trace-smoke-test-plan.md): never
+# committed. Only corpus identifiers, hashes, and metadata in cases.*.json are tracked.
+/data/examples/real_trace_smoke/local_corpora/
+/data/examples/real_trace_smoke/output/
+
+# Real-corpus evidence-set diagnostic source documents
+# (docs/evidence-set-real-corpus-diagnostics-plan.md): never committed. Only corpus
+# identifiers, hashes, and metadata in cases.*.json are tracked. The directory's own
+# README (usage instructions, no source material) is explicitly re-included below.
+/data/examples/evidence_set_diagnostics/local_corpora/*
+!/data/examples/evidence_set_diagnostics/local_corpora/README.md
+/data/examples/evidence_set_diagnostics/output/

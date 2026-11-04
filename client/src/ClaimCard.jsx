@@ -1,18 +1,6 @@
 // client/src/ClaimCard.jsx
 import React from 'react';
-
-const TIER_COLORS = {
-  // Distinct gray, not reused from High/Medium/Low -- this codebase's own
-  // color language uses green/orange/red to mean "risk level of a claim
-  // that WAS formalized." Falling back to Low's green (as this did before
-  // "Unformalized" had its own entry) told a reviewer "no concern" about a
-  // claim that in fact has no formal representation at all -- the opposite
-  // of what that color is supposed to signal everywhere else in this UI.
-  Unformalized: { bg: '#e2e3e5', fg: '#41464b', border: '#c4c8cb' },
-  High: { bg: '#f8d7da', fg: '#842029', border: '#f1aeb5' },
-  Medium: { bg: '#fff3cd', fg: '#664d03', border: '#ffe69c' },
-  Low: { bg: '#d1e7dd', fg: '#0f5132', border: '#a3cfbb' },
-};
+import { claimTierStyle } from './tiers.js';
 
 const DECISION_STYLES = {
   approved: { active: '#28a745', label: 'Approved' },
@@ -20,46 +8,59 @@ const DECISION_STYLES = {
   rejected: { active: '#dc3545', label: 'Rejected' },
 };
 
-export default function ClaimCard({ claim, decision, onDecide }) {
-  const tierColor = TIER_COLORS[claim.risk_tier] || TIER_COLORS.Low;
+const NOT_AVAILABLE = (
+  <em style={{ color: '#888' }}>not available -- formalization failed for this claim</em>
+);
+
+// The claim itself: tier badge (only if the server sent a tier), english
+// text, formal representation(s) with an explicit "not available" message
+// for anything null/missing, risk flags (only if the server sent them),
+// and the source segment reference. Shared by batch review, query-scoped
+// review, and the study harness -- the study harness relies on this
+// rendering NOTHING risk-related when those fields are absent.
+export function ClaimBody({ claim }) {
+  const tierColor = claimTierStyle(claim);
+  const hasSplitFields = claim.formal_logic !== undefined || claim.formal_english !== undefined;
 
   return (
-    <div style={{
-      marginBottom: 15, padding: 15, background: '#fff', borderRadius: 6,
-      border: `1px solid ${tierColor.border}`,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-        <span style={{
-          display: 'inline-block', padding: '2px 10px', borderRadius: 12,
-          background: tierColor.bg, color: tierColor.fg, fontSize: 12, fontWeight: 'bold',
-        }}>
-          {claim.risk_tier} risk
-        </span>
-        {decision && (
-          <span style={{ fontSize: 12, color: DECISION_STYLES[decision]?.active, fontWeight: 'bold' }}>
-            {DECISION_STYLES[decision]?.label}
+    <>
+      {claim.risk_tier != null && (
+        <div style={{ marginBottom: 8 }}>
+          <span style={{
+            display: 'inline-block', padding: '2px 10px', borderRadius: 12,
+            background: tierColor.bg, color: tierColor.fg, fontSize: 12, fontWeight: 'bold',
+          }}>
+            {claim.risk_tier} risk
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: 6 }}><strong>Claim:</strong> {claim.english}</div>
-      {claim.formal_logic != null || claim.formal_english != null ? (
+
+      {hasSplitFields ? (
         <>
           <div style={{ marginBottom: 4, color: '#444' }}>
             <strong>Logic:</strong>{' '}
-            {claim.formal_logic ?? <em style={{ color: '#888' }}>not available -- formalization failed for this claim</em>}
+            {claim.formal_logic ?? NOT_AVAILABLE}
           </div>
           <div style={{ marginBottom: 8, color: '#444' }}>
             <strong>English formalization:</strong>{' '}
-            {claim.formal_english ?? <em style={{ color: '#888' }}>not available -- formalization failed for this claim</em>}
+            {claim.formal_english ?? NOT_AVAILABLE}
           </div>
         </>
       ) : (
         <div style={{ marginBottom: 8, color: '#444' }}>
           <strong>Formal:</strong>{' '}
-          {claim.formal
-            ? claim.formal
-            : <em style={{ color: '#888' }}>not available -- formalization failed for this claim</em>}
+          {claim.formal ? claim.formal : NOT_AVAILABLE}
+        </div>
+      )}
+
+      {(claim.segment_index != null || claim.claim_index != null) && (
+        <div style={{ marginBottom: 8, fontSize: 12, color: '#777' }}>
+          Source:
+          {claim.segment_index != null ? ` segment ${claim.segment_index}` : ''}
+          {claim.segment_index != null && claim.claim_index != null ? ',' : ''}
+          {claim.claim_index != null ? ` claim ${claim.claim_index}` : ''}
         </div>
       )}
 
@@ -75,6 +76,25 @@ export default function ClaimCard({ claim, decision, onDecide }) {
           </ul>
         </div>
       )}
+    </>
+  );
+}
+
+export default function ClaimCard({ claim, decision, onDecide }) {
+  const tierColor = claimTierStyle(claim);
+
+  return (
+    <div style={{
+      marginBottom: 15, padding: 15, background: '#fff', borderRadius: 6,
+      border: `1px solid ${tierColor.border}`,
+    }}>
+      {decision && (
+        <div style={{ float: 'right', fontSize: 12, color: DECISION_STYLES[decision]?.active, fontWeight: 'bold' }}>
+          {DECISION_STYLES[decision]?.label}
+        </div>
+      )}
+
+      <ClaimBody claim={claim} />
 
       <div style={{ display: 'flex', gap: 8 }}>
         {Object.entries(DECISION_STYLES).map(([key, { active, label }]) => (

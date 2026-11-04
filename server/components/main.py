@@ -4,7 +4,7 @@ import uuid
 import hashlib
 
 from components.text_extraction import extract_text_from_pdf, extract_text_from_epub, segment_text
-from components.response_parsing import extract_claims
+from components.response_parsing import extract_claim_records
 from components.logic_formalization import formalize_claims, check_contradictions
 from components.pdf_generation import generate_output_pdf
 from components.reconstruction import generate_reconstructions
@@ -15,8 +15,17 @@ def save_to_json(data, filename):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-def formalize_file(file_path, mode, use_parallel=True, max_workers=5, output_dir=None):
+def formalize_file(file_path, mode, use_parallel=True, max_workers=5, output_dir=None,
+                   chunking_mode="propositional"):
     """
+    chunking_mode: how source text is chunked into claim records --
+    "propositional" (default; LLM decomposition into atomic,
+    self-contained claims, one extraction call per sentence) or "passage"
+    (fixed-size sentence windows, no LLM extraction call at all). See
+    response_parsing.extract_claim_records. Both modes produce the same
+    claim-record shape ({"claim_index", "segment_index", "english"}), so
+    everything downstream of extraction is mode-agnostic.
+
     output_dir: base directory for this call's scratch and output files
     (claim-extraction scratch file, final_data.json, output PDF). Defaults
     to a relative "outputs" directory (as before) if not given, but the
@@ -69,21 +78,17 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5, output_dir
     # docstrings for why this exists.
     segment_lookup = {seg_idx: sentence for seg_idx, sentence in segments}
 
-    print("Extracting claims from segments...")
-    if use_parallel:
-        parsed_data = extract_claims(segments, max_workers=max_workers, scratch_dir=output_dir)
-    else:
-        from components.response_parsing import extract_claims_sequential
-        parsed_data = extract_claims_sequential(segments, scratch_dir=output_dir)
-
-    # Gather all claims
-    print("Gathering all claims...")
-    all_claims_data = []
-    for item in parsed_data:
-        seg_idx = item.get("segment_index")
-        if seg_idx is not None:
-            for claim in item.get("claims", []):
-                all_claims_data.append({"segment_index": seg_idx, "english": claim})
+    print(f"Extracting claims from segments (chunking mode: {chunking_mode})...")
+    # claim_index is assigned here, at extraction time, and carried through
+    # formalize_claims unchanged -- see response_parsing.build_claim_records
+    # and logic_formalization.formalize_claims.
+    all_claims_data, parsed_data = extract_claim_records(
+        segments,
+        chunking_mode=chunking_mode,
+        use_parallel=use_parallel,
+        max_workers=max_workers,
+        scratch_dir=output_dir,
+    )
 
     print(f"Found {len(all_claims_data)} total claims")
 
@@ -175,6 +180,11 @@ def formalize_file(file_path, mode, use_parallel=True, max_workers=5, output_dir
 
     return {
         "axioms": final_data["axioms"],
+        # The request-unique id every artifact of this call is scoped under.
+        # Returned so the API layer can hand it back to the client as a
+        # documentId, making this processed document addressable later by
+        # POST /query (which loads outputs/{output_id}_final_data.json).
+        "output_id": output_id,
         "output_pdf": pdf_output_path,
         "logic_reconstruction": logic_text,
         "english_reconstruction": english_text,

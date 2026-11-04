@@ -10,40 +10,72 @@ def _empty_result(seg_idx):
 
 
 def _build_claim_extraction_prompt(seg_idx, sentence):
-    """Single source of truth for this prompt -- process_single_segment and
-    extract_claims_sequential used to each keep their own copy, which is
-    exactly how the two paths could silently drift out of sync.
+    """Single source of truth for the "propositional"-mode prompt --
+    process_single_segment and extract_claims_sequential used to each keep
+    their own copy, which is exactly how the two paths could silently
+    drift out of sync.
 
-    Kept deliberately narrow (one yes/no decision, verbatim extraction) so
-    the same sentence gets classified the same way run to run: the previous
-    version asked the model to sort each sentence into one of four buckets
-    (claims/arguments/examples/decorative), none of which but "claims" was
-    ever read downstream (main.py only consumes item["claims"]) -- so a
-    genuine claim landing in "arguments" or "examples" instead of "claims"
-    on a given run silently dropped it from the pipeline with no error,
-    which is the most likely cause of "sometimes isn't catching all the
-    claims" and inconsistent claim counts between runs on the same
-    document. Reducing this to a single decision, plus verbatim (not
-    paraphrased) extraction, removes both axes of that variability.
+    PROPOSITIONAL DECOMPOSITION (Chen et al.): the criteria below are a
+    close conceptual implementation, via prompting, of the propositional-
+    decomposition criteria stated in Chen et al. ("Dense X Retrieval: What
+    Retrieval Granularity Should We Use?"): each extracted claim should be
+    (1) ATOMIC -- exactly one distinct assertion, not further divisible;
+    (2) SELF-CONTAINED -- pronouns/references resolved where the sentence
+    itself provides the antecedent, so the claim is interpretable out of
+    context; (3) VERBATIM where possible -- the source's own wording,
+    deviating only as far as (1) and (2) require. This is NOT a
+    reproduction of their fine-tuned Propositionizer model, and it is
+    deliberately NOT tuned or benchmarked for retrieval quality: chunking
+    here is a formalization pre-processing step, not a retrieval-quality
+    contribution. No retrieval-benchmark comparison is made and none
+    should be attempted; do not "improve" this prompt against a retrieval
+    metric. (For the plain fixed-size baseline, see extract_passages.)
+
+    Kept deliberately narrow (one yes/no decision, then decomposition of
+    a single sentence) so the same sentence gets classified the same way
+    run to run: the previous version asked the model to sort each sentence
+    into one of four buckets (claims/arguments/examples/decorative), none
+    of which but "claims" was ever read downstream (main.py only consumes
+    item["claims"]) -- so a genuine claim landing in "arguments" or
+    "examples" instead of "claims" on a given run silently dropped it from
+    the pipeline with no error, which is the most likely cause of
+    "sometimes isn't catching all the claims" and inconsistent claim
+    counts between runs on the same document. Reducing this to a single
+    decision, plus verbatim-where-possible extraction, removes both axes
+    of that variability.
     """
     return f"""
-    You are identifying checkable factual/normative assertions in a single
-    sentence of source text, for downstream formalization into logic.
+    You are decomposing a single sentence of source text into atomic,
+    self-contained claims (checkable factual/normative assertions), for
+    downstream formalization into logic.
 
-    This segment is exactly one sentence. Decide: does it assert something
-    that could in principle be true or false (a claim), as opposed to being
-    a transition, rhetorical flourish, or purely illustrative aside with no
-    independent assertion of its own?
+    This segment is exactly one sentence. First decide: does it assert
+    anything that could in principle be true or false (a claim), as
+    opposed to being a transition, rhetorical flourish, or purely
+    illustrative aside with no independent assertion of its own? If it
+    asserts nothing checkable, return an empty list of claims.
 
-    If yes, extract the claim(s) it contains, reproduced VERBATIM from the
-    source sentence -- do not paraphrase, summarize, or rewrite. Most
-    sentences contain exactly one claim; only split into multiple claims if
-    the sentence conjoins two clearly independent assertions (e.g. joined by
-    "and"/"but"). If the sentence asserts nothing checkable, return an empty
-    list.
+    If it does assert something, decompose it into claims using exactly
+    these criteria:
+    1. ATOMIC: each extracted claim expresses exactly ONE assertion. If
+       the sentence conjoins or embeds several clearly distinct
+       assertions, output one claim per assertion. Do not merge separate
+       assertions into one claim, and do not split a single assertion
+       into fragments that cannot stand alone.
+    2. SELF-CONTAINED: each claim must be interpretable on its own. Where
+       THIS SENTENCE itself provides the antecedent for a pronoun or
+       shorthand reference, substitute the antecedent into the claim
+       (e.g. "it" -> the thing named earlier in the sentence). If the
+       antecedent is NOT present in this sentence, leave the reference
+       exactly as written -- never guess or invent one.
+    3. VERBATIM WHERE POSSIBLE: keep the source's own wording. Deviate
+       from the exact words only as far as criteria 1 and 2 require
+       (splitting a conjunction, substituting an in-sentence antecedent);
+       never paraphrase, summarize, embellish, or "clean up" the
+       language.
 
     Output strict JSON with exactly these keys: "segment_index", "claims"
-    (a list of strings, verbatim from the source, possibly empty).
+    (a list of strings, possibly empty).
     Return only valid JSON. Do not include Markdown code fences or
     additional text.
 
@@ -195,6 +227,106 @@ def extract_claims(segments, output_file=None, max_workers=5, scratch_dir=None):
             pass
 
     return parsed
+
+
+def extract_passages(segments, passage_size=5):
+    """"passage"-mode chunking: fixed-size windowed passages, the common
+    industry baseline. Purely mechanical -- consecutive non-overlapping
+    windows of `passage_size` sentences over the already-segmented text,
+    with NO LLM call of any kind. Each passage becomes one "claim" record
+    downstream, so the two chunking modes produce an identical output
+    shape and everything after extraction (formalization, reconciliation,
+    risk triage) is mode-agnostic.
+
+    Each unit's segment_index is the index of the passage's FIRST
+    sentence, so main.py's segment_lookup (segment_index -> sentence)
+    still resolves for risk_triage.py's segment-level checks.
+
+    Returns the same per-unit shape as extract_claims():
+    [{"segment_index": <first sentence idx>, "claims": [<passage text>]}]
+    """
+    passage_size = max(1, int(passage_size))
+    unit_results = []
+    for i in range(0, len(segments), passage_size):
+        window = segments[i:i + passage_size]
+        if not window:
+            continue
+        first_idx = window[0][0]
+        passage = " ".join(sentence for _, sentence in window).strip()
+        unit_results.append({
+            "segment_index": first_idx,
+            "claims": [passage] if passage else [],
+        })
+    return unit_results
+
+
+def build_claim_records(unit_results):
+    """Flatten per-unit extraction output ({"segment_index", "claims"})
+    into flat claim records, assigning each claim its globally unique
+    claim_index HERE, at extraction time.
+
+    claim_index used to be assigned later, inside formalize_claims() --
+    which worked, but meant the identity of a claim only existed once
+    formalization started, and anything between extraction and
+    formalization had no stable key to refer to a claim by.
+    formalize_claims() now respects a pre-assigned claim_index (via
+    setdefault) instead of overwriting it, and this function is the one
+    place indices are minted: 0..N-1 in extraction order, so the
+    reconciliation invariant (output axiom count == input claim count,
+    keyed by claim_index) is anchored at the earliest point a claim
+    exists.
+    """
+    records = []
+    for item in unit_results:
+        seg_idx = item.get("segment_index")
+        if seg_idx is None:
+            continue
+        for claim in item.get("claims", []):
+            records.append({
+                "claim_index": len(records),
+                "segment_index": seg_idx,
+                "english": claim,
+            })
+    return records
+
+
+def extract_claim_records(segments, chunking_mode="propositional",
+                          use_parallel=True, max_workers=5,
+                          scratch_dir=None, passage_size=5):
+    """Unified extraction entry point over the two chunking modes.
+
+    chunking_mode:
+      - "propositional" (default): LLM decomposition of each sentence
+        into atomic, self-contained claims (see
+        _build_claim_extraction_prompt for the criteria and for the
+        Chen et al. scope note -- conceptual implementation of their
+        stated criteria via prompting, not a retrieval-tuned system).
+      - "passage": fixed-size sentence windows, no LLM call at all
+        (see extract_passages).
+
+    Returns (claim_records, unit_results):
+      - claim_records: flat list of {"claim_index", "segment_index",
+        "english"} dicts -- identical shape for both modes, so
+        everything downstream is chunking-mode-agnostic.
+      - unit_results: the per-unit {"segment_index", "claims"} list, for
+        per-unit accounting (e.g. main.py's formalizability index).
+    """
+    if chunking_mode == "passage":
+        unit_results = extract_passages(segments, passage_size=passage_size)
+    elif chunking_mode == "propositional":
+        if use_parallel:
+            unit_results = extract_claims(
+                segments, max_workers=max_workers, scratch_dir=scratch_dir)
+        else:
+            unit_results = extract_claims_sequential(
+                segments, scratch_dir=scratch_dir)
+    else:
+        raise ValueError(
+            f"Unknown chunking_mode: {chunking_mode!r} "
+            "(expected 'propositional' or 'passage')"
+        )
+    return build_claim_records(unit_results), unit_results
+
 
 def extract_claims_sequential(segments, output_file=None, scratch_dir=None):
     """Original sequential version - kept as fallback.

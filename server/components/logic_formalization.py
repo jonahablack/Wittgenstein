@@ -163,14 +163,22 @@ def _formalize_batch(mode, batch, batch_num):
 def formalize_claims(all_claims_data, mode, batch_size=50, max_workers=5):
     """Send each batch of claims to the model in parallel.
 
-    Each item in all_claims_data is assigned a stable claim_index (its
-    position in this list) up front. That index is the reconciliation key
-    used in _reconcile_batch to guarantee the output axiom count always
-    equals len(all_claims_data) -- see _reconcile_batch's docstring for why
-    that wasn't previously guaranteed.
+    Every item in all_claims_data must carry a stable claim_index. That
+    index is the reconciliation key used in _reconcile_batch to guarantee
+    the output axiom count always equals len(all_claims_data) -- see
+    _reconcile_batch's docstring for why that wasn't previously
+    guaranteed.
+
+    claim_index is now assigned at EXTRACTION time (see
+    response_parsing.build_claim_records), so a claim has a stable
+    identity from the moment it exists rather than only once
+    formalization starts. This function therefore RESPECTS a pre-assigned
+    claim_index (setdefault, never overwrite); the enumerate fallback
+    below only fills in indices for any caller that still passes bare
+    {"segment_index", "english"} dicts.
     """
     for i, claim in enumerate(all_claims_data):
-        claim["claim_index"] = i
+        claim.setdefault("claim_index", i)
 
     total_claims = len(all_claims_data)
     batches = [

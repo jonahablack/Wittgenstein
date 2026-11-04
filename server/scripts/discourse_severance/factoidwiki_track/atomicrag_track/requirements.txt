@@ -1,0 +1,34 @@
+# Dependencies specific to atomicrag_track (running vendor/AtomicRAG's
+# OpenIE atomization step, see atomicrag_openie_adapter.py's module
+# docstring for exactly what is and isn't imported/run).
+#
+# Install into the project's venv with:
+#   venv/bin/python -m pip install -r server/scripts/discourse_severance/factoidwiki_track/atomicrag_track/requirements.txt
+#
+# (venv/bin/pip's shebang is stale from a path move -- always use
+# `venv/bin/python -m pip`, not `venv/bin/pip`, in this project -- same
+# note as ../requirements.txt.)
+#
+# What was ALREADY present in this shared venv (verified, no action
+# needed): openai, numpy, tenacity, tqdm, httpx, filelock, packaging,
+# torch, transformers (the latter two only matter if you ever import the
+# full `atomicrag` package unstubbed -- this track's adapter deliberately
+# does not, see the BYPASSED section of atomicrag_openie_adapter.py's
+# docstring; they are listed here only so it's on record they happen to
+# already be present).
+#
+# What this track ACTUALLY needed installed (one package): `litellm`.
+# AtomicRAG's atomicrag/llm/__init__.py unconditionally does
+# `from .bedrock_llm import BedrockLLM`, which unconditionally
+# `import litellm`s -- even though this track only ever uses
+# atomicrag/llm/openai_gpt.py's CacheOpenAI (the OpenAI branch), reaching
+# it still executes atomicrag/llm/__init__.py once (Python always runs a
+# package's __init__.py to import any of its submodules), so litellm must
+# be importable. Installed 2026-08-14 via plain `pip install litellm`
+# (not pinned to AtomicRAG's own requirements.txt litellm==1.73.1, since
+# this project's venv already has newer transitive dependencies
+# (aiohttp/tiktoken/etc.) that an old litellm pin would conflict with;
+# litellm's Bedrock branch is never exercised here, so the exact version
+# is not load-bearing for this track's results). Resolved to litellm
+# 1.96.2 in this venv on install.
+litellm

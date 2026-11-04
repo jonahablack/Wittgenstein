@@ -70,7 +70,7 @@ review decisions to persist across restarts, attach a Render Disk and set
 ```bash
 cd server
 pip install -r requirements.txt
-cp .env.example .env   # fill in OPENAI_API_KEY
+export OPENAI_API_KEY=sk-...   # read from the environment at call time
 python app.py          # serves on :3000, or PORT if set
 
 cd ../client

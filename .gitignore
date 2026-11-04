@@ -101,3 +101,23 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+# Participant study data -- never commit
+study_data/
+
+# Downloaded/regenerable experiment data caches
+server/scripts/discourse_severance/corpus_cache/
+server/scripts/discourse_severance/factoidwiki_track/data_cache/
+
+# Vendored third-party repo (has its own .git)
+server/scripts/discourse_severance/exp3_recovery_comparison/vendor/
+server/scripts/discourse_severance/factoidwiki_track/atomicrag_track/vendor/
+
+# Experiment outputs under server/scripts stay local (unpublished results):
+# only code, READMEs, and requirements files are tracked there.
+server/scripts/**/*
+!server/scripts/**/
+!server/scripts/**/*.py
+!server/scripts/**/README.md
+!server/scripts/**/requirements.txt
+# Vendored third-party repos (re-excluded after the negations above)
+server/scripts/**/vendor/

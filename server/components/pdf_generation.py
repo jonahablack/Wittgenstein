@@ -83,13 +83,17 @@ def generate_output_pdf(
         # read it, so a document with several failed formalizations would
         # report only High/Medium/Low counts that silently didn't sum to the
         # total claim count, with no visible explanation why.
-        unformalized = risk_counts.get('Unformalized', 0)
+        # "Unformalized" is included UNCONDITIONALLY, even when the count is
+        # zero: the summary line is a complete accounting of every claim, and
+        # a reader must be able to tell "zero claims failed formalization"
+        # apart from "this build predates Unformalized tracking". (An earlier
+        # revision only appended it when nonzero, so the zero case was
+        # indistinguishable from the tier not existing at all.)
         tier_line = (
             f"Risk Tiers: High {risk_counts.get('High', 0)}, "
-            f"Medium {risk_counts.get('Medium', 0)}, Low {risk_counts.get('Low', 0)}"
+            f"Medium {risk_counts.get('Medium', 0)}, Low {risk_counts.get('Low', 0)}, "
+            f"Unformalized {risk_counts.get('Unformalized', 0)}"
         )
-        if unformalized:
-            tier_line += f", Unformalized {unformalized}"
         draw_line(tier_line)
     y -= 0.3 * inch
 

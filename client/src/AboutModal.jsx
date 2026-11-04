@@ -85,33 +85,39 @@ export default function AboutModal({ onClose }) {
         <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 22 }}>About Wittgenstein</h2>
 
         <p>
-          Retrieving information from a body of text is a fundamentally interpretive
-          act. But interpretations can be misleading, especially given the presence of
-          linguistic complexities. Large language models have documented weaknesses
-          untangling these complexities
+          Restating a claim in a more formal shape is a fundamentally interpretive
+          act, and interpretations can quietly lose meaning — a hedge dropped, a
+          negation mis-scoped, a qualifier flattened. Large language models have
+          documented weaknesses with exactly these linguistic complexities
           <Footnote n="1" refId="ref1" /><Footnote n="2" refId="ref2" />
-          <Footnote n="3" refId="ref3" /><Footnote n="4" refId="ref4" />, and any
-          assertion, claim, or inference based on information they retrieve is therefore subject to scrutiny.
+          <Footnote n="3" refId="ref3" /><Footnote n="4" refId="ref4" />, so any
+          formalization they produce is subject to scrutiny.
         </p>
 
         <p>
-          Wittgenstein aims to make retrieved information legible to human
-          review. Text segments are flagged for the specific linguistic patterns most
-          associated with LLM interpretive error, enabling humans
-          to quickly and efficiently review potentially-problematic text
+          Wittgenstein extracts claims from a document, formalizes each one, and
+          flags the formalizations most likely to have lost meaning. Every flag is
+          rule-based by design and traces to a documented linguistic pattern —
+          hedges, modal mismatches, negation scope, cross-references, nested
+          conditionals — with a plain-language reason rather than an opaque score,
+          so a reviewer can triage attention toward the claims that need it
           while reducing <a href="https://www.ibm.com/think/topics/alert-fatigue" target="_blank" rel="noopener noreferrer">alert fatigue</a>.
+          The tool is domain-agnostic: clinical and legal documents appear here
+          only as test material dense in these patterns.
         </p>
 
         <p>
-          More broadly, this project explores how humans can remain engaged in AI-mediated information
-          retrieval by making model failure modes transparent and auditable.
+          More broadly, this project explores how humans can remain engaged in
+          AI-mediated reading by making model failure modes transparent and
+          auditable, rather than asking reviewers to read everything equally or
+          trust a score they cannot inspect.
         </p>
 
         <hr style={{ border: 'none', borderTop: '1px solid #e3e5e8', margin: '20px 0' }} />
 
         <h3 style={{ fontSize: 15, marginBottom: 10 }}>Sources</h3>
         <ol style={{ paddingLeft: 20, fontSize: 13, color: '#444' }}>
-          {SOURCES.map((s, i) => (
+          {SOURCES.map((s) => (
             <li key={s.id} id={s.id} style={{ marginBottom: 8 }}>
               <em>{s.text}</em>, {s.venue}.{' '}
               <a href={s.href} target="_blank" rel="noopener noreferrer" style={{ color: '#3949ab' }}>

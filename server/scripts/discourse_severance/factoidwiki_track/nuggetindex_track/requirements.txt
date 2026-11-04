@@ -1,0 +1,27 @@
+# Dependencies specific to the nuggetindex_track (NuggetIndex LLMExtractor
+# integration). EXPERIMENT-SCRIPT dependencies only -- intentionally NOT
+# added to server/requirements.txt, which governs the deployed Flask app's
+# production dependency footprint, matching ../requirements.txt's own
+# convention for this reason.
+#
+# Install into the project's venv with:
+#   venv/bin/python -m pip install -r server/scripts/discourse_severance/factoidwiki_track/nuggetindex_track/requirements.txt
+#
+# (venv/bin/pip's shebang is stale from a path move -- always use
+# `venv/bin/python -m pip`, not `venv/bin/pip`, in this project -- see
+# ../README.md's Environment section.)
+#
+# `nuggetindex[openai]` pulls in the real, published `nuggetindex` PyPI
+# package (confirmed real package name from its own README; cloned fresh
+# from https://github.com/searchsim-org/nuggetindex.git and read in full
+# before use, per this task's instructions -- not trusted from any spec)
+# plus the `openai` extra (`openai>=1.0`, `instructor>=1.0`), which is what
+# nuggetindex.extractors.clients.clients.openai.OpenAIClient needs to build
+# a structured-output client. Installing this into the SHARED project venv
+# upgraded `openai` from 1.57.0 -> 2.54.0 (a resolver-driven transitive
+# upgrade, not requested directly) -- verified this did NOT break
+# server/api_call.py's existing `generate_response` (smoke-tested with a
+# real "PONG" round-trip call before any other work in this track began);
+# noted here in case a future dependency audit wonders why `openai`'s
+# pinned version moved.
+nuggetindex[openai]

@@ -1,0 +1,34 @@
+# Dependencies specific to the factoidwiki_track pilot (Chen et al.
+# Propositionizer on FactoidWiki-style data). These are EXPERIMENT-SCRIPT
+# dependencies only -- intentionally NOT added to server/requirements.txt,
+# which governs the deployed Flask app's production dependency footprint.
+#
+# Install into the project's venv with:
+#   venv/bin/python -m pip install -r server/scripts/discourse_severance/factoidwiki_track/requirements.txt
+#
+# (venv/bin/pip's shebang is stale from a path move -- always use
+# `venv/bin/python -m pip`, not `venv/bin/pip`, in this project.)
+#
+# Versions below are what was actually installed/verified during the
+# 2026-08 pilot (see README.md in this directory). torch and transformers
+# were already present in this venv; sentencepiece and protobuf were
+# added for this track (required by the T5/FLAN-T5 tokenizer -- protobuf
+# specifically is needed to convert the sentencepiece vocab to a fast
+# tokenizer; loading fails with an ImportError without it).
+
+torch==2.7.1
+transformers==4.53.2
+sentencepiece==0.2.2
+protobuf==7.35.1
+
+# Added for Task 8 (Experiment 3, repair reliability): arm 2
+# (disco_rag_paragraph_adapter.py) composes the REAL, released Disco-RAG
+# pipeline code (read read-only from
+# ../exp3_recovery_comparison/vendor/Disco-RAG/src -- see that module's
+# docstring), which is written against langchain_core's BaseChatModel/
+# Document interfaces. Already present in this shared venv (installed
+# during the sibling exp3_recovery_comparison/ CFR-track experiment); not
+# a fresh install performed by this task, just documented here so this
+# track's own dependency footprint stays self-describing.
+langchain-core>=0.3,<0.4
+pydantic>=2

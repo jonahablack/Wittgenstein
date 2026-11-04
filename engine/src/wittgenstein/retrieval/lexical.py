@@ -11,8 +11,14 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
+from typing import Protocol
 
-from wittgenstein.schemas.proposition import SourceSegment
+
+class _Indexable(Protocol):
+    """Anything with an id and text -- a `SourceSegment`, or a live retrieval unit."""
+
+    segment_id: str
+    text: str
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -36,7 +42,7 @@ class BM25Index:
     no re-tokenization of the corpus per query.
     """
 
-    def __init__(self, segments: list[SourceSegment]) -> None:
+    def __init__(self, segments: list[_Indexable]) -> None:
         self._segments = {s.segment_id: s for s in segments}
         self._doc_tokens: dict[str, list[str]] = {s.segment_id: tokenize(s.text) for s in segments}
         self._doc_lengths: dict[str, int] = {sid: len(toks) for sid, toks in self._doc_tokens.items()}
@@ -76,5 +82,5 @@ class BM25Index:
             RetrievalCandidate(segment_id=sid, score=score, rank=i + 1) for i, (sid, score) in enumerate(ranked)
         ]
 
-    def segment(self, segment_id: str) -> SourceSegment:
+    def segment(self, segment_id: str) -> _Indexable:
         return self._segments[segment_id]

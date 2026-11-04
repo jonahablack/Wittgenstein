@@ -791,3 +791,140 @@ class ExactTargetAvailability(str, Enum):
     BROADER_CONTEXT_PRESENT = "broader_context_present"
     TARGET_MISSING = "target_missing"
     TARGET_UNKNOWN = "target_unknown"
+
+
+# --- Live self-aware pipeline (docs/live-pipeline-plan.md) ---------------------------
+
+
+class EmbedderFamily(str, Enum):
+    """How an embedding backend turns text into a vector -- recorded in every live
+    manifest because the awareness probes' interpretation depends on it (e.g. a static
+    model has no input-length truncation but dilutes long passages; a contextual model
+    with a fixed input window silently drops text past that window).
+    """
+
+    STATIC = "static"
+    CONTEXTUAL = "contextual"
+    HASHING_TEST_ONLY = "hashing_test_only"
+
+
+class RetrievalChannel(str, Enum):
+    """How a candidate entered the pool. A candidate found by more than one channel
+    carries every channel that found it -- never collapsed to one."""
+
+    LEXICAL = "lexical"
+    DENSE = "dense"
+    FACET = "facet"
+    REMEDIATION = "remediation"
+
+
+class KPolicy(str, Enum):
+    FIXED = "fixed"
+    ADAPTIVE = "adaptive"
+
+
+class CandidateFate(str, Enum):
+    """Exactly one fate per pool candidate, recorded with a reason. `NOT_REACHED`
+    means selection stopped before evaluating it -- distinct from being judged below
+    the cutoff (`BELOW_ELBOW`)."""
+
+    SELECTED = "selected"
+    PULLED_IN = "pulled_in"
+    SKIPPED_REDUNDANT = "skipped_redundant"
+    BELOW_ELBOW = "below_elbow"
+    OMITTED_BUDGET = "omitted_budget"
+    NOT_REACHED = "not_reached"
+
+
+class PullInReason(str, Enum):
+    SEVERED_NEIGHBOR = "severed_neighbor"
+    CROSS_REFERENCE_TARGET = "cross_reference_target"
+    DEFINITION = "definition"
+
+
+class QuestionType(str, Enum):
+    FACTOID = "factoid"
+    ENUMERATION = "enumeration"
+    COMPARISON = "comparison"
+    EXPLANATION = "explanation"
+    UNKNOWN = "unknown"
+
+
+class ConstraintKind(str, Enum):
+    """A hard constraint in the query that similarity search may not respect."""
+
+    NEGATION = "negation"
+    NUMBER = "number"
+    DATE = "date"
+    IDENTIFIER = "identifier"
+    COMPARATOR = "comparator"
+    QUOTED = "quoted"
+    MODALITY = "modality"
+
+
+class FlagOrigin(str, Enum):
+    """Whether a flag is about the source text itself or about what the pipeline did
+    with it. A flag can be both (e.g. a passage that opens with an anaphor -- text --
+    whose antecedent the chunker separated from it -- pipeline)."""
+
+    TEXT = "text"
+    PIPELINE = "pipeline"
+    TEXT_AND_PIPELINE = "text_and_pipeline"
+
+
+class FlagKind(str, Enum):
+    """Every awareness check's flag type. Embedding probes (D*) and gap signals (G*)
+    are measured observations of one run; text-artifact kinds map onto registry
+    mechanisms where one exists (see live/flags.py::REGISTRY_LINKS)."""
+
+    # Embedding probes
+    FACET_DOMINANCE = "facet_dominance"
+    CONSTRAINT_INSENSITIVE = "constraint_insensitive"
+    EMBEDDER_TRUNCATION = "embedder_truncation"
+    DILUTION = "dilution"
+    RETRIEVER_DISAGREEMENT = "retriever_disagreement"
+    NEAR_MISS = "near_miss"
+    WEAK_BEST_MATCH = "weak_best_match"
+    AMBIGUOUS_CUTOFF = "ambiguous_cutoff"
+    FLAT_TOP = "flat_top"
+    # Evidence gaps
+    FACET_UNCOVERED = "facet_uncovered"
+    CROSS_REFERENCE_NOT_FOLLOWED = "cross_reference_not_followed"
+    SEVERED_CONTEXT = "severed_context"
+    BUDGET_OMISSION = "budget_omission"
+    ENUMERATION_INCOMPLETE = "enumeration_incomplete"
+    DEFINITION_NOT_IN_CONTEXT = "definition_not_in_context"
+    REDUNDANCY = "redundancy"
+    # Text artifacts (ported risk-triage detectors)
+    CONDITION_SATELLITE = "condition_satellite"
+    CONCESSION_SATELLITE = "concession_satellite"
+    NEGATION_SCOPE = "negation_scope"
+    BACKWARD_REFERENCE = "backward_reference"
+    UNRESOLVED_REFERENCE = "unresolved_reference"
+    # Answer verification
+    MODAL_STRENGTH_MISMATCH = "modal_strength_mismatch"
+    ANSWER_SENTENCE_UNSUPPORTED = "answer_sentence_unsupported"
+
+
+class FlagDisposition(str, Enum):
+    """What the user should do with a flag. `HANDLED` means the pipeline already acted
+    on the observation (and says what it did); it must never be rendered as a warning."""
+
+    NEEDS_REVIEW = "needs_review"
+    HANDLED = "handled"
+    INFORMATIONAL = "informational"
+
+
+class FlagSeverity(str, Enum):
+    INFO = "info"
+    CAUTION = "caution"
+    WARNING = "warning"
+
+
+class CheckOutcome(str, Enum):
+    """Result of running one awareness check on one run. `NOT_APPLICABLE` (e.g. the
+    negation probe on a query with no negation) is distinct from `PASSED`."""
+
+    PASSED = "passed"
+    FLAGGED = "flagged"
+    NOT_APPLICABLE = "not_applicable"

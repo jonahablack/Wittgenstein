@@ -27,3 +27,7 @@ frontend/dist/
 /data/examples/evidence_set_diagnostics/local_corpora/*
 !/data/examples/evidence_set_diagnostics/local_corpora/README.md
 /data/examples/evidence_set_diagnostics/output/
+
+# Live-pipeline sample/uploaded corpora (fetched or user-provided, never committed)
+/data/live_corpora/
+/data/examples/evidence_set_diagnostics/local_corpora/README.md

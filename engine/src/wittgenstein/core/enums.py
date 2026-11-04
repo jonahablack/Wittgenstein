@@ -928,3 +928,25 @@ class CheckOutcome(str, Enum):
     PASSED = "passed"
     FLAGGED = "flagged"
     NOT_APPLICABLE = "not_applicable"
+
+
+class LiveEventType(str, Enum):
+    """Event types on the live pipeline's stream (live/events.py). The frontend's
+    TypeScript types are generated from these models, so the two cannot drift."""
+
+    RUN_STARTED = "run.started"
+    QUERY_ANALYZED = "query.analyzed"
+    MODEL_PROFILE = "model.profile"
+    STAGE = "stage"
+    FIELD = "field"
+    CANDIDATES = "candidates"
+    CHECK = "check"
+    FLAG = "flag"
+    FLAG_UPDATED = "flag.updated"
+    DECISION = "decision"
+    CONTEXT_PACKED = "context.packed"
+    ANSWER_DELTA = "answer.delta"
+    ANSWER_SENTENCE = "answer.sentence"
+    PIPELINE_COMPLETED = "pipeline.completed"
+    RUN_COMPLETED = "run.completed"
+    ERROR = "error"

@@ -59,6 +59,55 @@ TEMPLATE_SENTENCES = [
 ]
 
 
+#: Questions from many unrelated domains. Their best-match scores against a corpus show
+#: what "no real match" looks like for this model on this corpus -- the null against
+#: which a real question's best match is judged (probe D6). Real similarity scores are
+#: not normally distributed, so a textbook extreme-value bound is not used. Limitation,
+#: stated rather than hidden: one or two of these may be on-topic for some corpus (e.g.
+#: the medical ones for a clinical document); the null uses the 90th percentile, so a
+#: few on-topic probes shift it only slightly.
+OFF_TOPIC_QUESTIONS = [
+    "How do I reset my wireless router password?",
+    "What is the boiling point of water at high altitude?",
+    "Which team won the football championship last season?",
+    "How long should bread dough rise before baking?",
+    "What causes the northern lights?",
+    "How do I fix a memory leak in a Python program?",
+    "What are the symptoms of a vitamin D deficiency?",
+    "How do interest rates affect mortgage payments?",
+    "What is the best way to train a puppy to sit?",
+    "How many moons does Jupiter have?",
+    "What is the capital city of Australia?",
+    "How do I change a flat bicycle tire?",
+    "What ingredients are in a classic margarita?",
+    "How does photosynthesis work in plants?",
+    "What is the tallest mountain in Africa?",
+    "How do I write a cover letter for a job application?",
+    "What are the rules for castling in chess?",
+    "How do vaccines train the immune system?",
+    "What is the speed of light in a vacuum?",
+    "How do I grow tomatoes on a balcony?",
+    "What is a blockchain transaction fee?",
+    "How do earthquakes form along fault lines?",
+    "How should I store fresh herbs in the fridge?",
+    "What is the difference between a virus and a bacterium?",
+    "How do airplanes stay in the air?",
+    "What is the population of Tokyo?",
+    "How do I remove a red wine stain from carpet?",
+    "What does a solar panel inverter do?",
+    "How do bees make honey?",
+    "What is the airspeed of a migrating goose?",
+]
+OFF_TOPIC_PHRASES = [
+    "wireless router password", "boiling point of water", "football championship", "bread dough",
+    "northern lights", "memory leak", "vitamin D deficiency", "mortgage payments", "puppy training",
+    "moons of Jupiter", "capital of Australia", "flat bicycle tire", "margarita ingredients", "photosynthesis",
+    "tallest mountain", "cover letter", "chess castling", "immune system", "speed of light", "tomato plants",
+    "blockchain fee", "fault lines", "fresh herbs", "virus", "airplane wings", "population of Tokyo",
+    "wine stain", "solar inverter", "honey bees", "migrating goose",
+]  # fmt: skip
+
+
 class Spread(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -119,6 +168,14 @@ class EmbedderProfile(BaseModel):
     dilution_curve: dict[int, float] = Field(
         default_factory=dict,
         description="Context words around a sentence -> mean cosine(sentence alone, sentence in context).",
+    )
+    null_best_z_question: Spread | None = Field(
+        default=None,
+        description="Best-match z-score reached by off-topic questions on this corpus: the empirical "
+        "'no real match' baseline for whole questions.",
+    )
+    null_best_z_phrase: Spread | None = Field(
+        default=None, description="Same, for short off-topic phrases (the baseline for single question parts)."
     )
     pairwise_similarity: Spread | None = Field(
         default=None, description="Cosine between evenly spaced unit pairs: this model's similarity geometry."
@@ -333,6 +390,16 @@ def _measure_pairwise(embedder: Embedder, corpus: LiveCorpus, max_pairs: int = 4
     return Spread.of(sims)
 
 
+def _null_best_z(embedder: Embedder, corpus: LiveCorpus, texts: list[str]) -> Spread | None:
+    vecs = corpus.units().vectors(embedder)
+    if len(vecs) < 3:
+        return None
+    sims = vecs @ embedder.embed(texts).T  # (units, probes)
+    mean, std = sims.mean(axis=0), sims.std(axis=0)
+    std[std == 0] = 1.0
+    return Spread.of([float(x) for x in (sims.max(axis=0) - mean) / std])
+
+
 def characterize(embedder: Embedder, corpus: LiveCorpus) -> EmbedderProfile:
     sentences = _sentences(corpus, limit=48)
     baselines, insufficient = _measure_edit_shifts(embedder, sentences)
@@ -347,6 +414,8 @@ def characterize(embedder: Embedder, corpus: LiveCorpus) -> EmbedderProfile:
         edit_shift_baselines=baselines,
         insufficient_baselines=insufficient,
         dilution_curve=_measure_dilution(embedder, corpus, sentences),
+        null_best_z_question=_null_best_z(embedder, corpus, OFF_TOPIC_QUESTIONS),
+        null_best_z_phrase=_null_best_z(embedder, corpus, OFF_TOPIC_PHRASES),
         pairwise_similarity=_measure_pairwise(embedder, corpus),
         measured_at=datetime.now(UTC),
     )

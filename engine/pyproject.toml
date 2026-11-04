@@ -37,7 +37,7 @@ dev = [
     "types-PyYAML",
 ]
 anthropic = [
-    "anthropic>=0.39",
+    "anthropic>=2.0",
 ]
 quality = [
     "fastembed>=0.9",

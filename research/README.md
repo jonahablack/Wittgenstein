@@ -37,6 +37,8 @@ the entries below are symlinks to them, so nothing breaks and nothing is duplica
 
 ### `live-pipeline/` — the self-aware pipeline and web app (Nov 2026)
 - `2026-11-04_live-pipeline-plan-and-status.md` → `engine/docs/live-pipeline-plan.md`.
+- `2026-11-04_verification-audit.md` (+ folder): what the integration demo's checks caught, each flag
+  verified against the label text, three checker bugs found and fixed, and what is not yet established.
 
 ### `medical-education/` — University of Arizona College of Medicine conversation
 - `2026-11-04_medical-ai-problems-and-features.md` — evidence on medical LLM/RAG

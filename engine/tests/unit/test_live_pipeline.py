@@ -370,3 +370,30 @@ def test_end_to_end_run_produces_valid_traces_and_ordered_events() -> None:
         assert o.answer
         assert o.receipt.passages_used >= 1
         assert {f["disposition"] for f in o.flags} <= {d.value for d in FlagDisposition}
+
+
+def test_cutoff_wording_says_higher_when_the_cut_result_scores_higher() -> None:
+    from wittgenstein.core.enums import CandidateFate
+    from wittgenstein.live.gaps import run_gaps
+
+    corpus = _asteria("t-cutoff")
+    emb = _hashing()
+    units = corpus.units()
+    a = analyze_query("What clearance margin applies to Class S units?", units.bm25._idf)
+    prof = characterize(emb, corpus)
+    spec = _DENSE.model_copy(update={"k": 2})
+    r = retrieve(spec, units, a, emb)
+    inst = Instruments(units, a, emb, prof)
+    sel = select(spec, r, inst, [], prof.pairwise_similarity.p90)
+    # Make the first cut candidate clearly stronger than the last one used.
+    last = sel.ledger[sel.selected[-1]]
+    cut = next(
+        e
+        for e in sorted(sel.ledger.values(), key=lambda e: e.fused_rank or 0)
+        if e.fate == CandidateFate.NOT_REACHED
+    )
+    cut.relevance_z = last.relevance_z + 2.0
+    out = FlagCollector("t")
+    run_gaps(spec, r, inst, sel, out, weak=False)
+    flags = [f for f in out.flags if f.kind == FlagKind.AMBIGUOUS_CUTOFF]
+    assert flags and "scores higher than" in flags[0].title

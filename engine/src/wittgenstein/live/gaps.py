@@ -77,6 +77,14 @@ def run_gaps(
                 None,
             )
             if best is None:
+                # Before saying the source has nothing on this part, look at every
+                # passage by its words too -- not just the top few by meaning.
+                by_terms = [
+                    u.unit_id for u in units.units if inst.facet_coverage(u.unit_id, f.facet_id).how == "terms"
+                ]
+                if by_terms:
+                    best = max(by_terms, key=lambda uid: (inst.lexical.z(inst.pos[uid]), -inst.pos[uid]))
+            if best is None:
                 obs = (
                     f"“{f.span.text}” is never mentioned in the {scope}."
                     if absent and len(absent) == len([t for t in f.terms if len(t) > 2])
@@ -338,7 +346,11 @@ def run_gaps(
                     stage="selection",
                     severity=FlagSeverity.CAUTION if adds else FlagSeverity.INFO,
                     disposition=FlagDisposition.NEEDS_REVIEW if adds else FlagDisposition.INFORMATIONAL,
-                    title=f"Result #{first_out.fused_rank} was cut but is as relevant as #{tail.fused_rank}",
+                    title=(
+                        f"Result #{first_out.fused_rank} was cut but scores higher than #{tail.fused_rank}"
+                        if first_out.relevance_z > tail.relevance_z + TIED_AT_CUTOFF
+                        else f"Result #{first_out.fused_rank} was cut but is as relevant as #{tail.fused_rank}"
+                    ),
                     observation=f"#{tail.fused_rank} scored {tail.relevance_z:.2f} SD and was used; "
                     f"#{first_out.fused_rank} scored {first_out.relevance_z:.2f} SD and was cut by the fixed "
                     f"top-{spec.k} rule.",

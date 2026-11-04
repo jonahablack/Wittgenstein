@@ -194,7 +194,8 @@ def verify_answer(
         elif status in _QUALIFIED:
             vs.support = status.value  # shown in the UI as "partly matches", not flagged
 
-        if best is not None:
+        comparable = best is not None and status not in _UNSUPPORTED and bool(cites)
+        if comparable and best is not None:
             mm = modal_mismatch(best[1], text)
             if mm is not None:
                 src, ans = mm
@@ -284,7 +285,7 @@ def verify_answer(
 
         # Who the statement applies to: population qualifiers in the source sentence
         # must survive into the answer sentence.
-        if best is not None:
+        if comparable and best is not None:
             src_low, ans_low = P.lower(best[1]), P.lower(text)
             cues = [c for c in P.POPULATION_CUES if P.contains_word_prefix(src_low, c)]
             if cues:

@@ -162,3 +162,38 @@ def test_check_route() -> None:
     assert res.json()["access"]["level"] == "trace"
     remote = {**body, "embed_url": "https://example.com/embed"}
     assert client.post("/live/check", json=remote).status_code == 422
+
+
+# --- Regressions from the 2026-11-04 verification audit ------------------------------
+
+
+def test_uncovered_part_is_never_called_absent_when_the_document_has_it() -> None:
+    """The audit found "No passage in the document clearly matches 'starting dose'"
+    although the label states it twice: absence was judged from the top few passages
+    by meaning only. The document has a definition of "registered operator"; a pipeline
+    that didn't retrieve it must be told it was left out, never that it doesn't exist."""
+    corpus = LiveCorpus("ext-audit1", {p.stem: p.read_text() for p in sorted(ASTERIA.glob("*.md"))})
+    req = _req(
+        query="What clearance margin applies to Class R units, and who counts as a registered operator?",
+        candidates=[{"id": "c1", "text": RULE}, {"id": "c2", "text": CLASS_S}],
+        context_ids=["c1", "c2"],
+        answer=None,
+    )
+    r = check_external(req, corpus=corpus)
+    flags = [f for f in _by_kind(r, FlagKind.FACET_UNCOVERED) if "registered operator" in f["title"]]
+    assert flags, "the uncovered part should be flagged"
+    assert all("was left out" in f["title"] for f in flags)
+    assert not any("never mentioned" in f["observation"] or "No passage" in f["observation"] for f in flags)
+
+
+def test_population_check_stands_down_when_the_citation_is_wrong() -> None:
+    """The audit found a "dropped who this applies to" flag on a sentence whose cited
+    passage was about something else entirely: the comparison used the wrong sentence."""
+    req = _req(
+        candidates=[{"id": "c1", "text": "In patients with eGFR below 30, the drug is contraindicated."}],
+        context_ids=["c1"],
+        answer="The starting dose is 850 mg once daily. [1]",
+    )
+    r = check_external(req)
+    assert _by_kind(r, FlagKind.QUANTITY_MISMATCH)  # still flagged: useful either way
+    assert not _by_kind(r, FlagKind.POPULATION_QUALIFIER_DROPPED)

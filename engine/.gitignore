@@ -31,3 +31,8 @@ frontend/dist/
 # Live-pipeline sample/uploaded corpora (fetched or user-provided, never committed)
 /data/live_corpora/
 /data/live_runs/
+
+# Research result write-ups stay local (unpublished findings)
+/docs/*-results.md
+/docs/*-run-summary.md
+/docs/*-annotation-summary*.md

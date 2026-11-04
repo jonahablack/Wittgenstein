@@ -14,7 +14,6 @@ function FlagCard({ flag, run, tone }: { flag: AwarenessFlag; run: RunState; ton
   const accent = tone === "look" ? "border-l-look" : tone === "handled" ? "border-l-handled" : "border-l-info";
   return (
     <motion.li
-      layout
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       className={cx("rounded-xl border border-line border-l-2 bg-surface-2/60 px-4 py-3", accent)}

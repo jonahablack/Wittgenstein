@@ -63,7 +63,15 @@ def _overlap(a: str, b: str) -> float:
     return len(ta & tb) / len(ta) if ta else 0.0
 
 
-_AFTER_CITE = re.compile(r"(?<=\])\s+(?=\S)")
+def _cite_chunks(answer: str) -> list[str]:
+    """The answer cut right after each citation marker ("[3]", "[1, 2]"). Other square
+    brackets in quoted text ("deep venous thrombosis [DVT]") are not cut points."""
+    chunks, last = [], 0
+    for m in _CITE.finditer(answer):
+        chunks.append(answer[last : m.end()])
+        last = m.end()
+    chunks.append(answer[last:])
+    return [c for c in chunks if c.strip()]
 
 
 def split_answer(answer: str) -> list[tuple[str, list[int]]]:
@@ -72,7 +80,7 @@ def split_answer(answer: str) -> list[tuple[str, list[int]]]:
     boundary, because the marker sits between the full stop and the next capital);
     every sentence in a cut chunk shares that chunk's citations."""
     out = []
-    for chunk in _AFTER_CITE.split(answer):
+    for chunk in _cite_chunks(answer):
         cites = sorted({int(n) for m in _CITE.finditer(chunk) for n in m.group(1).split(",")})
         for s, _, _ in split_sentences(_CITE.sub("", chunk)):
             clean = s.strip()

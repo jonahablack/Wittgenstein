@@ -106,7 +106,9 @@ export function AnswerCard({ run, pipeline, compact = false }: { run: RunState; 
 
   return (
     <motion.article
-      layout
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
       className={cx("rounded-2xl border border-line bg-surface shadow-glow", compact ? "p-4" : "p-6 sm:p-7")}
     >
       <div className="mb-3 flex items-center gap-2 text-xs text-ink-3">

@@ -122,3 +122,15 @@ def test_article_paragraph_is_not_read_as_a_section_reference() -> None:
 
 def test_pull_in_reason_enum_still_covers_cross_references() -> None:
     assert PullInReason.CROSS_REFERENCE_TARGET.value == "cross_reference_target"
+
+
+def test_answer_splitting_ignores_non_citation_brackets() -> None:
+    from wittgenstein.live.verify import split_answer
+
+    parts = split_answer(
+        "Target INR is 2.5. [2] Venous thromboembolism (deep venous thrombosis [DVT] and PE): adjust the dose. [3]"
+    )
+    assert parts == [
+        ("Target INR is 2.5.", [2]),
+        ("Venous thromboembolism (deep venous thrombosis [DVT] and PE): adjust the dose.", [3]),
+    ]

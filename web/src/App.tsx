@@ -40,13 +40,13 @@ export function App() {
           </div>
         ) : (
           <>
-            <AnimatePresence initial={false}>
-              {!run && (
+            {/* The intro unmounts at once when a question is asked: an exit animation
+                would hold its space and then make the whole page jump. */}
+            {!run && (
                 <motion.section
                   key="hero"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
                   className="pt-[14vh] pb-8 text-center"
                 >
                   <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -57,11 +57,10 @@ export function App() {
                     record of what the system searched, what it left out, and what it already checked for you.
                   </p>
                 </motion.section>
-              )}
-            </AnimatePresence>
-            <div className={run ? "pt-6" : ""}>
+            )}
+            <motion.div layout="position" transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }} className={run ? "pt-6" : ""}>
               <AskBar />
-            </div>
+            </motion.div>
             {run && (
               <div className="mt-6 space-y-5">
                 {run.analysis && <QueryAnatomy analysis={run.analysis} />}

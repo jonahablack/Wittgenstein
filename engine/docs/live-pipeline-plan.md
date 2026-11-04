@@ -349,3 +349,34 @@ evidence only one pipeline found, and whether the answers agree.
   not failure mechanisms; they carry no `mechanism_id` and make no claim about embeddings
   in general.
 - No public deployment.
+
+## 12. Status (2026-11-04, end of first build session)
+
+Built and running locally (`make live` in `engine/`, then http://127.0.0.1:8100):
+
+- Backend: build steps 1-6 complete (`live/`), 28 new tests, 539 total passing, ruff and
+  mypy clean on the new code. Warm runs: ~0.1-0.25 s for four pipelines over a 770 KB novel;
+  corpora warm in a background thread on upload.
+- Frontend (`web/`): answer view with citation popovers and sentence-level flags, the
+  one-line receipt, the Checks panel (worth a look / handled / good to know / passed),
+  "Show me" source drawer, question anatomy with the measured model profile, pipeline
+  comparison, and the lazy-loaded process view (PixiJS evidence field, replay timeline,
+  passage flow, live findings, full decision ledger). Light and dark themes; phone width
+  verified with no horizontal scroll.
+- TypeScript types are generated from the backend's JSON Schema (`npm run gen:types`).
+
+Changes made while building, relative to the plan above:
+
+- Answerability (D6a) uses "key terms absent from the whole document + meaning no closer
+  than off-topic calibration questions", not a z-score of the best match: measured, the
+  best-match z of real and off-topic questions overlapped on a novel (§3.2 calibration).
+- Thresholds originally written as constants were replaced by measured ones where they
+  existed (facet coverage by meaning, redundancy, keyword-only blind spots).
+- Adaptive k falls back to the configured k when relevance declines smoothly with no
+  natural cutoff, and says so in the ledger.
+- The static embedding model *does* truncate (512 tokens); the window measurement caught
+  the wrong assumption.
+
+Not yet done: integration levels 2-3 (retriever-only and trace-only access), a reranker
+channel, LLM answers exercised against a live API (no credentials configured here), and
+a browser-level test suite.

@@ -30,3 +30,4 @@ frontend/dist/
 
 # Live-pipeline sample/uploaded corpora (fetched or user-provided, never committed)
 /data/live_corpora/
+/data/live_runs/

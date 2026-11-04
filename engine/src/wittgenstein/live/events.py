@@ -36,6 +36,8 @@ class UnitPoint(BaseModel):
     unit_id: str
     document_id: str
     position: float
+    char_start: int
+    char_end: int
     location: str
     tokens: int
     preview: str

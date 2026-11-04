@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/* Design tokens. Colors are CSS variables so light and dark share one set of utility
+   names; channel colors are the same everywhere (answer chips, evidence field, ledger). */
+:root {
+  --bg: #07090d;
+  --bg-elev: #0d1118;
+  --surface: #111620;
+  --surface-2: #161c28;
+  --line: #222a38;
+  --line-soft: #1a2130;
+  --ink: #e8ecf4;
+  --ink-2: #b4bccb;
+  --ink-3: #7c8698;
+  --ink-4: #535c6d;
+
+  --kw: #f5b84a; /* keyword (lexical) search */
+  --mn: #4cc9f0; /* meaning (dense) search */
+  --both: #c7b8ff; /* found by both */
+  --facet: #f472b6; /* per-part search */
+  --pull: #34d399; /* pulled in by a follow-up */
+  --omit: #fb7185; /* left out for space */
+
+  --look: #f59e0b; /* worth a look */
+  --handled: #34d399;
+  --info: #93a4c3;
+
+  --glow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 10px 30px -12px rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f7fa;
+    --bg-elev: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f1f3f8;
+    --line: #dde2ec;
+    --line-soft: #e8ecf3;
+    --ink: #0f1420;
+    --ink-2: #3a4356;
+    --ink-3: #657088;
+    --ink-4: #8c95a8;
+    --kw: #c27c05;
+    --mn: #0784b3;
+    --both: #6d55d6;
+    --facet: #c2367f;
+    --pull: #0e9a6a;
+    --omit: #d23a52;
+    --look: #b86b00;
+    --handled: #0e9a6a;
+    --info: #55688c;
+    --glow: 0 0 0 1px rgba(15, 20, 32, 0.05), 0 10px 30px -14px rgba(15, 20, 32, 0.18);
+    color-scheme: light;
+  }
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --color-bg: var(--bg);
+  --color-elev: var(--bg-elev);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-kw: var(--kw);
+  --color-mn: var(--mn);
+  --color-both: var(--both);
+  --color-facet: var(--facet);
+  --color-pull: var(--pull);
+  --color-omit: var(--omit);
+  --color-look: var(--look);
+  --color-handled: var(--handled);
+  --color-info: var(--info);
+  --shadow-glow: var(--glow);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A faint grid behind everything: the "instrument panel" feel without competing with content. */
+.bg-instrument {
+  background-image:
+    radial-gradient(1200px 600px at 50% -10%, color-mix(in oklab, var(--mn) 9%, transparent), transparent 70%),
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size:
+    auto,
+    44px 44px,
+    44px 44px;
+  background-position: center;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--mn) 35%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

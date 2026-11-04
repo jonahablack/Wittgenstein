@@ -20,6 +20,7 @@ class _Indexable(Protocol):
     segment_id: str
     text: str
 
+
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
 _K1 = 1.5

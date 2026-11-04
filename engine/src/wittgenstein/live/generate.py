@@ -108,7 +108,7 @@ class ExtractiveProvider:
         for f in inst.analysis.facets:
             terms = list(dict.fromkeys(f.terms))
             scored = [
-                (sum(P.contains_phrase(P.lower(s), t) for t in terms) / max(1, len(terms)), float(sims[i]), i)
+                (sum(_has_term(P.lower(s), t) for t in terms) / max(1, len(terms)), float(sims[i]), i)
                 for i, (_, s) in enumerate(sents)
                 if i not in chosen
             ]
@@ -116,7 +116,11 @@ class ExtractiveProvider:
                 share, _, i = max(scored)
                 if share >= 0.5:
                     chosen.append(i)
-        for i in np.argsort(-sims, kind="stable"):
+        # Then: sentences matching the most question terms (light suffix matching, so
+        # "elope" finds "elopement"), ties broken by similarity.
+        qterms = list(dict.fromkeys(inst.analysis.content_terms))
+        hits = np.array([sum(_has_term(P.lower(s), t) for t in qterms) for _, s in sents], dtype=float)
+        for i in np.lexsort((-sims, -hits)):
             if len(chosen) >= self.MAX_SENTENCES:
                 break
             if int(i) not in chosen:
@@ -129,6 +133,14 @@ class ExtractiveProvider:
             n, s = sents[i]
             text = s.rstrip()
             yield ("" if k == 0 else " ") + f"{text} [{n}]"
+
+
+def _has_term(low: str, term: str) -> bool:
+    """Whole-word match, except terms of 4+ letters may take a suffix ("elope" ->
+    "eloped", "elopement"). Still anchored at a word start, never mid-word."""
+    if len(term) < 4:
+        return P.contains_phrase(low, term)
+    return re.search(rf"(?<![a-z0-9]){re.escape(term)}[a-z]{{0,5}}(?![a-z0-9])", low) is not None
 
 
 _DANGLING_ENUM = re.compile(r"\s+(?:\d{1,3}|[a-z]|[ivx]{1,4})[.)]$")

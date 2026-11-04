@@ -79,6 +79,8 @@ def _points(units: UnitSet) -> list[dict[str, Any]]:
             unit_id=u.unit_id,
             document_id=u.document_id,
             position=round(u.position, 5),
+            char_start=u.char_start,
+            char_end=u.char_end,
             location=u.location,
             tokens=u.token_count,
             preview=u.text[:140],
@@ -231,7 +233,12 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
             continue
         uid = f.refs[0].unit_id
         if f.kind in _RECONCILABLE and uid in chosen:
-            f.action_taken = f"Included it anyway. {sel.ledger[uid].reason}"
+            reason = sel.ledger[uid].reason
+            f.action_taken = (
+                "Added this passage to the evidence used for the answer."
+                if reason.startswith("Included because a check found it")
+                else f"It was used anyway: {reason[0].lower()}{reason[1:]}"
+            )
         elif f.kind == FlagKind.NEAR_MISS and uid not in chosen:
             f.action_taken = "Left it out of the evidence used for the answer."
         else:
@@ -260,6 +267,11 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
     ts = time.perf_counter()
     provider = get_provider(provider_name, inst) if provider_name != "extractive" else ExtractiveProvider(inst)
     parts: list[str] = []
+    if weak and not provider.info.uses_llm:
+        # Quoting can't decline the way a model can, so it says so before quoting.
+        lead = "The document doesn't appear to cover this question; the closest passages it has are quoted below. "
+        parts.append(lead)
+        em.emit(LiveEventType.ANSWER_DELTA, pid, text=lead)
     try:
         for chunk in provider.stream(analysis.query, passages):
             parts.append(chunk)

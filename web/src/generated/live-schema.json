@@ -1,0 +1,919 @@
+{
+  "$defs": {
+    "AwarenessFlag": {
+      "additionalProperties": false,
+      "properties": {
+        "action_taken": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the pipeline already did about it.",
+          "title": "Action Taken"
+        },
+        "disposition": {
+          "$ref": "#/$defs/FlagDisposition"
+        },
+        "flag_id": {
+          "title": "Flag Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/FlagKind"
+        },
+        "measurement": {
+          "description": "measured | inferred_from_rankings | pattern_match -- how the observation was obtained.",
+          "title": "Measurement",
+          "type": "string"
+        },
+        "metrics": {
+          "additionalProperties": true,
+          "title": "Metrics",
+          "type": "object"
+        },
+        "observation": {
+          "description": "What was measured or matched -- a fact of this run.",
+          "title": "Observation",
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/FlagOrigin"
+        },
+        "pipeline_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pipeline Id"
+        },
+        "query_span": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Span"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "refs": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Refs",
+          "type": "array"
+        },
+        "registry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RegistryLink"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "severity": {
+          "$ref": "#/$defs/FlagSeverity"
+        },
+        "stage": {
+          "description": "query | embedding | retrieval | selection | packing | generation | answer",
+          "title": "Stage",
+          "type": "string"
+        },
+        "title": {
+          "description": "Short, plain-language headline.",
+          "title": "Title",
+          "type": "string"
+        },
+        "what_to_check": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The one thing a person should look at, if any.",
+          "title": "What To Check"
+        },
+        "why_it_matters": {
+          "description": "Bounded language: what this *could* affect. Never causal.",
+          "title": "Why It Matters",
+          "type": "string"
+        }
+      },
+      "required": [
+        "flag_id",
+        "kind",
+        "origin",
+        "stage",
+        "severity",
+        "disposition",
+        "title",
+        "observation",
+        "why_it_matters",
+        "measurement"
+      ],
+      "title": "AwarenessFlag",
+      "type": "object"
+    },
+    "CandidateFate": {
+      "description": "Exactly one fate per pool candidate, recorded with a reason. `NOT_REACHED`\nmeans selection stopped before evaluating it -- distinct from being judged below\nthe cutoff (`BELOW_ELBOW`).",
+      "enum": [
+        "selected",
+        "pulled_in",
+        "skipped_redundant",
+        "below_elbow",
+        "omitted_budget",
+        "not_reached"
+      ],
+      "title": "CandidateFate",
+      "type": "string"
+    },
+    "CheckOutcome": {
+      "description": "Result of running one awareness check on one run. `NOT_APPLICABLE` (e.g. the\nnegation probe on a query with no negation) is distinct from `PASSED`.",
+      "enum": [
+        "passed",
+        "flagged",
+        "not_applicable"
+      ],
+      "title": "CheckOutcome",
+      "type": "string"
+    },
+    "CheckRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "check_id": {
+          "title": "Check Id",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "flag_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Flag Ids",
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/FlagKind"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/CheckOutcome"
+        }
+      },
+      "required": [
+        "check_id",
+        "kind",
+        "label",
+        "outcome",
+        "detail"
+      ],
+      "title": "CheckRecord",
+      "type": "object"
+    },
+    "ConstraintKind": {
+      "description": "A hard constraint in the query that similarity search may not respect.",
+      "enum": [
+        "negation",
+        "number",
+        "date",
+        "identifier",
+        "comparator",
+        "quoted",
+        "modality"
+      ],
+      "title": "ConstraintKind",
+      "type": "string"
+    },
+    "EpistemicStatus": {
+      "description": "How strongly a failure mechanism's real-world applicability is established.\n\nThis is the single most important guardrail enum in the system: UI-facing code\nmust never present a mechanism as more certain than this status allows.",
+      "enum": [
+        "externally_established",
+        "manifest_conditioned_transfer",
+        "trace_integrity_condition",
+        "research_hypothesis",
+        "locally_validated",
+        "unsupported_or_retired"
+      ],
+      "title": "EpistemicStatus",
+      "type": "string"
+    },
+    "FlagDisposition": {
+      "description": "What the user should do with a flag. `HANDLED` means the pipeline already acted\non the observation (and says what it did); it must never be rendered as a warning.",
+      "enum": [
+        "needs_review",
+        "handled",
+        "informational"
+      ],
+      "title": "FlagDisposition",
+      "type": "string"
+    },
+    "FlagKind": {
+      "description": "Every awareness check's flag type. Embedding probes (D*) and gap signals (G*)\nare measured observations of one run; text-artifact kinds map onto registry\nmechanisms where one exists (see live/flags.py::REGISTRY_LINKS).",
+      "enum": [
+        "facet_dominance",
+        "constraint_insensitive",
+        "embedder_truncation",
+        "dilution",
+        "retriever_disagreement",
+        "near_miss",
+        "weak_best_match",
+        "ambiguous_cutoff",
+        "flat_top",
+        "facet_uncovered",
+        "cross_reference_not_followed",
+        "severed_context",
+        "budget_omission",
+        "enumeration_incomplete",
+        "definition_not_in_context",
+        "redundancy",
+        "condition_satellite",
+        "concession_satellite",
+        "negation_scope",
+        "backward_reference",
+        "unresolved_reference",
+        "modal_strength_mismatch",
+        "answer_sentence_unsupported"
+      ],
+      "title": "FlagKind",
+      "type": "string"
+    },
+    "FlagOrigin": {
+      "description": "Whether a flag is about the source text itself or about what the pipeline did\nwith it. A flag can be both (e.g. a passage that opens with an anaphor -- text --\nwhose antecedent the chunker separated from it -- pipeline).",
+      "enum": [
+        "text",
+        "pipeline",
+        "text_and_pipeline"
+      ],
+      "title": "FlagOrigin",
+      "type": "string"
+    },
+    "FlagSeverity": {
+      "enum": [
+        "info",
+        "caution",
+        "warning"
+      ],
+      "title": "FlagSeverity",
+      "type": "string"
+    },
+    "LedgerEntry": {
+      "properties": {
+        "channels": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Channels",
+          "type": "array"
+        },
+        "facets_covered": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Facets Covered",
+          "type": "array"
+        },
+        "fate": {
+          "$ref": "#/$defs/CandidateFate"
+        },
+        "fused_rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Fused Rank"
+        },
+        "order": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order"
+        },
+        "pull_in_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PullInReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pulled_in_for": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pulled In For"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "relevance_z": {
+          "title": "Relevance Z",
+          "type": "number"
+        },
+        "tokens": {
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "unit_id": {
+          "title": "Unit Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_id",
+        "fate",
+        "reason",
+        "channels",
+        "relevance_z",
+        "fused_rank",
+        "facets_covered",
+        "tokens"
+      ],
+      "title": "LedgerEntry",
+      "type": "object"
+    },
+    "LiveEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "additionalProperties": true,
+          "title": "Data",
+          "type": "object"
+        },
+        "pipeline_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pipeline Id"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "t_ms": {
+          "title": "T Ms",
+          "type": "number"
+        },
+        "type": {
+          "$ref": "#/$defs/LiveEventType"
+        }
+      },
+      "required": [
+        "seq",
+        "t_ms",
+        "type"
+      ],
+      "title": "LiveEvent",
+      "type": "object"
+    },
+    "LiveEventType": {
+      "description": "Event types on the live pipeline's stream (live/events.py). The frontend's\nTypeScript types are generated from these models, so the two cannot drift.",
+      "enum": [
+        "run.started",
+        "query.analyzed",
+        "model.profile",
+        "stage",
+        "field",
+        "candidates",
+        "check",
+        "flag",
+        "flag.updated",
+        "decision",
+        "context.packed",
+        "answer.delta",
+        "answer.sentence",
+        "pipeline.completed",
+        "run.completed",
+        "error"
+      ],
+      "title": "LiveEventType",
+      "type": "string"
+    },
+    "ProviderInfo": {
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "model_identifier": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Model Identifier"
+        },
+        "provider_id": {
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "uses_llm": {
+          "title": "Uses Llm",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "provider_id",
+        "label",
+        "model_identifier",
+        "uses_llm"
+      ],
+      "title": "ProviderInfo",
+      "type": "object"
+    },
+    "PullInReason": {
+      "enum": [
+        "severed_neighbor",
+        "cross_reference_target",
+        "definition"
+      ],
+      "title": "PullInReason",
+      "type": "string"
+    },
+    "QueryAnalysis": {
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "items": {
+            "$ref": "#/$defs/QueryConstraint"
+          },
+          "title": "Constraints",
+          "type": "array"
+        },
+        "content_terms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Content Terms",
+          "type": "array"
+        },
+        "dropped_facets": {
+          "description": "Lower-weight facets beyond MAX_FACETS.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Dropped Facets",
+          "type": "array"
+        },
+        "enumeration_target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enumeration Target"
+        },
+        "facets": {
+          "items": {
+            "$ref": "#/$defs/QueryFacet"
+          },
+          "title": "Facets",
+          "type": "array"
+        },
+        "query": {
+          "title": "Query",
+          "type": "string"
+        },
+        "question_type": {
+          "$ref": "#/$defs/QuestionType"
+        }
+      },
+      "required": [
+        "query",
+        "question_type",
+        "facets",
+        "constraints",
+        "content_terms"
+      ],
+      "title": "QueryAnalysis",
+      "type": "object"
+    },
+    "QueryConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ConstraintKind"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "span"
+      ],
+      "title": "QueryConstraint",
+      "type": "object"
+    },
+    "QueryFacet": {
+      "additionalProperties": false,
+      "properties": {
+        "facet_id": {
+          "title": "Facet Id",
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "terms": {
+          "description": "Lowercased content terms of the facet.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Terms",
+          "type": "array"
+        },
+        "weight": {
+          "description": "Specificity: max corpus IDF of its terms (1.0 when no corpus).",
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "facet_id",
+        "span",
+        "terms",
+        "weight"
+      ],
+      "title": "QueryFacet",
+      "type": "object"
+    },
+    "QuestionType": {
+      "enum": [
+        "factoid",
+        "enumeration",
+        "comparison",
+        "explanation",
+        "unknown"
+      ],
+      "title": "QuestionType",
+      "type": "string"
+    },
+    "Receipt": {
+      "description": "The one-line process summary under the answer (plan \u00a78.1).",
+      "properties": {
+        "candidates_considered": {
+          "title": "Candidates Considered",
+          "type": "integer"
+        },
+        "checks_passed": {
+          "title": "Checks Passed",
+          "type": "integer"
+        },
+        "checks_run": {
+          "title": "Checks Run",
+          "type": "integer"
+        },
+        "handled": {
+          "title": "Handled",
+          "type": "integer"
+        },
+        "passages_searched": {
+          "title": "Passages Searched",
+          "type": "integer"
+        },
+        "passages_used": {
+          "title": "Passages Used",
+          "type": "integer"
+        },
+        "retrieval_ms": {
+          "title": "Retrieval Ms",
+          "type": "number"
+        },
+        "total_ms": {
+          "title": "Total Ms",
+          "type": "number"
+        },
+        "worth_a_look": {
+          "title": "Worth A Look",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "passages_searched",
+        "candidates_considered",
+        "passages_used",
+        "worth_a_look",
+        "handled",
+        "checks_passed",
+        "checks_run",
+        "retrieval_ms",
+        "total_ms"
+      ],
+      "title": "Receipt",
+      "type": "object"
+    },
+    "RegistryLink": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_name": {
+          "title": "Canonical Name",
+          "type": "string"
+        },
+        "epistemic_status": {
+          "$ref": "#/$defs/EpistemicStatus"
+        },
+        "mechanism_id": {
+          "title": "Mechanism Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mechanism_id",
+        "canonical_name",
+        "epistemic_status"
+      ],
+      "title": "RegistryLink",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "description": "An exact span of source text a flag concerns (\"Show me\" opens this).",
+      "properties": {
+        "char_end": {
+          "title": "Char End",
+          "type": "integer"
+        },
+        "char_start": {
+          "title": "Char Start",
+          "type": "integer"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "unit_id": {
+          "title": "Unit Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_id",
+        "document_id",
+        "char_start",
+        "char_end",
+        "quote"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "Span": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "title": "Start",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "start",
+        "end"
+      ],
+      "title": "Span",
+      "type": "object"
+    },
+    "UnitPoint": {
+      "additionalProperties": false,
+      "description": "One retrieval unit as the evidence field draws it.",
+      "properties": {
+        "char_end": {
+          "title": "Char End",
+          "type": "integer"
+        },
+        "char_start": {
+          "title": "Char Start",
+          "type": "integer"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "position": {
+          "title": "Position",
+          "type": "number"
+        },
+        "preview": {
+          "title": "Preview",
+          "type": "string"
+        },
+        "tokens": {
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "unit_id": {
+          "title": "Unit Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_id",
+        "document_id",
+        "position",
+        "char_start",
+        "char_end",
+        "location",
+        "tokens",
+        "preview"
+      ],
+      "title": "UnitPoint",
+      "type": "object"
+    },
+    "VerifiedSentence": {
+      "properties": {
+        "best_evidence_span": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Best Evidence Span"
+        },
+        "best_evidence_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Best Evidence Unit"
+        },
+        "cited": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Cited",
+          "type": "array"
+        },
+        "cited_unit_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cited Unit Ids",
+          "type": "array"
+        },
+        "flag_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Flag Ids",
+          "type": "array"
+        },
+        "sentence_id": {
+          "title": "Sentence Id",
+          "type": "string"
+        },
+        "support": {
+          "title": "Support",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sentence_id",
+        "text",
+        "cited",
+        "cited_unit_ids",
+        "support",
+        "best_evidence_unit",
+        "best_evidence_span"
+      ],
+      "title": "VerifiedSentence",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "AwarenessFlag": {
+      "$ref": "#/$defs/AwarenessFlag"
+    },
+    "CheckRecord": {
+      "$ref": "#/$defs/CheckRecord"
+    },
+    "LedgerEntry": {
+      "$ref": "#/$defs/LedgerEntry"
+    },
+    "LiveEvent": {
+      "$ref": "#/$defs/LiveEvent"
+    },
+    "ProviderInfo": {
+      "$ref": "#/$defs/ProviderInfo"
+    },
+    "QueryAnalysis": {
+      "$ref": "#/$defs/QueryAnalysis"
+    },
+    "Receipt": {
+      "$ref": "#/$defs/Receipt"
+    },
+    "UnitPoint": {
+      "$ref": "#/$defs/UnitPoint"
+    },
+    "VerifiedSentence": {
+      "$ref": "#/$defs/VerifiedSentence"
+    }
+  },
+  "required": [
+    "LiveEvent",
+    "UnitPoint",
+    "AwarenessFlag",
+    "CheckRecord",
+    "QueryAnalysis",
+    "LedgerEntry",
+    "Receipt",
+    "VerifiedSentence",
+    "ProviderInfo"
+  ],
+  "title": "LiveSchema",
+  "type": "object"
+}

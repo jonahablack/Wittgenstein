@@ -28,3 +28,13 @@ api:
 	uv run uvicorn wittgenstein.api.app:app --reload --host 127.0.0.1 --port 8000
 
 dev-check: fmt lint typecheck test schemas validate-registry
+
+# Live self-aware pipeline: build the web app, then serve app + API on http://127.0.0.1:8100.
+# Optional: put ANTHROPIC_API_KEY / OPENAI_API_KEY in engine/.env (gitignored) to enable
+# language-model answers; without them, answers are quoted from the document.
+live:
+	cd ../web && npm install --no-audit --no-fund && npm run build
+	set -a; [ -f .env ] && . ./.env; set +a; uv run uvicorn wittgenstein.api.app:app --host 127.0.0.1 --port 8100
+
+live-sample:
+	uv run python scripts/fetch_sample_corpora.py

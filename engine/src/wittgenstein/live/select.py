@@ -95,24 +95,43 @@ def forward_pointer(unit: Unit) -> str | None:
     return None
 
 
+_NUMBERED_REF_RE = re.compile(r"(?:\[see [^\]]{0,80}?)?(?<!\w)\(\s*(?P<num>\d{1,2}(?:\.\d{1,2})?)\s*\)\s*\]?")
+
+
 def reference_targets(unit: Unit, units: UnitSet) -> list[tuple[str, list[str]]]:
     """(reference text, target unit ids) for each structural reference in the passage,
     resolved against section headings -- structural only, never semantic."""
-    out = []
-    for m in _REF_RE.finditer(unit.text):
-        label = f"{m.group(1)} {m.group(2)}".lower()
-        targets = [
+
+    def heads(label: str, same_doc: bool) -> list[str]:
+        return [
             u.unit_id
             for u in units.units
             if u.unit_id != unit.unit_id
+            and (not same_doc or u.document_id == unit.document_id)
             and u.heading_context
             and any(
                 line.lower().startswith(label) and (len(line) == len(label) or not line[len(label)].isalnum())
                 for line in u.heading_context.splitlines()
             )
         ]
+
+    out: list[tuple[str, list[str]]] = []
+    seen: set[str] = set()
+    for m in _REF_RE.finditer(unit.text):
+        targets = heads(f"{m.group(1)} {m.group(2)}".lower(), same_doc=False)
         if targets:
             out.append((m.group(0), targets))
+    # Numbered-section references as written in drug labels and many guidelines:
+    # "[see Warnings and Precautions (5.1)]", "(5.1)". Bare numbers repeat across
+    # documents, so these resolve within the citing document only.
+    for m in _NUMBERED_REF_RE.finditer(unit.text):
+        num = m.group("num")
+        if num in seen:
+            continue
+        seen.add(num)
+        targets = heads(num, same_doc=True)
+        if targets:
+            out.append((m.group(0).strip(), targets))
     return out
 
 

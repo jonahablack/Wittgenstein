@@ -137,6 +137,26 @@ MODALITY_PHRASES = [
     "mandatory", "prohibited", "forbidden", "can", "cannot",
 ]  # fmt: skip
 
+#: Who a statement applies to. In clinical text these are the qualifiers whose loss
+#: turns "in adults" or "if eGFR is below 30" into a statement about everyone.
+POPULATION_CUES = [
+    "pediatric", "children", "child", "infants", "infant", "neonates", "neonatal", "newborns", "adolescents",
+    "adults", "adult", "elderly", "geriatric", "older adults", "older patients", "pregnant", "pregnancy",
+    "lactating", "lactation", "breastfeeding", "breastfed", "nursing", "renal impairment", "hepatic impairment",
+    "kidney disease", "liver disease", "egfr", "creatinine clearance", "crcl", "dialysis", "weighing",
+    "body weight", "years of age", "years and older", "years or older", "months of age", "females", "males",
+    "women", "men", "premenopausal", "postmenopausal",
+]  # fmt: skip
+
+
+def contains_word_prefix(text: str, term: str) -> bool:
+    """Whole-word match, except terms of 4+ letters may take a short suffix ("elope" ->
+    "eloped", "pregnan..." forms). Anchored at a word start, never mid-word."""
+    if len(term) < 4:
+        return contains_phrase(text, term)
+    return re.search(rf"(?<![a-z0-9]){re.escape(term)}[a-z]{{0,5}}(?![a-z0-9])", text) is not None
+
+
 ENUMERATION_CUES = ["list", "all", "every", "each", "how many", "enumerate", "name the", "what are the"]
 COMPARISON_CUES = ["compare", "comparison", "difference", "differences", "differ", "versus", "vs", "compared"]
 EXPLANATION_CUES = ["why", "explain", "how does", "how do", "how did", "reason", "reasons", "cause", "caused"]

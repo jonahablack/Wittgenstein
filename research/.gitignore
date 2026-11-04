@@ -1,0 +1,5 @@
+# Research materials stay local: unpublished results, paper drafts, copyrighted literature,
+# participant data, and large archives. Only this folder's index is published.
+*
+!.gitignore
+!README.md

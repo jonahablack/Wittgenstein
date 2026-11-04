@@ -904,6 +904,8 @@ class FlagKind(str, Enum):
     # Answer verification
     MODAL_STRENGTH_MISMATCH = "modal_strength_mismatch"
     ANSWER_SENTENCE_UNSUPPORTED = "answer_sentence_unsupported"
+    QUANTITY_MISMATCH = "quantity_mismatch"
+    POPULATION_QUALIFIER_DROPPED = "population_qualifier_dropped"
 
 
 class FlagDisposition(str, Enum):

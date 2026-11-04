@@ -8,6 +8,11 @@ const EXAMPLES: Record<string, string[]> = {
     "Are legacy units manufactured before 2025 exempt from the clearance margin?",
     "What clearance margin applies to Class S units, and who counts as a registered operator?",
   ],
+  "fda-labels": [
+    "What is the starting dose of metformin extended-release, and when should it not be started in kidney impairment?",
+    "What is the amoxicillin dose for children with ear infections?",
+    "Which drugs should not be combined with warfarin, and why?",
+  ],
   austen: [
     "Who does Lydia elope with?",
     "How did Elizabeth's opinion of Mr. Darcy change after she read his letter?",

@@ -23,10 +23,12 @@ from wittgenstein.core.enums import (
     FlagSeverity,
 )
 from wittgenstein.ingestion.parser import split_sentences
+from wittgenstein.live import phrases as P
 from wittgenstein.live.corpus import UnitSet
 from wittgenstein.live.flags import AwarenessFlag, FlagCollector
 from wittgenstein.live.generate import ContextPassage
 from wittgenstein.live.probes import ref
+from wittgenstein.live.quantities import checkable, compare, quantities
 from wittgenstein.live.text_artifacts import classify_severance, modal_mismatch, passage_artifacts
 from wittgenstein.retrieval.lexical import tokenize
 from wittgenstein.review.claim_linking import link_claim_detailed
@@ -112,6 +114,10 @@ def verify_answer(
     modal_flags: list[AwarenessFlag] = []
     satellite_flags: list[AwarenessFlag] = []
     satellites_seen = 0
+    quantity_flags: list[AwarenessFlag] = []
+    population_flags: list[AwarenessFlag] = []
+    quantities_seen = 0
+    populations_seen = 0
 
     for i, (text, cites) in enumerate(split_answer(answer)):
         sid = f"s{i + 1}"
@@ -238,6 +244,63 @@ def verify_answer(
                 satellite_flags.append(f)
                 vs.flag_ids.append(f.flag_id)
 
+        # Doses, thresholds, durations: every checkable quantity in the sentence must be
+        # stated in the passages it cites (value and unit).
+        source_text = " ".join(u.text for u in pool)
+        sentence_quantities = [q for q in quantities(text) if checkable(q)]
+        quantities_seen += len(sentence_quantities)
+        for q, problem, found in compare(text, source_text):
+            f = out.flag(
+                FlagKind.QUANTITY_MISMATCH,
+                origin=FlagOrigin.PIPELINE,
+                stage="answer",
+                severity=FlagSeverity.WARNING,
+                disposition=FlagDisposition.NEEDS_REVIEW,
+                title=f"“{q.text}” isn't what the source says"
+                if problem == "different_unit"
+                else f"“{q.text}” doesn't appear in the cited source",
+                observation=(
+                    f"The answer says “{q.text}”; the cited passage has {found} — same number, different unit."
+                    if problem == "different_unit" and found
+                    else f"The answer says “{q.text}”, but no passage it cites states that value."
+                ),
+                why_it_matters="A dose, threshold or duration that isn't in the source may be misremembered, "
+                "converted wrongly, or taken from somewhere else.",
+                what_to_check=f"The exact value in the source, before relying on “{q.text}”.",
+                refs=[ref(best[0], best[2], best[3])] if best else [],
+                metrics={"sentence_id": sid, "value": q.value, "unit": q.unit, "problem": problem, "found": found},
+                measurement="pattern_match",
+            )
+            quantity_flags.append(f)
+            vs.flag_ids.append(f.flag_id)
+
+        # Who the statement applies to: population qualifiers in the source sentence
+        # must survive into the answer sentence.
+        if best is not None:
+            src_low, ans_low = P.lower(best[1]), P.lower(text)
+            cues = [c for c in P.POPULATION_CUES if P.contains_word_prefix(src_low, c)]
+            if cues:
+                populations_seen += 1
+                if not any(P.contains_word_prefix(ans_low, c) for c in cues):
+                    f = out.flag(
+                        FlagKind.POPULATION_QUALIFIER_DROPPED,
+                        origin=FlagOrigin.TEXT,
+                        stage="answer",
+                        severity=FlagSeverity.WARNING,
+                        disposition=FlagDisposition.NEEDS_REVIEW,
+                        title="The answer may have dropped who this applies to",
+                        observation=f"The source sentence is about {', '.join(f'“{c}”' for c in cues[:3])}; "
+                        "the answer sentence doesn't say so.",
+                        why_it_matters="A statement about a specific group (children, pregnancy, kidney "
+                        "impairment, an age range) can read as applying to everyone.",
+                        what_to_check="Whether the patient in question belongs to that group.",
+                        refs=[ref(best[0], best[2], best[3])],
+                        metrics={"sentence_id": sid, "cues": cues[:5]},
+                        measurement="pattern_match",
+                    )
+                    population_flags.append(f)
+                    vs.flag_ids.append(f.flag_id)
+
     from wittgenstein.core.enums import CheckOutcome
 
     def outcome(flags: list[AwarenessFlag]) -> CheckOutcome:
@@ -267,5 +330,25 @@ def verify_answer(
         if satellites_seen
         else "The evidence the answer relies on contains no conditions or exceptions.",
         satellite_flags,
+    )
+    out.check(
+        FlagKind.QUANTITY_MISMATCH,
+        "Doses, numbers and units match the source",
+        outcome(quantity_flags) if quantities_seen else CheckOutcome.NOT_APPLICABLE,
+        f"{quantities_seen} doses/values/durations in the answer; {len(quantity_flags)} not found as stated in "
+        "the cited passages."
+        if quantities_seen
+        else "The answer states no doses, thresholds or durations.",
+        quantity_flags,
+    )
+    out.check(
+        FlagKind.POPULATION_QUALIFIER_DROPPED,
+        "Who it applies to is kept",
+        outcome(population_flags) if populations_seen else CheckOutcome.NOT_APPLICABLE,
+        f"{populations_seen} answer sentences rest on evidence about a specific patient group; "
+        f"{len(population_flags)} don't say which group."
+        if populations_seen
+        else "The evidence used doesn't single out a patient group.",
+        population_flags,
     )
     return results, claims, edges

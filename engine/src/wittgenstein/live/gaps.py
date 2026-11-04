@@ -44,6 +44,7 @@ def run_gaps(
     sel: SelectionResult,
     out: FlagCollector,
     weak: bool,
+    scope: str = "document",
 ) -> None:
     units = inst.units
     a = inst.analysis
@@ -77,9 +78,9 @@ def run_gaps(
             )
             if best is None:
                 obs = (
-                    f"“{f.span.text}” is never mentioned in the document."
+                    f"“{f.span.text}” is never mentioned in the {scope}."
                     if absent and len(absent) == len([t for t in f.terms if len(t) > 2])
-                    else f"No passage in the document clearly matches “{f.span.text}”."
+                    else f"No passage in the {scope} clearly matches “{f.span.text}”."
                 )
                 flags.append(
                     out.flag(
@@ -245,7 +246,7 @@ def run_gaps(
                     severity=FlagSeverity.WARNING,
                     disposition=FlagDisposition.NEEDS_REVIEW,
                     title=f"{len(missing)} more passages mention “{a.enumeration_target}”",
-                    observation=f"{len(matching)} passages in the document mention “{a.enumeration_target}”; "
+                    observation=f"{len(matching)} passages in the {scope} mention “{a.enumeration_target}”; "
                     f"{len(matching) - len(missing)} were used.",
                     why_it_matters="A list built from part of the matching passages may be incomplete.",
                     what_to_check="Whether the list in the answer is complete.",

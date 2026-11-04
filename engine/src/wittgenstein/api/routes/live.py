@@ -7,6 +7,7 @@
 - GET  /live/corpora/{id}/documents/{doc}   full document text, for "Show me"
 - POST /live/runs                           run a question; streams Server-Sent Events
 - GET  /live/runs/{run_id}                  a stored run (events + outcomes), for replay
+- POST /live/check                          check an EXTERNAL pipeline's run (docs/integration.md)
 """
 
 from __future__ import annotations
@@ -22,8 +23,15 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from wittgenstein.core.enums import LiveEventType
-from wittgenstein.live.embedding import DEFAULT_EMBEDDER, EMBEDDER_CHOICES
+from wittgenstein.live.embedding import (
+    DEFAULT_EMBEDDER,
+    EMBEDDER_CHOICES,
+    CachingEmbedder,
+    EmbedCallbackError,
+    HttpEmbedder,
+)
 from wittgenstein.live.events import LiveEvent
+from wittgenstein.live.external import ExternalCheckRequest, check_external
 from wittgenstein.live.generate import PROVIDER_CHOICES, available_providers
 from wittgenstein.live.pipelines import DEFAULT_PIPELINE, PRESETS
 from wittgenstein.live.runner import run_query
@@ -171,6 +179,43 @@ async def start_run(req: RunRequest) -> EventSourceResponse:
             yield {"event": ev.type.value, "id": str(ev.seq), "data": json.dumps(ev.model_dump(mode="json"))}
 
     return EventSourceResponse(events(), ping=10)
+
+
+_EMBEDDERS: dict[tuple[str, str | None], CachingEmbedder] = {}
+_EMBEDDERS_LOCK = threading.Lock()
+
+
+def _callback_embedder(url: str, model: str | None, headers: dict[str, str] | None) -> CachingEmbedder:
+    """One measured embedder per callback URL, so a caller's model is characterized once
+    per document rather than on every request."""
+    key = (url, model)
+    with _EMBEDDERS_LOCK:
+        if key not in _EMBEDDERS:
+            _EMBEDDERS[key] = CachingEmbedder(HttpEmbedder(url, model, headers))
+        return _EMBEDDERS[key]
+
+
+@router.post("/check")
+def check(req: ExternalCheckRequest) -> dict[str, Any]:
+    """Check an external RAG pipeline's run: send the question, the ranked candidates,
+    which went into the prompt, and the answer. See live/external.py and
+    docs/integration.md."""
+    corpus = None
+    if req.corpus_id is not None:
+        rec = _record(req.corpus_id)
+        if rec.status != "ready" or rec.corpus is None:
+            raise HTTPException(409, f"Corpus {req.corpus_id!r} is {rec.status}.")
+        corpus = rec.corpus
+    embedder = None
+    if req.embed_url:
+        try:
+            embedder = _callback_embedder(req.embed_url, req.pipeline.embedding_model, req.embed_headers)
+        except EmbedCallbackError as e:
+            raise HTTPException(422 if "localhost" in str(e) else 502, str(e)) from e
+    try:
+        return check_external(req, corpus, embedder)
+    except EmbedCallbackError as e:
+        raise HTTPException(502, str(e)) from e
 
 
 @router.get("/runs/{run_id}")

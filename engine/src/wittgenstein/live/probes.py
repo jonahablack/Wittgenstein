@@ -46,6 +46,7 @@ MAX_LISTED = 3
 #: question's key terms to be absent from the whole document.
 ABSENT_TERM_SHARE = 0.5
 _NO_DENSE = "This pipeline doesn't use meaning-based (embedding) search."
+_NO_ACCESS = "Needs access to the pipeline's embedding model (pass embed_url) to measure."
 
 
 def ref(unit: Unit, start: int | None = None, end: int | None = None, max_chars: int = 280) -> SourceRef:
@@ -84,6 +85,12 @@ class _Ctx:
     embedder: Embedder | None
     profile: EmbedderProfile | None
     out: FlagCollector
+    scope: str = "document"
+    """"document" when the whole source is available; "retrieved passages" when only an
+    external pipeline's candidates are."""
+
+    def no_dense_reason(self) -> str:
+        return _NO_ACCESS if self.spec.uses_dense else _NO_DENSE
 
     @property
     def k(self) -> int:
@@ -189,7 +196,7 @@ def _d2_constraints(c: _Ctx) -> None:
         )
         return
     if not c.spec.uses_dense or den is None or c.embedder is None or c.retrieval.query_vector is None:
-        c.check(FlagKind.CONSTRAINT_INSENSITIVE, label, None, _NO_DENSE, na=True)
+        c.check(FlagKind.CONSTRAINT_INSENSITIVE, label, None, c.no_dense_reason(), na=True)
         return
     units = c.inst.units
     n = len(units.units)
@@ -258,7 +265,7 @@ def _d3_truncation(c: _Ctx) -> None:
     w = c.profile.window if c.profile else None
     window = w.effective_window_tokens if w and w.status == "saturated" else None
     if not c.spec.uses_dense or c.embedder is None:
-        c.check(FlagKind.EMBEDDER_TRUNCATION, label, None, _NO_DENSE, na=True)
+        c.check(FlagKind.EMBEDDER_TRUNCATION, label, None, c.no_dense_reason(), na=True)
         return
     if window is None:
         c.check(
@@ -319,7 +326,7 @@ def _d4_dilution(c: _Ctx) -> None:
     label = "Relevant sentences not buried in long passages"
     den, qv, emb = c.retrieval.dense, c.retrieval.query_vector, c.embedder
     if not c.spec.uses_dense or den is None or qv is None or emb is None:
-        c.check(FlagKind.DILUTION, label, None, _NO_DENSE, na=True)
+        c.check(FlagKind.DILUTION, label, None, c.no_dense_reason(), na=True)
         return
     if c.weak:
         c.check(FlagKind.DILUTION, label, None, "Skipped: the document may not cover this question.", na=True)
@@ -531,6 +538,15 @@ def _d5_near_miss(c: _Ctx) -> None:
 def _d6_answerable(c: _Ctx) -> None:
     label = "The document covers this question"
     inst = c.inst
+    if c.scope != "document":
+        c.check(
+            FlagKind.WEAK_BEST_MATCH,
+            label,
+            None,
+            "Needs the full source document (pass corpus_id); only the retrieved passages were provided.",
+            na=True,
+        )
+        return
     terms = [t for t in inst.analysis.content_terms if len(t) > 2 and not t.isdigit()]
     if not terms:
         c.check(FlagKind.WEAK_BEST_MATCH, label, None, "No key terms to look for.", na=True)
@@ -612,10 +628,11 @@ def run_probes(
     embedder: Embedder | None,
     profile: EmbedderProfile | None,
     out: FlagCollector,
+    scope: str = "document",
 ) -> None:
     """`embedder` is the pipeline's own embedding model (None for keyword-only);
     `profile` is the characterization of whichever model the instruments use."""
-    c = _Ctx(spec, retrieval, inst, embedder, profile, out)
+    c = _Ctx(spec, retrieval, inst, embedder, profile, out, scope)
     _d6_answerable(c)
     _d1_facets(c)
     _d2_constraints(c)

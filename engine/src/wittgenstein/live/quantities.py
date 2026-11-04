@@ -12,7 +12,16 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+_SPELLED = {
+    "milligrams": "mg", "milligram": "mg", "micrograms": "mcg", "microgram": "mcg", "grams": "g", "gram": "g",
+    "kilograms": "kg", "kilogram": "kg", "milliliters": "ml", "millilitres": "ml", "milliliter": "ml",
+    "millilitre": "ml", "liters": "l", "litres": "l", "liter": "l", "litre": "l", "centimeters": "cm",
+    "centimetres": "cm", "centimeter": "cm", "centimetre": "cm", "millimeters": "mm", "millimetres": "mm",
+    "millimeter": "mm", "millimetre": "mm", "international units": "iu",
+}  # fmt: skip
+
 _UNITS = [
+    *sorted((re.escape(w) for w in _SPELLED), key=len, reverse=True),
     r"mg/kg/day", r"mg/kg/dose", r"mg/kg", r"mcg/kg", r"mg/m\s?2", r"ml/min/1\.73\s?m\s?2", r"ml/min",
     r"mmol/l", r"mg/dl", r"meq/l", r"g/dl", r"mg", r"mcg", r"µg", r"ug", r"kg", r"ml", r"g", r"l", r"units?",
     r"iu", r"%", r"percent", r"hours?", r"hrs?", r"h", r"days?", r"weeks?", r"months?", r"years?", r"minutes?",
@@ -26,6 +35,7 @@ _QTY = re.compile(
     re.IGNORECASE,
 )
 _SYNONYMS = {
+    **_SPELLED,
     "µg": "mcg",
     "ug": "mcg",
     "percent": "%",
@@ -63,7 +73,10 @@ def _norm_value(raw: str) -> str:
 def _norm_unit(raw: str | None) -> str | None:
     if not raw:
         return None
-    u = re.sub(r"\s+", "", raw.lower())
+    spaced = " ".join(raw.lower().split())
+    if spaced in _SYNONYMS:
+        return _SYNONYMS[spaced]
+    u = spaced.replace(" ", "")
     return _SYNONYMS.get(u, u)
 
 

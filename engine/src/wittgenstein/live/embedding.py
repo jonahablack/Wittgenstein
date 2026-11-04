@@ -177,6 +177,90 @@ class HashingEmbedder:
         return len(_WORD_RE.findall(text.lower()))
 
 
+class EmbedCallbackError(RuntimeError):
+    """The caller's embedding endpoint failed or answered in the wrong shape."""
+
+
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def embed_url_allowed(url: str) -> bool:
+    """Calling arbitrary URLs from a server is a request-forgery risk, so embedding
+    callbacks are limited to this machine unless the operator explicitly allows remote
+    ones (WITTGENSTEIN_ALLOW_REMOTE_EMBED=1)."""
+    import os
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+    return parsed.hostname in _LOCAL_HOSTS or os.environ.get("WITTGENSTEIN_ALLOW_REMOTE_EMBED") == "1"
+
+
+class HttpEmbedder:
+    """A caller's own embedding model, reached through a callback:
+    POST {"texts": [...]} -> {"embeddings": [[...], ...]}.
+
+    Nothing about the model is assumed: its family is EXTERNAL, its input limit is
+    unknown (None), and live/characterize.py measures its behavior like any other
+    model's. Token counts are estimated (no tokenizer is available), and labeled so."""
+
+    BATCH = 64
+
+    def __init__(
+        self, url: str, model_name: str | None = None, headers: dict[str, str] | None = None, timeout: float = 30.0
+    ) -> None:
+        if not embed_url_allowed(url):
+            raise EmbedCallbackError(
+                "Embedding callbacks must point at this machine (localhost) unless the server sets "
+                "WITTGENSTEIN_ALLOW_REMOTE_EMBED=1."
+            )
+        self._url, self._headers, self._timeout = url, dict(headers or {}), timeout
+        name = model_name or url
+        probe = self._call(["probe"])
+        self.info = EmbedderInfo(
+            embedder_id=f"external:{name}",
+            model_identifier=name,
+            family=EmbedderFamily.EXTERNAL,
+            dimension=int(probe.shape[1]),
+            max_input_tokens=None,
+            token_counting_method="estimated_words_x1.3",
+        )
+
+    def _call(self, texts: list[str]) -> np.ndarray:
+        import json
+        import urllib.error
+        import urllib.request
+
+        body = json.dumps({"texts": texts}).encode()
+        req = urllib.request.Request(
+            self._url, data=body, headers={"content-type": "application/json", **self._headers}, method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=self._timeout) as r:
+                payload = json.loads(r.read())
+        except (urllib.error.URLError, TimeoutError, ValueError) as e:
+            raise EmbedCallbackError(f"Embedding callback failed: {e}") from e
+        vectors = payload.get("embeddings") if isinstance(payload, dict) else None
+        if not isinstance(vectors, list) or len(vectors) != len(texts):
+            raise EmbedCallbackError(
+                'Embedding callback must return {"embeddings": [...]} with one vector per text.'
+            )
+        arr = np.asarray(vectors, dtype=np.float32)
+        if arr.ndim != 2:
+            raise EmbedCallbackError("Embedding callback returned vectors of unequal length.")
+        return arr
+
+    def embed(self, texts: list[str]) -> np.ndarray:
+        if not texts:
+            return np.zeros((0, self.info.dimension), dtype=np.float32)
+        parts = [self._call(texts[i : i + self.BATCH]) for i in range(0, len(texts), self.BATCH)]
+        return _normalize(np.vstack(parts))
+
+    def count_tokens(self, text: str) -> int:
+        return int(len(text.split()) * 1.3)
+
+
 class CachingEmbedder:
     """Wraps any embedder with a content-hash vector cache, so a corpus is embedded once
     per model and repeated query-time embeddings (probes re-embed query variants) are

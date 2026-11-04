@@ -121,3 +121,23 @@ server/scripts/**/*
 !server/scripts/**/requirements.txt
 # Vendored third-party repos (re-excluded after the negations above)
 server/scripts/**/vendor/
+
+# Large documents and data never go in the (public) repo
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.docx
+*.doc
+*.pptx
+*.xlsx
+*.sqlite
+*.sqlite3
+*.db
+*.parquet
+*.npy
+*.npz
+*.pkl
+*.onnx
+*.safetensors
+*.bin

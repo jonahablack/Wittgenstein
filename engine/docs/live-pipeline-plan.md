@@ -377,6 +377,12 @@ Changes made while building, relative to the plan above:
 - The static embedding model *does* truncate (512 tokens); the window measurement caught
   the wrong assumption.
 
-Not yet done: integration levels 2-3 (retriever-only and trace-only access), a reranker
+Added later the same day: medical checks (doses/units vs. source, patient-population
+qualifiers, drug-label numbered cross-references), an FDA-label sample corpus, and the
+external-pipeline integration API (`POST /live/check`, docs/integration.md) with access
+levels trace / document / +embeddings (the caller's own model reached by callback and
+measured like any other).
+
+Not yet done: retriever-only access (ranking callbacks without texts), a reranker
 channel, LLM answers exercised against a live API (no credentials configured here), and
 a browser-level test suite.

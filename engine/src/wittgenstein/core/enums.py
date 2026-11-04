@@ -806,6 +806,8 @@ class EmbedderFamily(str, Enum):
     STATIC = "static"
     CONTEXTUAL = "contextual"
     HASHING_TEST_ONLY = "hashing_test_only"
+    EXTERNAL = "external"
+    """A caller's own model, reached through a callback; nothing about it is assumed."""
 
 
 class RetrievalChannel(str, Enum):

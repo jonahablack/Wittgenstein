@@ -134,3 +134,13 @@ def test_answer_splitting_ignores_non_citation_brackets() -> None:
         ("Target INR is 2.5.", [2]),
         ("Venous thromboembolism (deep venous thrombosis [DVT] and PE): adjust the dose.", [3]),
     ]
+
+
+def test_spelled_out_units_match_abbreviations() -> None:
+    from wittgenstein.live.quantities import compare
+
+    src = "The margin is 12 centimetres; give 500 mg."
+    assert compare("The margin is 12 cm and the dose 500 milligrams.", src) == []
+    assert [(q.value, p) for q, p, _ in compare("The margin is 15 centimetres.", src)] == [
+        ("15", "value_not_in_source")
+    ]

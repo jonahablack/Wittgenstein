@@ -20,7 +20,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 from wittgenstein.core.enums import ConstraintKind, EmbedderFamily
-from wittgenstein.live.corpus import LiveCorpus
+from wittgenstein.live.corpus import UnitSource
 from wittgenstein.live.embedding import Embedder
 
 METHOD_VERSION = "characterize-1"
@@ -240,7 +240,7 @@ _STOP = frozenset(
 )
 
 
-def _sentences(corpus: LiveCorpus, limit: int) -> list[str]:
+def _sentences(corpus: UnitSource, limit: int) -> list[str]:
     pool = [s for u in corpus.units().units for s, _, _ in u.sentences if 6 <= len(s.split()) <= 60]
     if len(pool) <= limit:
         return pool
@@ -291,7 +291,7 @@ _EDIT_KINDS = [
 ]
 
 
-def _measure_window(embedder: Embedder, corpus: LiveCorpus) -> WindowMeasurement:
+def _measure_window(embedder: Embedder, corpus: UnitSource) -> WindowMeasurement:
     words: list[str] = []
     for u in corpus.units().units:
         words.extend(u.text.split())
@@ -360,7 +360,7 @@ def _measure_edit_shifts(embedder: Embedder, sentences: list[str]) -> tuple[dict
     return out, insufficient
 
 
-def _measure_dilution(embedder: Embedder, corpus: LiveCorpus, sentences: list[str]) -> dict[int, float]:
+def _measure_dilution(embedder: Embedder, corpus: UnitSource, sentences: list[str]) -> dict[int, float]:
     filler: list[str] = []
     for u in reversed(corpus.units().units):
         filler.extend(u.text.split())
@@ -380,7 +380,7 @@ def _measure_dilution(embedder: Embedder, corpus: LiveCorpus, sentences: list[st
     return curve
 
 
-def _measure_pairwise(embedder: Embedder, corpus: LiveCorpus, max_pairs: int = 400) -> Spread | None:
+def _measure_pairwise(embedder: Embedder, corpus: UnitSource, max_pairs: int = 400) -> Spread | None:
     vecs = corpus.units().vectors(embedder)
     n = len(vecs)
     if n < 3:
@@ -390,7 +390,7 @@ def _measure_pairwise(embedder: Embedder, corpus: LiveCorpus, max_pairs: int = 4
     return Spread.of(sims)
 
 
-def _null_best_z(embedder: Embedder, corpus: LiveCorpus, texts: list[str]) -> Spread | None:
+def _null_best_z(embedder: Embedder, corpus: UnitSource, texts: list[str]) -> Spread | None:
     vecs = corpus.units().vectors(embedder)
     if len(vecs) < 3:
         return None
@@ -400,7 +400,7 @@ def _null_best_z(embedder: Embedder, corpus: LiveCorpus, texts: list[str]) -> Sp
     return Spread.of([float(x) for x in (sims.max(axis=0) - mean) / std])
 
 
-def characterize(embedder: Embedder, corpus: LiveCorpus) -> EmbedderProfile:
+def characterize(embedder: Embedder, corpus: UnitSource) -> EmbedderProfile:
     sentences = _sentences(corpus, limit=48)
     baselines, insufficient = _measure_edit_shifts(embedder, sentences)
     return EmbedderProfile(
@@ -425,7 +425,7 @@ _PROFILES: dict[tuple[str, str], EmbedderProfile] = {}
 _LOCK = threading.Lock()
 
 
-def get_profile(embedder: Embedder, corpus: LiveCorpus) -> EmbedderProfile:
+def get_profile(embedder: Embedder, corpus: UnitSource) -> EmbedderProfile:
     key = (embedder.info.embedder_id, corpus.corpus_id)
     with _LOCK:
         if key in _PROFILES:

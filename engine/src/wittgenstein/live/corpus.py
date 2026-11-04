@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import threading
 from dataclasses import dataclass, field
+from typing import Protocol
 
 import numpy as np
 
@@ -255,6 +256,15 @@ def _window_units(
                 back += len(sents[k][0].split())
             i = k if back and k > i else j
     return units
+
+
+class UnitSource(Protocol):
+    """Anything that can supply retrieval units: a LiveCorpus, or the candidate set an
+    external pipeline sent (live/external.py)."""
+
+    corpus_id: str
+
+    def units(self, chunker: str = ...) -> UnitSet: ...
 
 
 class LiveCorpus:

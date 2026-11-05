@@ -65,10 +65,11 @@ export function About() {
           <Ref n={6} />.
         </p>
         <p>
-          Wittgenstein makes retrieved information legible to human review. It flags the text most likely to hide an
-          LLM misreading, so people can review quickly without alert fatigue. This works because Wittgenstein understands the
-          RAG architecture it sits in. It knows how each document was divided into chunks, which of them the search
-          returned, and which never made it into the model’s context.
+          Wittgenstein makes retrieved information legible to human review. It is built to be self-aware. It
+          understands the system it sits inside, from how documents are stored and searched to what the AI model is
+          finally shown, and it can tell how a problem early in that process carries through to the answer a person
+          reads. That lets it point reviewers to the few passages most likely to have been misread, so they can check
+          what matters without wading through false alarms.
         </p>
         <p>
           More broadly, this project explores how humans can remain engaged in AI-mediated information retrieval by

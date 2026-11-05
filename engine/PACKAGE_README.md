@@ -14,8 +14,15 @@ misread a passage or was never given the right one.
 
 ```bash
 pip install wittgenstein-rag
-wittgenstein start               # runs in the background; feed at http://127.0.0.1:8100/#/pipeline
+wittgenstein start               # runs in the background
 wittgenstein autostart enable    # optional: start at every login
+```
+
+Then watch your app's answers being checked, in the terminal or in a window:
+
+```bash
+wittgenstein watch               # in the terminal (also works over SSH; --plain for logs)
+pip install "wittgenstein-rag[app]" && wittgenstein app    # in its own window
 ```
 
 `wittgenstein status` and `wittgenstein stop` do what they say. Everything runs on your

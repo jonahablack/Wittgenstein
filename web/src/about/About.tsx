@@ -110,8 +110,9 @@ wittgenstein start`}
       </pre>
       <p>
         Then point your app’s model client at it, or start a Python app with{" "}
-        <code className="num text-ink">wittgenstein run</code>. Requests go through unchanged, and every answer appears
-        in a local interface with the same checks as this site.
+        <code className="num text-ink">wittgenstein run</code>. Requests go through unchanged, and every answer is
+        checked as this site does, shown in the terminal (<code className="num text-ink">wittgenstein watch</code>) or
+        in its own window (<code className="num text-ink">wittgenstein app</code>).
       </p>
       <p>
         Wittgenstein is supported by a grant from the{" "}

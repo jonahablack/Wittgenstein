@@ -776,7 +776,7 @@ def _send_demo(url: str) -> None:
 def serve(
     port: int = typer.Option(8100, help="Port for the local interface and API."),
     host: str = typer.Option("127.0.0.1", help="Keep 127.0.0.1 unless you mean to expose it."),
-    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open the interface in a browser."),
+    open_browser: bool = typer.Option(False, "--open/--no-open", help="Also open the interface in a browser tab."),
     audit_dir: Path = typer.Option(None, help="Where the audit feed is kept (default ~/.wittgenstein)."),
     demo: bool = typer.Option(False, help="Send four example audits so the feed isn't empty."),
 ) -> None:
@@ -798,8 +798,10 @@ def serve(
     os.environ["WITTGENSTEIN_AUDIT_DIR"] = str(home)
     os.environ.setdefault("WITTGENSTEIN_DATABASE_URL", f"sqlite:///{home / 'wittgenstein.db'}")
     url = f"http://{'127.0.0.1' if host in {'0.0.0.0', '::'} else host}:{port}"
-    console.print(f"[bold]Wittgenstein[/bold] on {url}  ·  your pipeline's audits: {url}/#/pipeline")
-    console.print("Connect a pipeline:  [cyan]import wittgenstein.monitor as wm; wm.instrument()[/cyan]")
+    console.print(f"[bold]Wittgenstein[/bold] running on {url}")
+    console.print("See checked answers:  [cyan]wittgenstein watch[/cyan] (terminal)  ·  "
+                  "[cyan]wittgenstein app[/cyan] (window)")  # fmt: skip
+    _print_connect(url, feed=False)
     if open_browser:
         threading.Timer(1.5, lambda: webbrowser.open(url + "/#/pipeline")).start()
     if demo:
@@ -932,8 +934,53 @@ def measure_model_cmd(
         console.print(prof.note)
 
 
-def _print_connect(url: str) -> None:
-    console.print(f"Feed: {url}/#/pipeline")
+def _ensure_running(port: int | None) -> str:
+    from wittgenstein import service
+
+    if not service.responding(port):
+        console.print("Starting Wittgenstein in the background…")
+        ok, message = service.start(port)
+        if not service.responding(port):
+            console.print(message)
+            raise typer.Exit(1)
+    return service.url(port)
+
+
+@app.command("watch")
+def watch_cmd(
+    port: int = typer.Option(None, help="Port of the server (default: the last one used, or 8100)."),
+    plain: bool = typer.Option(False, help="Print one line per answer instead of the interactive view."),
+) -> None:
+    """Watch your RAG app's answers being checked, in the terminal (starts the server if needed)."""
+    import contextlib
+
+    from wittgenstein.tui import watch
+
+    with contextlib.suppress(KeyboardInterrupt):
+        watch(_ensure_running(port), plain=plain)
+
+
+@app.command("app")
+def app_cmd(
+    port: int = typer.Option(None, help="Port of the server (default: the last one used, or 8100)."),
+) -> None:
+    """Open Wittgenstein in its own window (needs `pip install "wittgenstein-rag[app]"`)."""
+    try:
+        import webview
+    except ImportError:
+        console.print('The window needs one more package:  [cyan]pip install "wittgenstein-rag[app]"[/cyan]')
+        console.print("Or use the terminal view:  [cyan]wittgenstein watch[/cyan]")
+        raise typer.Exit(1) from None
+    base = _ensure_running(port)
+    webview.create_window("Wittgenstein", base + "/#/pipeline", width=1280, height=860, min_size=(720, 520))
+    webview.start()
+    console.print("Window closed; Wittgenstein keeps running in the background (`wittgenstein stop` to stop it).")
+
+
+def _print_connect(url: str, feed: bool = True) -> None:
+    if feed:
+        console.print("See checked answers:  [cyan]wittgenstein watch[/cyan] (terminal)  ·  "
+                      "[cyan]wittgenstein app[/cyan] (window)")  # fmt: skip
     console.print("Connect an app:")
     console.print("  Python (LangChain / LlamaIndex):  [cyan]wittgenstein run python app.py[/cyan]")
     console.print(f"  Any language, OpenAI-compatible:  base URL [cyan]{url}/proxy/openai/v1[/cyan]")

@@ -128,7 +128,9 @@ export function ApiDocs() {
         latency or blocks a response.
       </p>
       <Code lang="bash">{`pip install wittgenstein-rag
-wittgenstein start                 # runs in the background; the feed is at /#/pipeline
+wittgenstein start                 # runs in the background
+wittgenstein watch                 # watch answers being checked, in the terminal
+wittgenstein app                   # or in its own window (pip install "wittgenstein-rag[app]")
 wittgenstein autostart enable      # optional: start at every login (macOS, Linux, Windows)
 wittgenstein status                # running? how many audits?
 wittgenstein stop`}</Code>

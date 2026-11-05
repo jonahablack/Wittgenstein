@@ -236,7 +236,9 @@ wm.record(question, chunks, answer)   # anything else`}
       </pre>
       <p className="mt-5 text-sm text-ink-3">
         Keep it running in the background with <code className="num text-ink-2">wittgenstein start</code>, or at every
-        login with <code className="num text-ink-2">wittgenstein autostart enable</code>.
+        login with <code className="num text-ink-2">wittgenstein autostart enable</code>. Watch from the terminal with{" "}
+        <code className="num text-ink-2">wittgenstein watch</code>, or open this view in its own window with{" "}
+        <code className="num text-ink-2">wittgenstein app</code>.
       </p>
     </div>
   );

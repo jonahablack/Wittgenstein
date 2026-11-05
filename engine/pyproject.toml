@@ -1,6 +1,6 @@
 [project]
 name = "wittgenstein-rag"
-version = "0.3.0"
+version = "0.3.1"
 description = "A self-aware review layer for RAG pipelines: flags the retrieved text and answer sentences most likely to hide an LLM misreading, with a local interface."
 readme = "PACKAGE_README.md"
 requires-python = ">=3.11"
@@ -68,6 +68,10 @@ openai = [
 
 langchain = [
     "langchain-core>=0.3",
+]
+# `wittgenstein app`: the interface in its own window (the system's web view, no browser)
+app = [
+    "pywebview>=5.0",
 ]
 
 [project.urls]

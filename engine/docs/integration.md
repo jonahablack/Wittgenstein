@@ -25,12 +25,15 @@ use), they're open.
 
 ```bash
 pip install wittgenstein-rag        # or, from this repo: make wheel && pip install dist/*.whl
-wittgenstein start                   # background process; feed at http://127.0.0.1:8100/#/pipeline
+wittgenstein start                   # background process
+wittgenstein watch                   # the feed of checked answers, in the terminal (--plain for logs)
+wittgenstein app                     # the same in its own window (pip install "wittgenstein-rag[app]")
 wittgenstein autostart enable        # optional: launchd (macOS), systemd user unit (Linux), Startup (Windows)
 wittgenstein status | stop
 ```
 
-`wittgenstein serve` runs the same thing in the foreground (`--demo` adds 4 examples).
+`wittgenstein serve` runs the same thing in the foreground (`--demo` adds 4 examples); it no longer
+opens a browser unless asked (`--open`).
 State, log, settings and the feed live in `~/.wittgenstein` (`WITTGENSTEIN_HOME`).
 
 Three ways to connect an app; none of them adds latency, since each answer is checked

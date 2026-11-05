@@ -51,6 +51,8 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-di
 export function PipelineView() {
   const [list, setList] = useState<Brief[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 403: this server doesn't serve the feed to other machines (a hosted deployment).
+  const hosted = error === "403";
   const [selected, setSelected] = useState<string | null>(null);
   const [audit, setAudit] = useState<Audit | null>(null);
 
@@ -64,9 +66,13 @@ export function PipelineView() {
           setError(null);
           setSelected((s) => s ?? d.audits[0]?.audit_id ?? null);
         })
-        .catch((e: Error) => live && setError(e.message));
-    void load();
+        .catch((e: Error) => {
+          if (!live) return;
+          setError(e.message);
+          if (e.message === "403") clearInterval(t); // won't change: stop asking
+        });
     const t = setInterval(load, 2000);
+    void load();
     return () => {
       live = false;
       clearInterval(t);
@@ -89,10 +95,12 @@ export function PipelineView() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Your pipeline</h1>
-          <p className="mt-1.5 flex items-center gap-2 text-sm text-ink-3">
-            <Radio className={cx("size-4", error ? "text-omit" : "text-handled")} />
-            {error ? `Can’t reach the local server (${error}).` : "Watching for answers from your RAG pipeline."}
-          </p>
+          {!hosted && (
+            <p className="mt-1.5 flex items-center gap-2 text-sm text-ink-3">
+              <Radio className={cx("size-4", error ? "text-omit" : "text-handled")} />
+              {error ? `Can’t reach the local server (${error}).` : "Watching for answers from your RAG pipeline."}
+            </p>
+          )}
         </div>
         {!!list?.length && (
           <button onClick={() => void clear()} className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink-3 hover:text-ink">
@@ -101,6 +109,7 @@ export function PipelineView() {
         )}
       </div>
 
+      {hosted && <OnYourMachine />}
       {list && list.length === 0 && <Connect />}
 
       {!!list?.length && (
@@ -205,6 +214,41 @@ function Detail({ audit }: { audit: Audit }) {
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+function OnYourMachine() {
+  return (
+    <div className="mt-8 max-w-2xl rounded-2xl border border-line bg-surface p-6">
+      <h2 className="font-medium text-ink">This page runs on your own computer</h2>
+      <p className="mt-2 text-sm leading-relaxed text-ink-2">
+        It shows, as they happen, the answers your own RAG app produces, each checked the way this site checks them.
+        Those answers stay on your machine, so a hosted site like this one never sees them and this page is empty
+        here. To use it, install Wittgenstein where your app runs:
+      </p>
+      <pre className="num mt-4 overflow-x-auto rounded-xl border border-line bg-surface-2 p-4 text-[13px] leading-relaxed text-ink">
+        {`pip install wittgenstein-rag
+wittgenstein start      # runs in the background
+wittgenstein app        # this page, in a window
+wittgenstein watch      # or in the terminal`}
+      </pre>
+      <p className="mt-4 text-sm text-ink-2">
+        Then point your app’s model client at{" "}
+        <code className="num text-ink">http://127.0.0.1:8100/proxy/openai/v1</code>, or start a Python app with{" "}
+        <code className="num text-ink">wittgenstein run python app.py</code>.{" "}
+        <a href="#/api" className="text-mn underline decoration-mn/40 underline-offset-4 hover:decoration-mn">
+          More in the API docs
+        </a>
+        .
+      </p>
+      <p className="mt-4 text-sm text-ink-3">
+        To try the checks here without installing anything, ask a question on the{" "}
+        <a href="#/" className="underline underline-offset-4 hover:text-ink">
+          main page
+        </a>
+        .
+      </p>
     </div>
   );
 }

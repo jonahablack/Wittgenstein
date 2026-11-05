@@ -13,6 +13,7 @@ import { useApp } from "./store";
 // The process view (PixiJS evidence field, timeline, ledger) is code-split: the default
 // answer view never downloads the rendering engine.
 const ProcessView = lazy(() => import("./process/ProcessView"));
+const ApiDocs = lazy(() => import("./about/ApiDocs").then((m) => ({ default: m.ApiDocs })));
 const About = lazy(() => import("./about/About").then((m) => ({ default: m.About })));
 
 /** "#/about" shows the About page. A hash route, because the built app is served as
@@ -27,7 +28,7 @@ function useRoute() {
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
-  return hash === "#/about" ? "about" : "app";
+  return hash === "#/about" ? "about" : hash === "#/api" ? "api" : "app";
 }
 
 export function App() {
@@ -50,9 +51,9 @@ export function App() {
     <div className="bg-instrument min-h-full">
       <TopBar />
       <main className="mx-auto w-full max-w-[1180px] px-4 pb-24 sm:px-6">
-        {route === "about" ? (
+        {route !== "app" ? (
           <Suspense fallback={<div className="mt-24 h-96 animate-pulse rounded-2xl border border-line bg-surface" />}>
-            <About />
+            {route === "about" ? <About /> : <ApiDocs />}
           </Suspense>
         ) : loadError ? (
           <div className="mt-24 rounded-xl border border-omit/40 bg-surface p-6 text-ink-2">

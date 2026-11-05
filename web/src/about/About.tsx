@@ -62,7 +62,11 @@ export function About() {
         <p>
           Wittgenstein aims to make retrieved information legible to human review. Text segments are flagged for the
           specific linguistic patterns most associated with LLM interpretive error, enabling humans to quickly and
-          efficiently review potentially-problematic text while reducing alert fatigue.
+          efficiently review potentially-problematic text while reducing alert fatigue. What makes this possible is
+          that the review layer is aware of its own RAG architecture: how the documents were split, what the
+          embedding model can and cannot register, what the search found, and what was left out of the model’s
+          context. So a flag can say where an error came from, whether the model misread a passage or the pipeline
+          never gave it the right one.
         </p>
         <p>
           More broadly, this project explores how humans can remain engaged in AI-mediated information retrieval by
@@ -86,7 +90,15 @@ export function About() {
         </ol>
       </section>
 
-      <p className="mt-12 border-t border-line pt-6 text-ink-2">
+      <div className="mt-12 space-y-3 border-t border-line pt-6 text-ink-2">
+      <p>
+        Wittgenstein is also now available via API, so it can check an existing RAG pipeline.{" "}
+        <a href="#/api" className="text-mn underline decoration-mn/40 underline-offset-4 hover:decoration-mn">
+          Read the API docs
+        </a>
+        .
+      </p>
+      <p>
         Wittgenstein is supported by a grant from the{" "}
         <a
           href="https://www.cosmos-institute.org/"
@@ -98,6 +110,7 @@ export function About() {
         </a>
         .
       </p>
+      </div>
     </article>
   );
 }

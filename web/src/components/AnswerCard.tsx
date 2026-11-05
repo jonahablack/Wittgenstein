@@ -83,7 +83,15 @@ function Sentence({
       </span>
       {s.cited.map((n) => (
         <Cite key={n} n={n} run={run} pipeline={pipeline} />
-      ))}{" "}
+      ))}
+      {s.strength && (
+        <span
+          className="mx-1 inline-flex h-[18px] items-center rounded-[5px] border border-line bg-surface-2 px-1.5 align-baseline text-[11px] leading-none text-ink-3"
+          title={`Recommendation grade in the cited source: ${s.strength}`}
+        >
+          {s.strength.split(" (")[0]}
+        </span>
+      )}{" "}
       {hover && open.length > 0 && (
         <span className="absolute top-full left-0 z-20 mt-1 block w-80 rounded-xl border border-look/40 bg-elev p-3 text-xs leading-5 shadow-glow">
           {open.map((f) => (

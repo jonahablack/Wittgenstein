@@ -20,6 +20,7 @@ from wittgenstein.core.enums import (
     QuestionType,
 )
 from wittgenstein.live import phrases as P
+from wittgenstein.live.conflicts import find_conflicts
 from wittgenstein.live.coverage import Instruments
 from wittgenstein.live.flags import AwarenessFlag, FlagCollector
 from wittgenstein.live.pipelines import PipelineSpec
@@ -321,6 +322,39 @@ def run_gaps(
             )
     out.check(
         FlagKind.REDUNDANCY, "No duplicate evidence", _outcome(flags), f"{len(flags)} duplicate findings.", flags
+    )
+
+    # --- G8 conflicting evidence among the passages used -----------------------------------
+    flags = []
+    for cf in find_conflicts(units, sel.selected):
+        ua, ub = units.by_id[cf.unit_a], units.by_id[cf.unit_b]
+        what = "one says the opposite of the other" if cf.dimension == "polarity" else "they give different values"
+        flags.append(
+            out.flag(
+                FlagKind.CONTEXT_CONFLICT,
+                origin=FlagOrigin.TEXT,
+                stage="selection",
+                severity=FlagSeverity.WARNING,
+                disposition=FlagDisposition.NEEDS_REVIEW,
+                title="Two passages used disagree",
+                observation=f"“{cf.sentence_a[0][:180]}” ({ua.location}) and “{cf.sentence_b[0][:180]}” "
+                f"({ub.location}): {what}.",
+                why_it_matters="An answer built from both may follow either one without saying so. Nothing in "
+                "these passages says which applies (a different edition, patient group or situation may).",
+                what_to_check="Which of the two applies to your case, and whether the answer says.",
+                refs=[ref(ua, cf.sentence_a[1], cf.sentence_a[2]), ref(ub, cf.sentence_b[1], cf.sentence_b[2])],
+                metrics={"units": [cf.unit_a, cf.unit_b], "dimension": cf.dimension, "fields": list(cf.fields)},
+                measurement="pattern_match",
+            )
+        )
+    out.check(
+        FlagKind.CONTEXT_CONFLICT,
+        "Passages used agree with each other",
+        _outcome(flags) if len(sel.selected) > 1 else _na(),
+        f"{len(flags)} conflicting pair(s) among {len(sel.selected)} passages used."
+        if len(sel.selected) > 1
+        else "Only one passage was used.",
+        flags,
     )
 
     # --- D6b ambiguous cutoff (fixed-k only: adaptive selection decides at the elbow) -------

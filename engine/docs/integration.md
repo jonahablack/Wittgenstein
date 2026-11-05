@@ -19,7 +19,7 @@ it ran, passed, flagged something, or was not possible at your access level (and
 
 | You send | Level | Adds |
 |---|---|---|
-| question, candidates, context, answer | `trace` | Answer verification (each sentence vs. the passage it cites: support, doses/units, patient-population qualifiers, conditions and exceptions, certainty); near-miss identifiers; per-part coverage; redundancy; cutoff checks |
+| question, candidates, context, answer | `trace` | Answer verification (each sentence vs. the passage it cites: support, doses/units, patient-population qualifiers, conditions and exceptions, certainty, recommendation grade); conflicting values or polarity between passages used; near-miss identifiers; per-part coverage; redundancy; cutoff checks |
 | + `corpus_id` (document uploaded to this server) | `document` | Whether the document covers the question at all; what keyword or meaning search would have found that your retriever didn't; severed context; cross-references and definitions your pipeline didn't follow |
 | + `embed_url` (your embedding model) | `+embeddings` | Your model is measured: input window, how much it registers negation and exact values, dilution in long passages; then the embedding probes run against it |
 

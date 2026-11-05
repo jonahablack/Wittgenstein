@@ -49,7 +49,11 @@ export type FlagKind =
   | "backward_reference"
   | "unresolved_reference"
   | "modal_strength_mismatch"
-  | "answer_sentence_unsupported";
+  | "answer_sentence_unsupported"
+  | "quantity_mismatch"
+  | "population_qualifier_dropped"
+  | "recommendation_strength_dropped"
+  | "context_conflict";
 /**
  * measured | inferred_from_rankings | pattern_match -- how the observation was obtained.
  */
@@ -236,6 +240,7 @@ export type Cited = number[];
 export type CitedUnitIds = string[];
 export type FlagIds1 = string[];
 export type SentenceId = string;
+export type Strength = string | null;
 export type Support = string;
 export type Text1 = string;
 
@@ -435,6 +440,7 @@ export interface VerifiedSentence {
   cited_unit_ids: CitedUnitIds;
   flag_ids?: FlagIds1;
   sentence_id: SentenceId;
+  strength?: Strength;
   support: Support;
   text: Text1;
 }

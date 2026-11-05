@@ -256,7 +256,11 @@
         "backward_reference",
         "unresolved_reference",
         "modal_strength_mismatch",
-        "answer_sentence_unsupported"
+        "answer_sentence_unsupported",
+        "quantity_mismatch",
+        "population_qualifier_dropped",
+        "recommendation_strength_dropped",
+        "context_conflict"
       ],
       "title": "FlagKind",
       "type": "string"
@@ -849,6 +853,18 @@
         "sentence_id": {
           "title": "Sentence Id",
           "type": "string"
+        },
+        "strength": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strength"
         },
         "support": {
           "title": "Support",

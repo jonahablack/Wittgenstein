@@ -908,6 +908,9 @@ class FlagKind(str, Enum):
     ANSWER_SENTENCE_UNSUPPORTED = "answer_sentence_unsupported"
     QUANTITY_MISMATCH = "quantity_mismatch"
     POPULATION_QUALIFIER_DROPPED = "population_qualifier_dropped"
+    RECOMMENDATION_STRENGTH_DROPPED = "recommendation_strength_dropped"
+    # Evidence consistency
+    CONTEXT_CONFLICT = "context_conflict"
 
 
 class FlagDisposition(str, Enum):

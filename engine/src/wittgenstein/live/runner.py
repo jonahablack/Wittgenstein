@@ -32,7 +32,7 @@ from wittgenstein.live.query import QueryAnalysis, analyze_query
 from wittgenstein.live.retrieve import retrieve
 from wittgenstein.live.select import select
 from wittgenstein.live.verify import verify_answer
-from wittgenstein.schemas.trace import ContextItem, QueryTrace
+from wittgenstein.schemas.trace import ContextConflict, ContextItem, QueryTrace
 from wittgenstein.trace.packer import pack_context
 
 #: Probe flags that become "handled" when their passage ends up in the context anyway.
@@ -323,6 +323,16 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         answer=answer,
         answer_claims=claims,
         answer_support_edges=edges,
+        context_conflicts=[
+            ContextConflict(
+                conflict_id=f.flag_id,
+                context_item_ids=list(f.metrics["units"]),
+                dimension=f.metrics["dimension"],
+                description=f.observation,
+            )
+            for f in out.flags
+            if f.kind == FlagKind.CONTEXT_CONFLICT
+        ],
         trace_status=TraceStatus.COMPLETE,
     )
     receipt = Receipt(

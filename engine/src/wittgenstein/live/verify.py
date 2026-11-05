@@ -29,7 +29,8 @@ from wittgenstein.live.flags import AwarenessFlag, FlagCollector
 from wittgenstein.live.generate import ContextPassage
 from wittgenstein.live.probes import ref
 from wittgenstein.live.quantities import checkable, compare, quantities
-from wittgenstein.live.text_artifacts import classify_severance, modal_mismatch, passage_artifacts
+from wittgenstein.live.strength import find_strength, summarize
+from wittgenstein.live.text_artifacts import classify_severance, modal_mismatch, modal_strength, passage_artifacts
 from wittgenstein.retrieval.lexical import tokenize
 from wittgenstein.review.claim_linking import link_claim_detailed
 from wittgenstein.schemas.trace import AnswerClaim, AnswerSupportEdge, ContextItem
@@ -56,6 +57,8 @@ class VerifiedSentence:
     best_evidence_unit: str | None
     best_evidence_span: tuple[int, int] | None
     flag_ids: list[str] = field(default_factory=list)
+    strength: str | None = None
+    """Recommendation strength stated in the cited evidence, if any (e.g. "Class IIb ...")."""
 
 
 def _overlap(a: str, b: str) -> float:
@@ -126,6 +129,8 @@ def verify_answer(
     population_flags: list[AwarenessFlag] = []
     quantities_seen = 0
     populations_seen = 0
+    strength_flags: list[AwarenessFlag] = []
+    strengths_seen = 0
 
     for i, (text, cites) in enumerate(split_answer(answer)):
         sid = f"s{i + 1}"
@@ -310,6 +315,56 @@ def verify_answer(
                     population_flags.append(f)
                     vs.flag_ids.append(f.flag_id)
 
+        # Recommendation strength: a weak/conditional recommendation, or one *against*,
+        # must not become a plain rule (or the opposite) in the answer.
+        if comparable and best is not None:
+            labels = find_strength(best[1]) or find_strength(best[0].text)
+            if labels:
+                strengths_seen += 1
+                vs.strength = summarize(labels)
+                rec = next((x for x in labels if x.level != "evidence_only"), None)
+                ans_low = P.lower(text)
+                hedged = modal_strength(text) in {"weak", "medium"}
+                negated = bool(P.find_phrases(ans_low, P.NEGATION_WORDS))
+                mentions = any(
+                    P.contains_phrase(ans_low, w) for w in ("weak", "conditional", "limited", "class", "grade")
+                )
+                overstated: str | None = None
+                if rec is not None and rec.level == "against" and not negated:
+                    overstated = f"The source recommends against this ({rec.text}); the answer doesn't say so."
+                elif (
+                    rec is not None
+                    and rec.level in {"weak", "insufficient", "expert_opinion"}
+                    and not (hedged or mentions)
+                ):
+                    overstated = (
+                        f"The source rates this as a {rec.plain} ({rec.text}); the answer states it as settled."
+                    )
+                if overstated:
+                    f = out.flag(
+                        FlagKind.RECOMMENDATION_STRENGTH_DROPPED,
+                        origin=FlagOrigin.TEXT,
+                        stage="answer",
+                        severity=FlagSeverity.WARNING if rec and rec.level == "against" else FlagSeverity.CAUTION,
+                        disposition=FlagDisposition.NEEDS_REVIEW,
+                        title="The answer may overstate the recommendation"
+                        if not (rec and rec.level == "against")
+                        else "The source recommends against this",
+                        observation=overstated,
+                        why_it_matters="Guidelines grade how firmly they recommend something; a weak or "
+                        "conditional recommendation, or one against, read as a plain rule changes the advice.",
+                        what_to_check="The recommendation's grade in the source.",
+                        refs=[ref(best[0], best[2], best[3])],
+                        metrics={
+                            "sentence_id": sid,
+                            "label": rec.text if rec else None,
+                            "level": rec.level if rec else None,
+                        },
+                        measurement="pattern_match",
+                    )
+                    strength_flags.append(f)
+                    vs.flag_ids.append(f.flag_id)
+
     from wittgenstein.core.enums import CheckOutcome
 
     def outcome(flags: list[AwarenessFlag]) -> CheckOutcome:
@@ -359,5 +414,14 @@ def verify_answer(
         if populations_seen
         else "The evidence used doesn't single out a patient group.",
         population_flags,
+    )
+    out.check(
+        FlagKind.RECOMMENDATION_STRENGTH_DROPPED,
+        "Recommendation strength carried over",
+        outcome(strength_flags) if strengths_seen else CheckOutcome.NOT_APPLICABLE,
+        f"{strengths_seen} answer sentences rest on graded recommendations; {len(strength_flags)} overstate them."
+        if strengths_seen
+        else "The evidence used carries no recommendation grades.",
+        strength_flags,
     )
     return results, claims, edges

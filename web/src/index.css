@@ -26,6 +26,12 @@
   --info: #93a4c3;
 
   --glow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 10px 30px -12px rgba(0, 0, 0, 0.7);
+
+  /* Chart series (About page), fixed order. Reference data-viz palette slots 1-3,
+     validated all-pairs for colour-vision deficiency in both modes. */
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
   color-scheme: dark;
 }
 
@@ -51,6 +57,9 @@
     --handled: #0e9a6a;
     --info: #55688c;
     --glow: 0 0 0 1px rgba(15, 20, 32, 0.05), 0 10px 30px -14px rgba(15, 20, 32, 0.18);
+    --viz-1: #2a78d6;
+    --viz-2: #eb6834;
+    --viz-3: #1baf7a;
     color-scheme: light;
   }
 }

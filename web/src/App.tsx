@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { AnswerCard } from "./components/AnswerCard";
 import { AskBar } from "./components/AskBar";
 import { ChecksPanel } from "./components/Checks";
@@ -13,6 +13,22 @@ import { useApp } from "./store";
 // The process view (PixiJS evidence field, timeline, ledger) is code-split: the default
 // answer view never downloads the rendering engine.
 const ProcessView = lazy(() => import("./process/ProcessView"));
+const About = lazy(() => import("./about/About").then((m) => ({ default: m.About })));
+
+/** "#/about" shows the About page. A hash route, because the built app is served as
+ *  static files and a path like /about has no file behind it. */
+function useRoute() {
+  const [hash, setHash] = useState(() => window.location.hash);
+  useEffect(() => {
+    const on = () => {
+      setHash(window.location.hash);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  return hash === "#/about" ? "about" : "app";
+}
 
 export function App() {
   const init = useApp((s) => s.init);
@@ -21,6 +37,7 @@ export function App() {
   const showProcess = useApp((s) => s.showProcess);
   const compare = useApp((s) => s.compare);
   const active = useApp((s) => s.activePipeline);
+  const route = useRoute();
 
   useEffect(() => {
     void init();
@@ -33,7 +50,11 @@ export function App() {
     <div className="bg-instrument min-h-full">
       <TopBar />
       <main className="mx-auto w-full max-w-[1180px] px-4 pb-24 sm:px-6">
-        {loadError ? (
+        {route === "about" ? (
+          <Suspense fallback={<div className="mt-24 h-96 animate-pulse rounded-2xl border border-line bg-surface" />}>
+            <About />
+          </Suspense>
+        ) : loadError ? (
           <div className="mt-24 rounded-xl border border-omit/40 bg-surface p-6 text-ink-2">
             Couldn't reach the Wittgenstein engine: {loadError}. Start it with{" "}
             <code className="num text-ink">make live</code> in <code className="num">engine/</code>.

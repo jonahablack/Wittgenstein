@@ -22,13 +22,17 @@ export function TopBar() {
   return (
     <header className="sticky top-0 z-30 border-b border-line-soft bg-bg/75 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-[1180px] items-center gap-3 px-4 sm:px-6">
-        <a href="/" className="flex items-center gap-2.5" aria-label="Wittgenstein home">
+        <a href="#/" className="flex items-center gap-2.5" aria-label="Wittgenstein home">
           <svg viewBox="0 0 32 32" className="size-6" aria-hidden>
             <circle cx="16" cy="16" r="3.2" fill="var(--ink)" />
             <circle cx="16" cy="16" r="8" fill="none" stroke="var(--mn)" strokeWidth="1.6" opacity=".85" />
             <circle cx="16" cy="16" r="12.5" fill="none" stroke="var(--kw)" strokeWidth="1.2" opacity=".6" />
           </svg>
           <span className="font-semibold tracking-tight">Wittgenstein</span>
+        </a>
+
+        <a href="#/about" className="ml-3 text-sm text-ink-3 hover:text-ink">
+          About
         </a>
 
         <div className="ml-auto flex min-w-0 items-center gap-2">

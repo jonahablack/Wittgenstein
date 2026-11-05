@@ -28,6 +28,7 @@ from wittgenstein.core.enums import (
     TraceStatus,
 )
 from wittgenstein.live import counterfactual
+from wittgenstein.live.answer_source import check_answer_sources
 from wittgenstein.live.characterize import EmbedderProfile, get_profile
 from wittgenstein.live.context_checks import check_context
 from wittgenstein.live.corpus import LiveCorpus, UnitSet
@@ -248,13 +249,13 @@ def fit_to_generator(spec: PipelineSpec, sel: Any, info: Any, out: FlagCollector
         FlagKind.CONTEXT_OVER_CAPACITY,
         origin=FlagOrigin.PIPELINE,
         stage="select",
-        severity=FlagSeverity.CAUTION,
-        disposition=FlagDisposition.NEEDS_REVIEW,
+        severity=FlagSeverity.INFO,
+        disposition=FlagDisposition.INFORMATIONAL,
         title=f"More passages than this model reliably uses ({n}; measured reliable: {cap})",
         observation=evidence,
         why_it_matters="A small model given more text than it handles well picks the wrong passage: an answer "
         "built from a neighbouring rule, class or definition.",
-        what_to_check="That each part of the answer comes from the passage it cites.",
+        what_to_check=None,
         refs=[],
         metrics=metrics,
         measurement="measured",
@@ -403,6 +404,7 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         question=analysis.query,
         others=[u for u in units.units if u.unit_id not in in_prompt],
     )
+    check_answer_sources(analysis.query, answer, passages, out)
     by_n = {p.n: p.unit.unit_id for p in passages}
     for s in sentences:
         em.emit(
@@ -427,6 +429,32 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         counterfactual.report(
             counterfactual.run_probes(analysis.query, [(p.n, p.unit.text) for p in passages], answer, regenerate),
             out,
+        )
+        # And does the answer survive fewer passages (or another order)? (live/consistency.py)
+        from wittgenstein.live import consistency
+        from wittgenstein.live import generator_profile as gp
+
+        prof = gp.load(provider.info.provider_id, provider.info.model_identifier)
+        cap = prof.reliable_passages if prof else 3
+        by_text = {p.unit.text: p.unit for p in passages}
+        note = (
+            f"This model was measured answering from the wrong passage more often with more than "
+            f"{prof.reliable_passages} passages; it was given {len(passages)}."
+            if prof and len(passages) > prof.reliable_passages
+            else ""
+        )
+        consistency.report(
+            consistency.run_context_probe(
+                analysis.query,
+                [(p.n, p.unit.text) for p in passages],
+                answer,
+                lambda q, ps: "".join(provider.stream(q, [ContextPassage(n, by_text[t]) for n, t in ps])),
+                [[t.lower() for t in f.terms] for f in analysis.facets],
+                cap,
+            ),
+            answer,
+            out,
+            note,
         )
         flush(nf, nc)
         stage("probe-generator", ts)

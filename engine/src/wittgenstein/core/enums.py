@@ -934,6 +934,10 @@ class FlagKind(str, Enum):
     ANSWER_UNSTABLE = "answer_unstable"
     # More passages than the answering model was measured to use reliably
     CONTEXT_OVER_CAPACITY = "context_over_capacity"
+    # A question part answered from a look-alike passage, not the one that answers it
+    ANSWER_FROM_NEIGHBOR = "answer_from_neighbor"
+    # The answer's substance changes with fewer passages or another order (live/consistency.py)
+    ANSWER_CONTEXT_SENSITIVE = "answer_context_sensitive"
 
 
 class FlagDisposition(str, Enum):

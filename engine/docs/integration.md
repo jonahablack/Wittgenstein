@@ -83,7 +83,18 @@ graded by value and citation; the result, with every probe and answer, is saved 
 gives the model more passages than its measured reliable size is flagged
 (`context_over_capacity`), with the measured curve as evidence. Trimming to that size is
 opt-in (`fit_context`): on 40 held-out drug-label questions it fixed 2 answers and broke 4
-for Qwen2-1.5B.
+for Qwen2-1.5B. The over-capacity note is informational: passage count alone is a weak
+predictor.
+
+Two per-answer checks look for misleading context directly:
+- `answer_from_neighbor`: a part of the question (a definition, an amount, a frequency;
+  named classes, articles and tiers must match exactly) answered from a look-alike
+  passage while the passage that answers it was in the prompt; both are quoted.
+- `answer_context_sensitive` (with `counterfactual` / "Test the model", or a
+  `generator_url`): the model is asked again with only the passages most relevant to
+  each question part (or the same passages reversed). A different value or yes/no in
+  two answers means at least one is wrong; held out: 2 flags, both real errors, none on
+  correct answers.
 
 ## Access levels
 

@@ -69,7 +69,9 @@ export type FlagKind =
   | "answer_off_question"
   | "context_ignored"
   | "answer_unstable"
-  | "context_over_capacity";
+  | "context_over_capacity"
+  | "answer_from_neighbor"
+  | "answer_context_sensitive";
 /**
  * measured | inferred_from_rankings | pattern_match | model_judgment -- how the observation was obtained. model_judgment: a language-inference model's verdict (can be wrong).
  */

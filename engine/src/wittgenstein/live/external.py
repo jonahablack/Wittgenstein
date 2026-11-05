@@ -367,6 +367,9 @@ def check_external(
             question=req.query,
             others=left_out,
         )
+        from wittgenstein.live.answer_source import check_answer_sources
+
+        check_answer_sources(req.query, req.answer, passages, out)
         sentences = [asdict(s) for s in verified]
     else:
         notes.append("No answer was sent, so answer verification didn't run.")
@@ -378,6 +381,23 @@ def check_external(
         gen = _callback_generator(req.generator_url, req.generator_headers)
         probes = counterfactual.report(
             counterfactual.run_probes(req.query, [(p.n, p.unit.text) for p in passages], req.answer, gen),
+            out,
+        )
+        # Does the answer keep its substance with fewer passages (or another order)?
+        from wittgenstein.live import consistency
+        from wittgenstein.live import generator_profile as gp
+
+        prof = gp.load("callback", req.pipeline.llm) if req.pipeline.llm else None
+        consistency.report(
+            consistency.run_context_probe(
+                req.query,
+                [(p.n, p.unit.text) for p in passages],
+                req.answer,
+                gen,
+                [[t.lower() for t in f.terms] for f in analyze_query(req.query).facets],
+                prof.reliable_passages if prof else 3,
+            ),
+            req.answer,
             out,
         )
     elif req.generator_url:

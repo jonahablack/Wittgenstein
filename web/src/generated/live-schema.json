@@ -277,7 +277,9 @@
         "answer_off_question",
         "context_ignored",
         "answer_unstable",
-        "context_over_capacity"
+        "context_over_capacity",
+        "answer_from_neighbor",
+        "answer_context_sensitive"
       ],
       "title": "FlagKind",
       "type": "string"

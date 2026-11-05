@@ -128,7 +128,7 @@ export function AskBar() {
           {provider !== "extractive" && (
             <label
               className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-1.5 text-xs text-ink-3 hover:text-ink-2"
-              title="Change a value in the passages and ask again: does the model follow the document or its memory? (up to 2 extra generations)"
+              title="Ask the model again (up to 3 extra generations): with a value in the passages changed (does it follow the document or its memory?), and with fewer passages or another order (does the answer keep its substance?)"
             >
               <input
                 type="checkbox"

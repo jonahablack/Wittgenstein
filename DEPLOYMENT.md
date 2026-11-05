@@ -1,89 +1,42 @@
-# Deployment Guide
+# Deployment
 
-This guide covers deploying Wittgenstein to Render as a **single web service**.
-There is no separate frontend deployment: Flask (`server/app.py`) builds and
-serves the Vite client directly (`client/dist`), and also exposes the API
-routes (`/upload`, `/formalize`, `/review`, `/reviews`, etc.) on the same
-origin.
+Wittgenstein deploys as **one web service**: the engine (`engine/`, FastAPI) serves the
+built web app (`web/`) and the API from the same origin. The `Dockerfile` at the repo
+root builds both; `render.yaml` deploys it on Render.
 
-## Architecture
+## Render
 
-- **One Render web service**, Python runtime, running `server/app.py` via Gunicorn.
-- Build step installs Python deps and builds the client (`npm run build` → `client/dist`).
-- Flask serves `client/dist` as static files and handles API requests — no CORS
-  split, no separate frontend URL to keep in sync.
+1. In the Render dashboard: **New → Blueprint**, pick this repository and the `Cosmos`
+   branch. Render reads `render.yaml` and creates the `wittgenstein-cosmos` web service
+   (Docker, free plan, health check `/live/config`).
+2. Optional environment variables (set in the dashboard, never in the repo):
+   - `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`: language-model answers in the app
+     (without them, answers quote the document).
+   - `WITTGENSTEIN_API_KEYS`: comma-separated keys required by the public `/v1` API.
+3. Every push to `Cosmos` redeploys (`autoDeploy: true`).
 
-## Prerequisites
+Notes:
+- Memory: about 180 MB at peak for a three-pipeline run (measured locally), within the
+  free plan's 512 MB.
+- The disk is not persistent: uploaded documents and saved runs reset on each deploy or
+  restart. The built-in manual and the public FDA label samples are baked into the image.
+- The model proxy (`/proxy/...`) and the audit feed (`/v1/audits`) accept only requests
+  from the same machine; they're for the local install, not the hosted site.
 
-1. GitHub repository with your code.
-2. Render account (free tier is enough for this demo).
-3. OpenAI API key.
-
-## Deploying with `render.yaml`
-
-A `render.yaml` blueprint is committed at the repo root. In the Render
-dashboard, choose **New → Blueprint**, point it at this repository, and
-Render will read `render.yaml` and provision the service automatically.
-
-It defines:
-
-```yaml
-buildCommand: pip install -r server/requirements.txt && cd client && npm install && npm run build
-startCommand: cd server && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 300
-```
-
-After the blueprint creates the service, set the required environment
-variable (Render won't have a value for this since it's marked `sync: false`):
-
-- `OPENAI_API_KEY` — your OpenAI API key.
-
-`PORT` is set automatically by Render; `server/app.py` reads it via
-`os.environ.get("PORT", 3000)` and binds to `0.0.0.0`.
-
-**Note:** the build command assumes Node/npm is available in Render's Python
-build image to run `npm run build`. Check the first deploy's build logs to
-confirm this works in practice — if Render's native Python environment
-doesn't include Node, switch the service to a Docker-based build instead.
-
-## Manual setup (without the blueprint)
-
-If you'd rather configure the service by hand instead of using
-`render.yaml`:
-
-1. **New → Web Service**, connect the repo.
-2. **Runtime**: Python 3.
-3. **Build Command**: `pip install -r server/requirements.txt && cd client && npm install && npm run build`
-4. **Start Command**: `cd server && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 300`
-5. **Environment**: add `OPENAI_API_KEY`.
-
-## Persistent storage (optional)
-
-Uploads, generated PDFs, and the reviewer decision log (`outputs/reviews.json`)
-are written under `DATA_DIR` (defaults to the repo root if unset). Render's free
-tier has an ephemeral filesystem — anything written during a session is lost
-on redeploy/restart. For a live demo this is usually fine; if you want
-review decisions to persist across restarts, attach a Render Disk and set
-`DATA_DIR` to its mount path.
-
-## Local development
+## Anywhere else
 
 ```bash
-cd server
-pip install -r requirements.txt
-export OPENAI_API_KEY=sk-...   # read from the environment at call time
-python app.py          # serves on :3000, or PORT if set
-
-cd ../client
-npm install
-npm run build           # or `npm run dev` for hot-reload against the Flask API
+docker build -t wittgenstein .
+docker run -p 10000:10000 wittgenstein        # http://localhost:10000
 ```
 
-## Troubleshooting
+## On a laptop, beside your own RAG app
 
-- **Build fails on `npm run build`**: confirm Node is available in the build
-  environment (see note above).
-- **API key errors**: verify `OPENAI_API_KEY` is set in the Render service's
-  Environment tab, not just locally.
-- **Blank page after deploy**: check `/__debug` for `CLIENT_DIR` /
-  `exists_index` — confirms whether the client build actually landed where
-  Flask expects it.
+```bash
+pip install wittgenstein-rag
+wittgenstein start
+```
+
+See `engine/docs/integration.md`.
+
+The previous Flask app (`server/`, `client/`) is no longer deployed.

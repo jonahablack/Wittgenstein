@@ -63,14 +63,24 @@ class _Model:
         from huggingface_hub import hf_hub_download
         from tokenizers import Tokenizer
 
+        # The 8-bit quantized export for this CPU (the one the evaluations ran on), not the
+        # full-precision model: same verdicts on the planted set, a fraction of the memory.
         arm = platform.machine().lower() in {"arm64", "aarch64"}
-        onnx_file = "onnx/model_qint8_arm64.onnx" if arm else "onnx/model.onnx"
+        onnx_file = "onnx/model_qint8_arm64.onnx" if arm else "onnx/model_quint8_avx2.onnx"
         with open(hf_hub_download(REPO, "config.json")) as fh:
             cfg = json.load(fh)
         self._labels = {int(k): v for k, v in cfg["id2label"].items()}
         self._tok = Tokenizer.from_file(hf_hub_download(REPO, "tokenizer.json"))
         self._tok.enable_truncation(512)
-        self._sess = ort.InferenceSession(hf_hub_download(REPO, onnx_file), providers=["CPUExecutionProvider"])
+        # No preallocated memory pool and one thread: inputs are short, calls are serialized
+        # (_run_lock), and the pool alone cost about 110 MB.
+        opts = ort.SessionOptions()
+        opts.enable_cpu_mem_arena = False
+        opts.enable_mem_pattern = False
+        opts.intra_op_num_threads = 1
+        self._sess = ort.InferenceSession(
+            hf_hub_download(REPO, onnx_file), opts, providers=["CPUExecutionProvider"]
+        )
         self._inputs = {i.name for i in self._sess.get_inputs()}
         self._run_lock = threading.Lock()
         self.identifier = f"{REPO} ({onnx_file})"

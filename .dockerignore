@@ -1,0 +1,19 @@
+# Only engine/ and web/ go into the image. Everything else stays out, in particular
+# participant data, research results, uploads and local environments.
+*
+!engine/
+!web/
+engine/.venv
+engine/.env
+engine/dist
+engine/data/live_runs
+engine/data/live_corpora
+engine/data/examples/evidence_set_diagnostics/local_corpora
+engine/src/wittgenstein/web_dist
+engine/**/__pycache__
+engine/**/.pytest_cache
+engine/**/.mypy_cache
+engine/**/.ruff_cache
+web/node_modules
+web/dist
+**/.DS_Store

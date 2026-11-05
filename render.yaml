@@ -1,12 +1,22 @@
+# Wittgenstein on Render: one Docker web service (Dockerfile at the repo root) that
+# builds the web app and runs the engine. Measured peak memory about 180 MB for a
+# three-pipeline run, so the free plan's 512 MB is enough for a demo.
 services:
   - type: web
-    name: wittgenstein
-    runtime: python
+    name: wittgenstein-cosmos
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: free
-    buildCommand: "pip install -r server/requirements.txt && cd client && npm install && npm run build"
-    startCommand: "cd server && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 300"
+    branch: Cosmos
+    autoDeploy: true
+    healthCheckPath: /live/config
     envVars:
+      # Optional: language-model answers in the app. Set in the Render dashboard, never in the repo.
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      # Optional: require an API key for the public /v1 API (comma-separated).
+      - key: WITTGENSTEIN_API_KEYS
+        sync: false

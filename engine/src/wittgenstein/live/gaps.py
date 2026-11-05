@@ -340,6 +340,8 @@ def run_gaps(
                 FlagKind.CONTEXT_CONFLICT,
                 origin=FlagOrigin.TEXT,
                 stage="selection",
+                # Raised for review; once the answer is known it stays a review item only if
+                # the answer states the disputed point (flags.gate_to_answer).
                 severity=FlagSeverity.WARNING,
                 disposition=FlagDisposition.NEEDS_REVIEW,
                 title="Two passages used disagree",
@@ -349,7 +351,12 @@ def run_gaps(
                 "these passages says which applies (a different edition, patient group or situation may).",
                 what_to_check="Which of the two applies to your case, and whether the answer says.",
                 refs=[ref(ua, cf.sentence_a[1], cf.sentence_a[2]), ref(ub, cf.sentence_b[1], cf.sentence_b[2])],
-                metrics={"units": [cf.unit_a, cf.unit_b], "dimension": cf.dimension, "fields": list(cf.fields)},
+                metrics={
+                    "units": [cf.unit_a, cf.unit_b],
+                    "dimension": cf.dimension,
+                    "fields": list(cf.fields),
+                    "sentences": [cf.sentence_a[0], cf.sentence_b[0]],
+                },
                 measurement="model_judgment" if cf.model_contradiction is not None else "pattern_match",
             )
         )

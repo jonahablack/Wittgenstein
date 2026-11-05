@@ -35,7 +35,7 @@ from wittgenstein.live.corpus import LiveCorpus, UnitSet
 from wittgenstein.live.coverage import Instruments
 from wittgenstein.live.embedding import DEFAULT_EMBEDDER, get_embedder
 from wittgenstein.live.events import Emitter, LiveEvent, UnitPoint
-from wittgenstein.live.flags import FlagCollector
+from wittgenstein.live.flags import FlagCollector, gate_to_answer
 from wittgenstein.live.gaps import run_gaps
 from wittgenstein.live.generate import ContextPassage, ExtractiveProvider, ProviderError, get_provider
 from wittgenstein.live.pipelines import PRESETS, PipelineSpec
@@ -372,6 +372,11 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         others=[u for u in units.units if u.unit_id not in in_prompt],
     )
     check_answer_sources(analysis.query, answer, passages, out)
+    used = {u for vs in sentences for u in vs.cited_unit_ids} | {
+        vs.best_evidence_unit for vs in sentences if vs.best_evidence_unit
+    }
+    for f in gate_to_answer(out.flags, used, answer):
+        em.emit(LiveEventType.FLAG_UPDATED, pid, flag=f.model_dump(mode="json"))
     by_n = {p.n: p.unit.unit_id for p in passages}
     for s in sentences:
         em.emit(

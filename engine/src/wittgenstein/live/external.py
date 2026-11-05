@@ -369,6 +369,14 @@ def check_external(
         from wittgenstein.live.answer_source import check_answer_sources
 
         check_answer_sources(req.query, req.answer, passages, out)
+        from wittgenstein.live.flags import gate_to_answer
+
+        gate_to_answer(
+            out.flags,
+            {u for vs in verified for u in vs.cited_unit_ids}
+            | {vs.best_evidence_unit for vs in verified if vs.best_evidence_unit},
+            req.answer,
+        )
         sentences = [asdict(s) for s in verified]
     else:
         notes.append("No answer was sent, so answer verification didn't run.")

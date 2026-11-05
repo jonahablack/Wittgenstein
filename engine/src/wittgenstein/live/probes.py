@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -498,6 +499,9 @@ def _d5_near_miss(c: _Ctx) -> None:
     units = c.inst.units
     raised: list[AwarenessFlag] = []
     seen: set[str] = set()
+    # One flag per (asked, look-alike) pair, listing every top passage about the look-alike.
+    groups: dict[tuple[str, str], list[tuple[Any, Any, re.Match[str]]]] = {}
+    spans: dict[str, Any] = {}
     for x in idents:
         head, _, tail = x.span.text.partition(" ")
         if not tail:
@@ -512,26 +516,29 @@ def _d5_near_miss(c: _Ctx) -> None:
             if not m:
                 continue
             seen.add(u.unit_id)
-            raised.append(
-                c.out.flag(
-                    FlagKind.NEAR_MISS,
-                    origin=FlagOrigin.TEXT_AND_PIPELINE,
-                    stage="retrieval",
-                    severity=FlagSeverity.WARNING,
-                    disposition=FlagDisposition.NEEDS_REVIEW,
-                    title=f"A top match is about “{m.group(0)}”, not “{x.span.text}”",
-                    observation=f"Ranked #{cand.fused_rank}, this passage ({u.location}) mentions “{m.group(0)}” "
-                    f"and never “{x.span.text}”.",
-                    why_it_matters="Search treats closely related identifiers as near-identical, so a passage "
-                    "about the wrong one can look like strong evidence.",
-                    what_to_check=f"That the answer doesn't apply what this says about {m.group(0)} to "
-                    f"{x.span.text}.",
-                    refs=[ref(u, m.start(), m.end())],
-                    query_span=x.span,
-                    metrics={"asked": x.span.text, "found": m.group(0), "rank": cand.fused_rank},
-                    measurement="pattern_match",
-                )
+            groups.setdefault((x.span.text, m.group(0)), []).append((cand, u, m))
+            spans[x.span.text] = x.span
+    for (asked, found), hits in groups.items():
+        where = "; ".join(f"#{cand.fused_rank} ({u.location})" for cand, u, _ in hits)
+        raised.append(
+            c.out.flag(
+                FlagKind.NEAR_MISS,
+                origin=FlagOrigin.TEXT_AND_PIPELINE,
+                stage="retrieval",
+                severity=FlagSeverity.WARNING,
+                disposition=FlagDisposition.NEEDS_REVIEW,
+                title=f"A top match is about “{found}”, not “{asked}”",
+                observation=f"{len(hits)} top passage{'s' if len(hits) > 1 else ''} mention “{found}” and never "
+                f"“{asked}”: ranked {where}.",
+                why_it_matters="Search treats closely related identifiers as near-identical, so a passage "
+                "about the wrong one can look like strong evidence.",
+                what_to_check=f"That the answer doesn't apply what these say about {found} to {asked}.",
+                refs=[ref(u, m.start(), m.end()) for _, u, m in hits],
+                query_span=spans[asked],
+                metrics={"asked": asked, "found": found, "ranks": [cand.fused_rank for cand, _, _ in hits]},
+                measurement="pattern_match",
             )
+        )
     c.check(FlagKind.NEAR_MISS, label, raised, f"{len(raised)} top passages name a sibling identifier instead.")
 
 

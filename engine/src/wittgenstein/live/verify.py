@@ -699,8 +699,10 @@ def verify_answer(
                 FlagKind.CITATION_MISSING,
                 origin=FlagOrigin.PIPELINE,
                 stage="answer",
-                severity=FlagSeverity.CAUTION,
-                disposition=FlagDisposition.NEEDS_REVIEW,
+                # The statement matches the source; only the [n] is missing. A note, not a
+                # review item (held out: on 7 of 18 correct answers, 1 of 22 problems).
+                severity=FlagSeverity.INFO,
+                disposition=FlagDisposition.INFORMATIONAL,
                 title="A sentence from the sources has no citation",
                 observation=f"“{shown[:140]}” isn't cited, but passage [{stated_in.n}] states it.",
                 why_it_matters="Without the citation a reader can't check it; the statement itself matches the "

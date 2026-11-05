@@ -94,6 +94,36 @@ def _content(text: str) -> set[str]:
     return {w for w in re.findall(r"[a-z0-9]+", text.lower()) if w not in _STOP and len(w) > 1}
 
 
+#: A named item of a kind: "Class S", "Article 5", "Tier 2", "Schedule II".
+_NAMED = re.compile(
+    r"\b(class|type|tier|grade|category|stage|schedule|group|level|phase|article|section|part|annex|table|"
+    r"definition|model|version)\s+([A-Z0-9][\w.()-]*)",
+    re.IGNORECASE,
+)
+
+
+def different_referents(a: str, b: str) -> bool:
+    """The two sentences are about different things of the same kind: different named
+    items ("Class R" / "Class S") or opposite members of a contrast set
+    (immediate-release / extended-release). Different limits for different things are
+    not a conflict (seen: Class R's 12 cm against Class S's 8 cm)."""
+    from wittgenstein.live.claims import contrast_terms
+
+    def named(t: str) -> dict[str, set[str]]:
+        out: dict[str, set[str]] = {}
+        for m in _NAMED.finditer(t):
+            out.setdefault(m.group(1).lower(), set()).add(m.group(2).lower().rstrip(".,;:"))
+        return out
+
+    na, nb = named(a), named(b)
+    if any(k in nb and na[k].isdisjoint(nb[k]) for k in na):
+        return True
+    ca = {(group, member) for _, member, group in contrast_terms(a)}
+    cb = {(group, member) for _, member, group in contrast_terms(b)}
+    groups = {g for g, _ in ca} & {g for g, _ in cb}
+    return any({m for g, m in ca if g == grp}.isdisjoint({m for g, m in cb if g == grp}) for grp in groups)
+
+
 def find_conflicts(units: UnitSet, used: list[str]) -> list[Conflict]:
     sents = {
         uid: [s for s in units.by_id[uid].sentences if len(s[0]) > 20][:MAX_SENTENCES_PER_PASSAGE] for uid in used
@@ -114,6 +144,8 @@ def find_conflicts(units: UnitSet, used: list[str]) -> list[Conflict]:
                     if not cb or " ".join(sa[0].lower().split()) == " ".join(sb[0].lower().split()):
                         continue
                     if len(ca & cb) / len(ca | cb) < MIN_TOPIC_OVERLAP:
+                        continue
+                    if different_referents(sa[0], sb[0]):
                         continue
                     cmp = compare_claim_to_candidate(
                         AnswerClaim(claim_id="a", text=sa[0]), ContextItem(item_id="b", excerpt=sb[0])

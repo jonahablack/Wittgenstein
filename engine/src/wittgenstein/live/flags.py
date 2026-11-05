@@ -177,3 +177,57 @@ class FlagCollector:
         )
         self.checks.append(rec)
         return rec
+
+
+#: Search-side flags about a specific passage that only need a person's review when the
+#: answer actually draws on that passage (a look-alike the answer didn't use is noise).
+ANSWER_GATED = {FlagKind.NEAR_MISS}
+
+
+def _states_disputed_point(f: AwarenessFlag, answer: str) -> bool:
+    """Does the answer say what two conflicting passages disagree about: restate either
+    sentence, or give a value one of them has and the other doesn't?"""
+    import re
+
+    sents = [s for s in (f.metrics or {}).get("sentences", []) if s]
+    if not sents or not answer.strip():
+        return False
+    words = lambda t: set(re.findall(r"[a-z0-9]+", t.lower()))  # noqa: E731
+    nums = lambda t: set(re.findall(r"\d+(?:[.,]\d+)?", t.replace(",", "")))  # noqa: E731
+    for part in re.split(r"(?<=[.!?])\s+", answer):
+        w = words(part)
+        if len(w) >= 4 and any(len(w & words(s)) / len(w) >= 0.5 for s in sents):
+            return True
+    disputed = nums(sents[0]) ^ nums(sents[1]) if len(sents) == 2 else set()
+    return bool(disputed & nums(answer))
+
+
+def gate_to_answer(flags: list[AwarenessFlag], used_units: set[str], answer: str = "") -> list[AwarenessFlag]:
+    """Once the answer is known, keep as review items only the passage-level flags that
+    bear on it; the rest become notes. Returns the flags changed (for re-emitting).
+
+    - ANSWER_GATED (a look-alike passage): kept if the answer draws on that passage.
+    - CONTEXT_CONFLICT (two passages disagree): kept if the answer states the disputed
+      point (held out: the 2 conflicts on correct answers were about something the
+      answer never said; red-team P3, an answer following the superseded value, is kept).
+    """
+    changed = []
+    for f in flags:
+        if f.disposition != FlagDisposition.NEEDS_REVIEW:
+            continue
+        if f.kind in ANSWER_GATED and f.refs:
+            if any(r.unit_id in used_units for r in f.refs):
+                continue
+            note = "The answer doesn't draw on this passage, so it isn't a review item."
+        elif f.kind == FlagKind.CONTEXT_CONFLICT:
+            if _states_disputed_point(f, answer):
+                continue
+            note = "The answer doesn't state the point these passages disagree on, so it isn't a review item."
+        else:
+            continue
+        f.disposition = FlagDisposition.INFORMATIONAL
+        f.severity = FlagSeverity.INFO
+        f.what_to_check = None
+        f.action_taken = note
+        changed.append(f)
+    return changed

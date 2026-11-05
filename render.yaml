@@ -1,22 +1,38 @@
-# Wittgenstein on Render: one Docker web service (Dockerfile at the repo root) that
-# builds the web app and runs the engine. Measured peak memory about 180 MB for a
-# three-pipeline run, so the free plan's 512 MB is enough for a demo.
+# Wittgenstein on Render (the existing "Wittgenstein" service, wittgenstein.onrender.com):
+# one web service on Render's Python runtime that builds the web app and runs the engine,
+# which serves both. (The Dockerfile at the repo root builds the same thing as an image.)
+# Memory: about 650-700 MB once the models are loaded (measured in the Docker image),
+# so a 512 MB plan may restart under load.
 services:
   - type: web
-    name: wittgenstein-cosmos
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    plan: free
+    name: Wittgenstein
+    runtime: python
+    plan: starter
     branch: Cosmos
     autoDeploy: true
     healthCheckPath: /live/config
+    buildCommand: >-
+      pip install uv
+      && cd web && npm ci --no-audit --no-fund && npm run build
+      && cd ../engine && uv sync --frozen
+      && uv run --no-sync python -c "from wittgenstein.live.nlp import nlp; nlp();
+      from wittgenstein.live.embedding import get_embedder; get_embedder();
+      from wittgenstein.live import nli; assert nli.model() is not None, nli.load_error()"
+      && (uv run --no-sync python scripts/fetch_sample_corpora.py || echo 'sample corpora not fetched')
+      && rm -rf data/live_corpora/austen
+    startCommand: cd engine && uv run --no-sync uvicorn wittgenstein.api.app:app --host 0.0.0.0 --port $PORT
     envVars:
-      # Optional: language-model answers in the app. Set in the Render dashboard, never in the repo.
-      - key: ANTHROPIC_API_KEY
-        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: NODE_VERSION
+        value: 22.12.0
+      # Models downloaded at build time must stay inside the project folder to exist at runtime.
+      - key: HF_HOME
+        value: /opt/render/project/src/engine/.cache/hf
+      # Optional, set in the dashboard: language-model answers, and keys for the public /v1 API.
       - key: OPENAI_API_KEY
         sync: false
-      # Optional: require an API key for the public /v1 API (comma-separated).
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: WITTGENSTEIN_API_KEYS
         sync: false

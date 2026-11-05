@@ -23,6 +23,7 @@ from wittgenstein.core.enums import (
     FlagSeverity,
 )
 from wittgenstein.ingestion.parser import split_sentences
+from wittgenstein.live import nli
 from wittgenstein.live import phrases as P
 from wittgenstein.live.corpus import UnitSet
 from wittgenstein.live.flags import AwarenessFlag, FlagCollector
@@ -35,11 +36,15 @@ from wittgenstein.retrieval.lexical import tokenize
 from wittgenstein.review.claim_linking import link_claim_detailed
 from wittgenstein.schemas.trace import AnswerClaim, AnswerSupportEdge, ContextItem
 
+NLI_PREMISES = 3
 _CITE = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 _UNSUPPORTED = {
     ClaimSupportCandidateStatus.NO_SUPPORT_EDGE_FOUND,
     ClaimSupportCandidateStatus.CONTRADICTION_CANDIDATE,
 }
+#: Linker outcomes a strong entailment judgment may resolve to "supported" (never a
+#: field-level contradiction, which stays flagged).
+_RESOLVABLE = {ClaimSupportCandidateStatus.NO_SUPPORT_EDGE_FOUND, ClaimSupportCandidateStatus.UNRESOLVED}
 _QUALIFIED = {
     ClaimSupportCandidateStatus.PARTIAL_SUPPORT_CANDIDATE,
     ClaimSupportCandidateStatus.QUALIFICATION_REQUIRED,
@@ -131,6 +136,8 @@ def verify_answer(
     populations_seen = 0
     strength_flags: list[AwarenessFlag] = []
     strengths_seen = 0
+    contradiction_flags: list[AwarenessFlag] = []
+    nli_seen = 0
 
     for i, (text, cites) in enumerate(split_answer(answer)):
         sid = f"s{i + 1}"
@@ -148,6 +155,7 @@ def verify_answer(
             # the linker may still pair it with a *different* sentence of that passage.
             status = ClaimSupportCandidateStatus.DIRECT_SUPPORT_CANDIDATE
             edge = edge.model_copy(update={"candidate_support_status": status})
+            edges[-1] = edge  # the trace records the upgraded status, not the linker's
         # The evidence sentence this answer sentence most resembles (word overlap).
         best = max(
             ((u, s, s0, s1) for u in pool for s, s0, s1 in u.sentences),
@@ -167,7 +175,56 @@ def verify_answer(
         if text.lower().startswith(("the document", "the passages", "the provided passages")):
             continue  # a statement about the sources themselves ("the passages don't say ...")
 
-        if status in _UNSUPPORTED or (not cites and passages):
+        # Meaning-level judgment (live/nli.py): catches a contradiction stated in other
+        # words, and recognizes a faithful paraphrase the field comparison can't match.
+        contradicted = False
+        if not verbatim and passages:
+            ranked = sorted(
+                ((u, s, s0, s1) for u in pool for s, s0, s1 in u.sentences),
+                key=lambda t: -_overlap(text, t[1]),
+            )[:NLI_PREMISES]
+            verdict = nli.judge([t[1] for t in ranked], text)
+            if verdict is not None:
+                nli_seen += 1
+                c, e = verdict
+                if c.contradiction >= nli.POSSIBLE_CONTRADICTION:
+                    contradicted = True
+                    src_sent = next((t for t in ranked if t[1] == c.premise), ranked[0])
+                    strong = c.contradiction >= nli.CONTRADICTION
+                    f = out.flag(
+                        FlagKind.ANSWER_CONTRADICTS_SOURCE,
+                        origin=FlagOrigin.PIPELINE,
+                        stage="answer",
+                        severity=FlagSeverity.WARNING if strong else FlagSeverity.CAUTION,
+                        disposition=FlagDisposition.NEEDS_REVIEW,
+                        title="The answer may say the opposite of its source"
+                        if strong
+                        else "The answer may conflict with its source",
+                        observation=f"The source says “{c.premise[:200]}”; the answer says "
+                        f"“{c.hypothesis[:200]}”. A language-inference model reads these as contradictory "
+                        f"(probability {c.contradiction:.2f}).",
+                        why_it_matters="A contradiction in different words passes word-matching checks; the "
+                        "answer may reverse what the source allows or requires.",
+                        what_to_check="Whether the source permits what the answer says.",
+                        refs=[ref(src_sent[0], src_sent[2], src_sent[3])],
+                        metrics={
+                            "sentence_id": sid,
+                            "contradiction": round(c.contradiction, 3),
+                            "entailment": round(e.entailment, 3),
+                            "model": nli.REPO,
+                        },
+                        measurement="model_judgment",
+                    )
+                    contradiction_flags.append(f)
+                    vs.flag_ids.append(f.flag_id)
+                elif e.entailment >= nli.ENTAILMENT and status in _RESOLVABLE and cites:
+                    # A faithful paraphrase: supported in meaning, though not word for word.
+                    status = ClaimSupportCandidateStatus.DIRECT_SUPPORT_CANDIDATE
+                    edge = edge.model_copy(update={"candidate_support_status": status})
+                    edges[-1] = edge
+                    vs.support = "entailed_paraphrase"
+
+        if not contradicted and (status in _UNSUPPORTED or (not cites and passages)):
             f = out.flag(
                 FlagKind.ANSWER_SENTENCE_UNSUPPORTED,
                 origin=FlagOrigin.PIPELINE,
@@ -414,6 +471,20 @@ def verify_answer(
         if populations_seen
         else "The evidence used doesn't single out a patient group.",
         population_flags,
+    )
+    out.check(
+        FlagKind.ANSWER_CONTRADICTS_SOURCE,
+        "Answer doesn't contradict its sources (meaning-level)",
+        outcome(contradiction_flags) if nli_seen else CheckOutcome.NOT_APPLICABLE,
+        f"{nli_seen} sentences judged by a language-inference model; {len(contradiction_flags)} read as "
+        "contradicting their source."
+        if nli_seen
+        else (
+            f"The language-inference model is unavailable ({nli.load_error()})."
+            if nli.load_error()
+            else "No answer sentences needed a meaning-level check (all quoted verbatim)."
+        ),
+        contradiction_flags,
     )
     out.check(
         FlagKind.RECOMMENDATION_STRENGTH_DROPPED,

@@ -45,6 +45,7 @@ REGISTRY_LINKS: dict[FlagKind, str] = {
     FlagKind.ENUMERATION_INCOMPLETE: "RET_MULTIHOP_SUPPORT_INCOMPLETE",
     FlagKind.NEAR_MISS: "RET_HARD_DISTRACTOR",
     FlagKind.ANSWER_SENTENCE_UNSUPPORTED: "GEN_UNSUPPORTED_DESPITE_CONTEXT",
+    FlagKind.ANSWER_CONTRADICTS_SOURCE: "GEN_UNSUPPORTED_DESPITE_CONTEXT",
     FlagKind.QUANTITY_MISMATCH: "HYP_THRESHOLD_UNIT_COMPARATOR_MISBINDING",
     FlagKind.POPULATION_QUALIFIER_DROPPED: "HYP_CONDITIONAL_APPLICABILITY_OMISSION",
     FlagKind.RECOMMENDATION_STRENGTH_DROPPED: "HYP_MODAL_STRENGTH_TRANSFORMATION",
@@ -92,7 +93,9 @@ class AwarenessFlag(BaseModel):
     query_span: Span | None = None
     metrics: dict[str, Any] = Field(default_factory=dict)
     measurement: str = Field(
-        ..., description="measured | inferred_from_rankings | pattern_match -- how the observation was obtained."
+        ...,
+        description="measured | inferred_from_rankings | pattern_match | model_judgment -- how the observation "
+        "was obtained. model_judgment: a language-inference model's verdict (can be wrong).",
     )
     registry: RegistryLink | None = None
     pipeline_id: str | None = None

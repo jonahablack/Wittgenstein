@@ -17,6 +17,7 @@ import re
 from dataclasses import dataclass
 
 from wittgenstein.core.enums import ClaimSupportCandidateStatus, ComparisonOutcome
+from wittgenstein.live import nli
 from wittgenstein.live.corpus import UnitSet
 from wittgenstein.review.claim_linking import compare_claim_to_candidate
 from wittgenstein.schemas.trace import AnswerClaim, ContextItem
@@ -26,6 +27,9 @@ from wittgenstein.schemas.trace import AnswerClaim, ContextItem
 MIN_TOPIC_OVERLAP = 0.35
 MAX_SENTENCES_PER_PASSAGE = 25
 MAX_CONFLICTS = 3
+#: Language-inference bar for a passage-pair conflict, and a per-run call budget.
+NLI_CONFLICT = 0.95
+MAX_NLI_CALLS = 80
 _STOP = frozenset(
     [
         "the",
@@ -82,6 +86,8 @@ class Conflict:
     sentence_b: tuple[str, int, int]
     fields: tuple[str, ...]
     dimension: str
+    model_contradiction: float | None = None
+    """Set when found by the language-inference model rather than field comparison."""
 
 
 def _content(text: str) -> set[str]:
@@ -93,6 +99,7 @@ def find_conflicts(units: UnitSet, used: list[str]) -> list[Conflict]:
         uid: [s for s in units.by_id[uid].sentences if len(s[0]) > 20][:MAX_SENTENCES_PER_PASSAGE] for uid in used
     }
     found: list[Conflict] = []
+    nli_calls = 0
     pairs_seen: set[tuple[str, str]] = set()
     for i, ua in enumerate(used):
         for ub in used[i + 1 :]:
@@ -112,6 +119,15 @@ def find_conflicts(units: UnitSet, used: list[str]) -> list[Conflict]:
                         AnswerClaim(claim_id="a", text=sa[0]), ContextItem(item_id="b", excerpt=sb[0])
                     )
                     if cmp.relationship_status != ClaimSupportCandidateStatus.CONTRADICTION_CANDIDATE:
+                        # Same topic, no field-level contradiction: ask the language-inference
+                        # model, with a strict bar (a passage pair gets more scrutiny than an
+                        # answer sentence).
+                        if nli_calls < MAX_NLI_CALLS and (v := nli.pair(sa[0], sb[0])) is not None:
+                            nli_calls += 1
+                            if v.contradiction >= NLI_CONFLICT:
+                                found.append(Conflict(ua, ub, sa, sb, ("meaning",), "meaning", v.contradiction))
+                                pairs_seen.add((ua, ub))
+                                break
                         continue
                     fields = tuple(
                         fc.field_name.value
@@ -120,7 +136,7 @@ def find_conflicts(units: UnitSet, used: list[str]) -> list[Conflict]:
                     )
                     dims = {_DIMENSIONS[f] for f in fields if f in _DIMENSIONS}
                     dimension = "polarity" if "polarity" in dims else (sorted(dims)[0] if dims else "value")
-                    found.append(Conflict(ua, ub, sa, sb, fields, dimension))
+                    found.append(Conflict(ua, ub, sa, sb, fields, dimension, None))
                     pairs_seen.add((ua, ub))
                     break
                 if (ua, ub) in pairs_seen:

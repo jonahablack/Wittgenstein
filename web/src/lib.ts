@@ -27,6 +27,7 @@ export const MEASUREMENT: Record<string, string> = {
   measured: "Measured on this run",
   inferred_from_rankings: "Inferred from rankings",
   pattern_match: "Matched in the text",
+  model_judgment: "Judged by a language-inference model (can be wrong)",
 };
 
 export const FATE: Record<CandidateFate, { label: string; tone: string }> = {

@@ -328,7 +328,13 @@ def run_gaps(
     flags = []
     for cf in find_conflicts(units, sel.selected):
         ua, ub = units.by_id[cf.unit_a], units.by_id[cf.unit_b]
-        what = "one says the opposite of the other" if cf.dimension == "polarity" else "they give different values"
+        what = (
+            f"a language-inference model reads them as contradictory (probability {cf.model_contradiction:.2f})"
+            if cf.model_contradiction is not None
+            else "one says the opposite of the other"
+            if cf.dimension == "polarity"
+            else "they give different values"
+        )
         flags.append(
             out.flag(
                 FlagKind.CONTEXT_CONFLICT,
@@ -344,7 +350,7 @@ def run_gaps(
                 what_to_check="Which of the two applies to your case, and whether the answer says.",
                 refs=[ref(ua, cf.sentence_a[1], cf.sentence_a[2]), ref(ub, cf.sentence_b[1], cf.sentence_b[2])],
                 metrics={"units": [cf.unit_a, cf.unit_b], "dimension": cf.dimension, "fields": list(cf.fields)},
-                measurement="pattern_match",
+                measurement="model_judgment" if cf.model_contradiction is not None else "pattern_match",
             )
         )
     out.check(

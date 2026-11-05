@@ -36,6 +36,7 @@ export const FATE: Record<CandidateFate, { label: string; tone: string }> = {
   skipped_redundant: { label: "Duplicate", tone: "text-ink-3" },
   below_elbow: { label: "Below cutoff", tone: "text-ink-3" },
   omitted_budget: { label: "No room", tone: "text-omit" },
+  omitted_capacity: { label: "Over model's capacity", tone: "text-omit" },
   not_reached: { label: "Not reached", tone: "text-ink-4" },
 };
 

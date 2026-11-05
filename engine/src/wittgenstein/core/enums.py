@@ -835,6 +835,9 @@ class CandidateFate(str, Enum):
     SKIPPED_REDUNDANT = "skipped_redundant"
     BELOW_ELBOW = "below_elbow"
     OMITTED_BUDGET = "omitted_budget"
+    #: Left out so the answering model gets no more passages than it was measured to use
+    #: reliably (live/generator_profile.py).
+    OMITTED_CAPACITY = "omitted_capacity"
     NOT_REACHED = "not_reached"
 
 
@@ -929,6 +932,8 @@ class FlagKind(str, Enum):
     # Generator behavior (counterfactual probe, live/counterfactual.py)
     CONTEXT_IGNORED = "context_ignored"
     ANSWER_UNSTABLE = "answer_unstable"
+    # More passages than the answering model was measured to use reliably
+    CONTEXT_OVER_CAPACITY = "context_over_capacity"
 
 
 class FlagDisposition(str, Enum):

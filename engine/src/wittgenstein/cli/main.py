@@ -733,8 +733,6 @@ def fixture_run(
     console.print(f"Wrote diagnostic report/labels template to {output_dir}")
 
 
-
-
 _DEMO_PASSAGES = [
     "The recommended starting dosage of metformin hydrochloride extended-release is 500 mg orally once daily "
     "with the evening meal.",
@@ -885,6 +883,49 @@ def run_cmd(
         console.print("Usage: wittgenstein run python your_app.py")
         raise typer.Exit(2)
     raise typer.Exit(service.run(list(ctx.args), source))
+
+
+@app.command("measure-model")
+def measure_model_cmd(
+    provider: str = typer.Option("local", help="local | claude | openai: the answer-writing model to measure."),
+    yes: bool = typer.Option(False, "--yes", help="Don't ask before sending paid requests."),
+    show: bool = typer.Option(False, help="Show the last measurement instead of measuring again."),
+) -> None:
+    """Measure how many passages the answering model uses reliably (fictional probes with
+    near-identical decoys; graded by value, no model judges). The pipeline then trims or
+    flags context beyond that. Every probe and answer is saved for audit."""
+    from wittgenstein import service
+    from wittgenstein.live import generator_profile as gp
+    from wittgenstein.live.generate import get_provider
+
+    service.apply_config_env()
+    p = get_provider(provider)
+    model = p.info.model_identifier or provider
+    if show:
+        prof = gp.load(p.info.provider_id, model)
+        if prof is None:
+            console.print(f"Not measured yet: {model}")
+            raise typer.Exit(1)
+    else:
+        n = len(gp.probes()) * len(gp.SIZES)
+        if provider in {"claude", "openai"} and not yes:
+            typer.confirm(f"This sends {n} requests to {model} (billed to your API key). Continue?", abort=True)
+        console.print(f"Measuring {model}: {n} generations…")
+        prof = gp.measure(gp.with_provider(p), p.info.provider_id, model)
+        path = gp.save(prof)
+        console.print(f"Saved with every probe and answer: {path}")
+    table = Table(title=f"{model} — measured {prof.measured_at[:16]}")
+    table.add_column("Passages")
+    table.add_column("Correct")
+    table.add_column("Wrong passage")
+    table.add_column("No answer")
+    for s_ in prof.sizes:
+        k = str(s_)
+        table.add_row(k, f"{prof.accuracy[k]:.0%}", f"{prof.wrong_passage[k]:.0%}", f"{prof.no_answer[k]:.0%}")
+    console.print(table)
+    console.print(f"[bold]Reliable size: {prof.reliable_passages} passages[/bold]  ({prof.rule})")
+    if prof.note:
+        console.print(prof.note)
 
 
 def _print_connect(url: str) -> None:

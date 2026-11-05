@@ -182,6 +182,11 @@ class RunRequest(BaseModel):
         description="Also test whether the model answers from the passages (LLM providers only; up to 2 extra "
         "generations).",
     )
+    fit_context: bool = Field(
+        default=False,
+        description="Trim the self-aware pipeline's context to what the answering model was measured to use "
+        "reliably (wittgenstein measure-model). Over-capacity is flagged either way.",
+    )
 
 
 @router.post("/runs")
@@ -215,6 +220,7 @@ async def start_run(req: RunRequest) -> EventSourceResponse:
                 req.provider,
                 sink=forward,
                 counterfactual=req.counterfactual,
+                fit_context=req.fit_context,
             )
             runs.put(result)
         except Exception:  # noqa: BLE001 -- the runner already emitted an ERROR event on the stream
@@ -335,6 +341,68 @@ def get_audit(audit_id: str) -> dict[str, Any]:
 def clear_audits() -> dict[str, Any]:
     audit_log().clear()
     return {"cleared": True}
+
+
+class MeasureRequest(BaseModel):
+    generator_url: str
+    model: str = Field(..., min_length=1, max_length=200, description="Your model's name; match pipeline.llm.")
+    generator_headers: dict[str, str] | None = None
+
+
+@v1.post("/generator-profile", dependencies=[Depends(require_api_key)])
+def measure_callback_generator(req: MeasureRequest) -> dict[str, Any]:
+    """Measure your own answering model through its generator callback (60 generations).
+    Afterwards, /v1/check requests with pipeline.llm = model are flagged when the prompt
+    holds more passages than the model was measured to use reliably."""
+    from dataclasses import asdict
+
+    from wittgenstein.live.external import measure_callback
+
+    try:
+        prof = measure_callback(req.generator_url, req.model, req.generator_headers)
+    except GeneratorCallbackError as e:
+        raise HTTPException(422, str(e)) from e
+    return asdict(prof)
+
+
+@router.get("/generator-profile")
+def get_generator_profile(provider: str) -> dict[str, Any]:
+    """The last measurement of a provider's answering model, with every probe, passage
+    list, answer and grade (live/generator_profile.py), for audit."""
+    from dataclasses import asdict
+
+    from wittgenstein.live import generator_profile as gp
+    from wittgenstein.live.generate import get_provider
+
+    if provider not in PROVIDER_CHOICES or provider == "extractive":
+        raise HTTPException(404, "Only language-model providers are measured.")
+    p = get_provider(provider)
+    prof = gp.load(p.info.provider_id, p.info.model_identifier)
+    if prof is None:
+        raise HTTPException(404, f"{p.info.model_identifier or provider} hasn't been measured.")
+    return asdict(prof)
+
+
+@router.post("/generator-profile", dependencies=[Depends(local_or_keyed)])
+def measure_generator(provider: str) -> dict[str, Any]:
+    """Measure a provider's answering model now (len(probes) x len(SIZES) generations;
+    paid for paid APIs). Local requests only."""
+    from dataclasses import asdict
+
+    from wittgenstein.live import generator_profile as gp
+    from wittgenstein.live.generate import ProviderError, get_provider
+
+    if provider not in PROVIDER_CHOICES or provider == "extractive":
+        raise HTTPException(404, "Only language-model providers are measured.")
+    if not available_providers().get(provider):
+        raise HTTPException(409, f"{provider} isn't configured on this server.")
+    try:
+        p = get_provider(provider)
+    except ProviderError as e:
+        raise HTTPException(409, str(e)) from e
+    prof = gp.measure(gp.with_provider(p), p.info.provider_id, p.info.model_identifier or provider)
+    gp.save(prof)
+    return {k: v for k, v in asdict(prof).items() if k != "records"}
 
 
 @router.get("/runs/{run_id}")

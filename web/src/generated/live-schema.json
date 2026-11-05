@@ -140,6 +140,7 @@
         "skipped_redundant",
         "below_elbow",
         "omitted_budget",
+        "omitted_capacity",
         "not_reached"
       ],
       "title": "CandidateFate",
@@ -274,7 +275,9 @@
         "citation_missing",
         "answer_empty",
         "answer_off_question",
-        "context_ignored"
+        "context_ignored",
+        "answer_unstable",
+        "context_over_capacity"
       ],
       "title": "FlagKind",
       "type": "string"

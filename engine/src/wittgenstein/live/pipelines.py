@@ -54,6 +54,13 @@ class PipelineSpec(BaseModel):
     k_min: int = Field(default=2, ge=1)
     k_max: int = Field(default=16, ge=1)
     token_budget: int = Field(default=1800, ge=64)
+    fit_to_generator: bool = Field(
+        default=False,
+        description="Trim the context to what the answering model was measured to use reliably "
+        "(live/generator_profile.py), when it has been measured. Off by default: on 40 held-out drug-label "
+        "questions, trimming Qwen2-1.5B from 7.4 to 4 passages fixed 2 answers and broke 4. Over-capacity is "
+        "always flagged.",
+    )
     remediation: Remediation = Field(
         default_factory=lambda: Remediation(severed_neighbor=False, cross_reference=False, definition=False)
     )

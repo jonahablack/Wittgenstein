@@ -76,6 +76,8 @@ export interface RunRequest {
   provider: string;
   /** Also test whether the model answers from the passages (LLM providers only). */
   counterfactual?: boolean;
+  /** Trim the self-aware pipeline's context to what the model was measured to use reliably. */
+  fit_context?: boolean;
 }
 
 /** POSTs a run and parses the Server-Sent Events stream as it arrives. EventSource

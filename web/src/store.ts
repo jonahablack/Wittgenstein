@@ -198,6 +198,7 @@ interface AppState {
   corpusId?: string;
   provider: string;
   counterfactual: boolean;
+  fitContext: boolean;
   compare: boolean;
   comparePipelines: string[];
   showProcess: boolean;
@@ -212,6 +213,7 @@ interface AppState {
   setCorpus: (id: string) => void;
   setProvider: (p: string) => void;
   setCounterfactual: (on: boolean) => void;
+  setFitContext: (on: boolean) => void;
   setCompare: (on: boolean) => void;
   toggleComparePipeline: (id: string) => void;
   setShowProcess: (on: boolean) => void;
@@ -241,6 +243,7 @@ export const useApp = create<AppState>((set, get) => ({
   corpora: [],
   provider: pref("wg.provider", "extractive"),
   counterfactual: pref("wg.counterfactual", false),
+  fitContext: pref("wg.fitContext", false),
   compare: pref("wg.compare", false),
   comparePipelines: pref("wg.comparePipelines", ["aware", "semantic-top5"]),
   showProcess: pref("wg.showProcess", false),
@@ -269,6 +272,10 @@ export const useApp = create<AppState>((set, get) => ({
     savePref("wg.counterfactual", counterfactual);
     set({ counterfactual });
   },
+  setFitContext: (fitContext) => {
+    savePref("wg.fitContext", fitContext);
+    set({ fitContext });
+  },
   setCompare: (compare) => {
     savePref("wg.compare", compare);
     set({ compare });
@@ -289,7 +296,7 @@ export const useApp = create<AppState>((set, get) => ({
   closeSource: () => set({ source: undefined }),
 
   ask: async (query) => {
-    const { corpusId, config, provider, compare, comparePipelines, counterfactual } = get();
+    const { corpusId, config, provider, compare, comparePipelines, counterfactual, fitContext } = get();
     if (!corpusId || !config) return;
     get().abort?.abort();
     const abort = new AbortController();
@@ -319,7 +326,8 @@ export const useApp = create<AppState>((set, get) => ({
     };
     try {
       const probe = counterfactual && provider !== "extractive";
-      await streamRun({ corpus_id: corpusId, query, pipelines, provider, counterfactual: probe }, (e) => {
+      const fit = fitContext && provider !== "extractive";
+      await streamRun({ corpus_id: corpusId, query, pipelines, provider, counterfactual: probe, fit_context: fit }, (e) => {
         pending.push(e);
         if (!raf) raf = requestAnimationFrame(flush);
       }, abort.signal);

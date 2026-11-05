@@ -67,7 +67,9 @@ export type FlagKind =
   | "citation_missing"
   | "answer_empty"
   | "answer_off_question"
-  | "context_ignored";
+  | "context_ignored"
+  | "answer_unstable"
+  | "context_over_capacity";
 /**
  * measured | inferred_from_rankings | pattern_match | model_judgment -- how the observation was obtained. model_judgment: a language-inference model's verdict (can be wrong).
  */
@@ -157,7 +159,13 @@ export type FacetsCovered = string[];
  * via the `definition` "CandidateFate".
  */
 export type CandidateFate =
-  "selected" | "pulled_in" | "skipped_redundant" | "below_elbow" | "omitted_budget" | "not_reached";
+  | "selected"
+  | "pulled_in"
+  | "skipped_redundant"
+  | "below_elbow"
+  | "omitted_budget"
+  | "omitted_capacity"
+  | "not_reached";
 export type FusedRank = number | null;
 export type Order = number | null;
 /**

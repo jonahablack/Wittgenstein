@@ -18,7 +18,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from wittgenstein.core.enums import CheckOutcome, FlagDisposition, FlagKind, LiveEventType, TraceStatus
+from wittgenstein.core.enums import (
+    CheckOutcome,
+    FlagDisposition,
+    FlagKind,
+    FlagOrigin,
+    FlagSeverity,
+    LiveEventType,
+    TraceStatus,
+)
 from wittgenstein.live import counterfactual
 from wittgenstein.live.characterize import EmbedderProfile, get_profile
 from wittgenstein.live.context_checks import check_context
@@ -29,7 +37,7 @@ from wittgenstein.live.events import Emitter, LiveEvent, UnitPoint
 from wittgenstein.live.flags import FlagCollector
 from wittgenstein.live.gaps import run_gaps
 from wittgenstein.live.generate import ContextPassage, ExtractiveProvider, ProviderError, get_provider
-from wittgenstein.live.pipelines import PRESETS, PipelineSpec
+from wittgenstein.live.pipelines import DEFAULT_PIPELINE, PRESETS, PipelineSpec
 from wittgenstein.live.probes import run_probes
 from wittgenstein.live.query import QueryAnalysis, analyze_query
 from wittgenstein.live.retrieve import retrieve
@@ -128,9 +136,12 @@ class _Shared:
     """Per-run caches shared by pipeline threads: query analysis and field events per
     chunker, and model profiles per embedder."""
 
-    def __init__(self, corpus: LiveCorpus, query: str, em: Emitter, counterfactual: bool = False) -> None:
+    def __init__(
+        self, corpus: LiveCorpus, query: str, em: Emitter, counterfactual: bool = False, fit_context: bool = False
+    ) -> None:
         self.corpus, self.query, self.em = corpus, query, em
         self.counterfactual = counterfactual
+        self.fit_context = fit_context
         self._lock = threading.Lock()
         self._analysis: dict[str, QueryAnalysis] = {}
         self._fields: set[str] = set()
@@ -165,6 +176,90 @@ class _Shared:
             dense_z=[round(inst.dense.z(i), 2) for i in range(len(units.units))] if inst.dense else None,
             lexical_z=[round(inst.lexical.z(i), 2) for i in range(len(units.units))],
         )
+
+
+def fit_to_generator(spec: PipelineSpec, sel: Any, info: Any, out: FlagCollector, trim: bool = False) -> None:
+    """Give the answering model no more passages than it was measured to use reliably
+    (live/generator_profile.py): trim (pipelines with fit_to_generator) or flag."""
+    from wittgenstein.live import generator_profile as gp
+    from wittgenstein.live.select import fit_to_capacity
+
+    label = "The model is given no more passages than it reliably uses"
+    if not info.uses_llm:
+        out.check(FlagKind.CONTEXT_OVER_CAPACITY, label, CheckOutcome.NOT_APPLICABLE,
+                  "The answer quotes the document; no model reads the passages.")  # fmt: skip
+        return
+    model = info.model_identifier or ""
+    prof = gp.load(info.provider_id, model)
+    if prof is None:
+        out.check(
+            FlagKind.CONTEXT_OVER_CAPACITY,
+            label,
+            CheckOutcome.NOT_APPLICABLE,
+            f"Not measured for {model or info.provider_id}. Measure it with `wittgenstein measure-model "
+            f"--provider {info.provider_id}` ({len(gp.probes()) * len(gp.SIZES)} generations); until then, "
+            "how much context this model handles is unknown.",
+        )
+        return
+    n, cap = len(sel.selected), prof.reliable_passages
+    evidence = f"Measured on {model}: {prof.summary()}. Reliable size: {cap} passages ({prof.rule})." + (
+        f" {prof.note}" if prof.note else ""
+    )
+    metrics = {
+        "model": model,
+        "reliable_passages": cap,
+        "passages": n,
+        "accuracy": prof.accuracy,
+        "wrong_passage": prof.wrong_passage,
+        "measured_at": prof.measured_at,
+        "profile": str(gp.path_for(info.provider_id, model)),
+    }
+    if n <= cap:
+        out.check(FlagKind.CONTEXT_OVER_CAPACITY, label, CheckOutcome.PASSED, f"{n} passages; {evidence}")
+        return
+    if spec.fit_to_generator or trim:
+        removed = fit_to_capacity(
+            sel,
+            cap,
+            f"Left out so the model gets no more than the {cap} passages it was measured to use reliably.",
+        )
+        f = out.flag(
+            FlagKind.CONTEXT_OVER_CAPACITY,
+            origin=FlagOrigin.PIPELINE,
+            stage="select",
+            severity=FlagSeverity.INFO,
+            disposition=FlagDisposition.HANDLED,
+            title=f"Context trimmed to the {cap} passages this model reliably uses",
+            observation=f"{n} passages were chosen; with more than {cap}, this model was measured answering from "
+            f"the wrong passage more often. {evidence}",
+            why_it_matters="A small model given more text than it handles well picks the wrong passage: an answer "
+            "built from a neighbouring rule, class or definition.",
+            action_taken=f"Kept one passage for each part of the question, then the best-ranked, up to {cap}; "
+            f"left out {len(removed)}.",
+            what_to_check=None,
+            refs=[],
+            metrics={**metrics, "left_out": removed},
+            measurement="measured",
+        )
+        out.check(FlagKind.CONTEXT_OVER_CAPACITY, label, CheckOutcome.PASSED,
+                  f"Trimmed from {n} to {cap} passages. {evidence}", [f])  # fmt: skip
+        return
+    f = out.flag(
+        FlagKind.CONTEXT_OVER_CAPACITY,
+        origin=FlagOrigin.PIPELINE,
+        stage="select",
+        severity=FlagSeverity.CAUTION,
+        disposition=FlagDisposition.NEEDS_REVIEW,
+        title=f"More passages than this model reliably uses ({n}; measured reliable: {cap})",
+        observation=evidence,
+        why_it_matters="A small model given more text than it handles well picks the wrong passage: an answer "
+        "built from a neighbouring rule, class or definition.",
+        what_to_check="That each part of the answer comes from the passage it cites.",
+        refs=[],
+        metrics=metrics,
+        measurement="measured",
+    )
+    out.check(FlagKind.CONTEXT_OVER_CAPACITY, label, CheckOutcome.FLAGGED, evidence, [f])
 
 
 def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> PipelineOutcome:
@@ -228,6 +323,11 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         list(out.flags),
         profile.pairwise_similarity.p90 if profile.pairwise_similarity else None,
     )
+    provider = get_provider(provider_name, inst) if provider_name != "extractive" else ExtractiveProvider(inst)
+    # "Fit context to the model" applies to the self-aware pipeline; the baselines stay as configured.
+    fit_to_generator(
+        spec, sel, provider.info, out, trim=shared.fit_context and spec.pipeline_id == DEFAULT_PIPELINE
+    )
     for e in sel.ledger.values():
         em.emit(LiveEventType.DECISION, pid, entry=_ledger_json(e))
     run_gaps(spec, retrieval, inst, sel, out, weak)
@@ -272,7 +372,6 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
     stage("pack", ts)
 
     ts = time.perf_counter()
-    provider = get_provider(provider_name, inst) if provider_name != "extractive" else ExtractiveProvider(inst)
     parts: list[str] = []
     if weak and not provider.info.uses_llm:
         # Quoting can't decline the way a model can, so it says so before quoting.
@@ -419,6 +518,7 @@ def run_query(
     sink: Callable[[LiveEvent], None] | None = None,
     specs: dict[str, PipelineSpec] | None = None,
     counterfactual: bool = False,
+    fit_context: bool = False,
 ) -> RunResult:
     specs = specs or PRESETS
     pipeline_ids = pipeline_ids or ["aware"]
@@ -437,7 +537,7 @@ def run_query(
             {"pipeline_id": p, "label": specs[p].label, "description": specs[p].description} for p in pipeline_ids
         ],
     )
-    shared = _Shared(corpus, query, em, counterfactual)
+    shared = _Shared(corpus, query, em, counterfactual, fit_context)
     outcomes: dict[str, PipelineOutcome] = {}
     try:
         with ThreadPoolExecutor(max_workers=max(1, len(pipeline_ids))) as pool:

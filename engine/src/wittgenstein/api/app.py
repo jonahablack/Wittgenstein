@@ -63,7 +63,10 @@ app.include_router(proxy.router)
 # it has been built. Mounted last so every API route above takes precedence.
 # Installed as a package (`pip install wittgenstein-rag`), the build ships inside it.
 _PACKAGED_WEB = Path(__file__).resolve().parents[1] / "web_dist"
-_WEB_DIST = _PACKAGED_WEB if _PACKAGED_WEB.is_dir() else Path(__file__).resolve().parents[4] / "web" / "dist"
+_REPO_WEB = Path(__file__).resolve().parents[4] / "web" / "dist"
+# A repo checkout serves its own fresh build; `make wheel` also leaves a copy in the
+# package folder, which would otherwise shadow it.
+_WEB_DIST = _REPO_WEB if _REPO_WEB.is_dir() else _PACKAGED_WEB
 
 
 class _WebApp(StaticFiles):

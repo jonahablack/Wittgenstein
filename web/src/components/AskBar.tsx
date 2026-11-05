@@ -1,6 +1,7 @@
 import { ArrowUp, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "../store";
+import { ModelCapacity } from "./ModelCapacity";
 
 const EXAMPLES: Record<string, string[]> = {
   asteria: [
@@ -32,6 +33,8 @@ export function AskBar() {
   const setProvider = useApp((s) => s.setProvider);
   const counterfactual = useApp((s) => s.counterfactual);
   const setCounterfactual = useApp((s) => s.setCounterfactual);
+  const fitContext = useApp((s) => s.fitContext);
+  const setFitContext = useApp((s) => s.setFitContext);
   const providers = useApp((s) => s.config?.providers) ?? DEFAULT_PROVIDERS;
   const [q, setQ] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -136,6 +139,20 @@ export function AskBar() {
               Test the model
             </label>
           )}
+          {provider !== "extractive" && (
+            <label
+              className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-1.5 text-xs text-ink-3 hover:text-ink-2"
+              title="Give the self-aware pipeline's model no more passages than it was measured to use reliably. Off by default: on drug-label questions it fixed some answers and broke others."
+            >
+              <input
+                type="checkbox"
+                checked={fitContext}
+                onChange={(e) => setFitContext(e.target.checked)}
+                className="size-3.5 accent-current"
+              />
+              Fit context to the model
+            </label>
+          )}
           <span className="hidden text-xs text-ink-4 sm:block">
             {corpus?.units ? `${corpus.units.toLocaleString()} passages` : ""}
           </span>
@@ -150,6 +167,7 @@ export function AskBar() {
           </button>
         </div>
       </form>
+      {provider !== "extractive" && providers[provider] && <ModelCapacity provider={provider} />}
       {hint && (
         <p role="status" className="mt-2 px-1 text-sm text-look">
           {hint}

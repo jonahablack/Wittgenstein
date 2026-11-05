@@ -72,6 +72,19 @@ wm.record(question, retrieved_chunks, answer, prompt=prompt_text)
   kept in `~/.wittgenstein/audits.jsonl` and, unless the server sets API keys, served
   only to this machine.
 
+## How much context your model handles
+
+The answering model's capacity is measured, not assumed: `wittgenstein measure-model
+--provider local|claude|openai`, or for your own model through its generator callback,
+`POST /v1/generator-profile {"generator_url": ..., "model": "<pipeline.llm>"}` (60
+generations). Fictional probes with near-identical decoys at 2, 4, 8 and 12 passages,
+graded by value and citation; the result, with every probe and answer, is saved in
+`~/.wittgenstein/models/`. Afterwards any run (or `/v1/check` with `pipeline.llm`) that
+gives the model more passages than its measured reliable size is flagged
+(`context_over_capacity`), with the measured curve as evidence. Trimming to that size is
+opt-in (`fit_context`): on 40 held-out drug-label questions it fixed 2 answers and broke 4
+for Qwen2-1.5B.
+
 ## Access levels
 
 What can be checked depends on what you send. Every check in the response says whether

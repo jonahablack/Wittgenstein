@@ -173,8 +173,11 @@ def available_providers() -> dict[str, bool]:
     return out
 
 
-def get_provider(name: str, inst: Instruments) -> AnswerProvider:
+def get_provider(name: str, inst: Instruments | None = None) -> AnswerProvider:
+    """`inst` is needed only by the extractive provider (it quotes from the run's units)."""
     if name == "extractive":
+        if inst is None:
+            raise ValueError("The extractive provider needs the run's instruments.")
         return ExtractiveProvider(inst)
     if name == "claude":
         from wittgenstein.live.providers.anthropic_provider import ClaudeProvider

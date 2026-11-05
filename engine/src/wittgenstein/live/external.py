@@ -340,6 +340,19 @@ def check_external(
     ctx_units = _synthetic_units([by_id[cid] for cid in context_ids])
     passages = [ContextPassage(i + 1, u) for i, u in enumerate(ctx_units)]
     check_context(passages, out)
+    if req.pipeline.llm:
+        # The caller's model, if measured through its generator callback (POST /v1/generator-profile):
+        # flag a prompt with more passages than it was measured to use reliably.
+        from types import SimpleNamespace
+
+        from wittgenstein.live.runner import fit_to_generator
+
+        fit_to_generator(
+            SimpleNamespace(fit_to_generator=False),  # type: ignore[arg-type]
+            SimpleNamespace(selected=list(range(len(passages)))),
+            SimpleNamespace(uses_llm=True, provider_id="callback", model_identifier=req.pipeline.llm),
+            out,
+        )
     if req.answer:
         ctx_ids = set(context_ids)
         left_out = _synthetic_units([c for c in req.candidates if c.id not in ctx_ids])
@@ -419,6 +432,17 @@ def check_external(
 
 class GeneratorCallbackError(RuntimeError):
     pass
+
+
+def measure_callback(url: str, model: str, headers: dict[str, str] | None = None):  # noqa: ANN201
+    """Measure the caller's own model through its generator callback (live/generator_profile.py),
+    saved under ("callback", model) so /v1/check can flag over-capacity prompts for it."""
+    from wittgenstein.live import generator_profile as gp
+
+    call = _callback_generator(url, headers)
+    prof = gp.measure(lambda q, texts: call(q, [(i + 1, t) for i, t in enumerate(texts)]), "callback", model)
+    gp.save(prof)
+    return prof
 
 
 def _callback_generator(url: str, headers: dict[str, str] | None):  # noqa: ANN202

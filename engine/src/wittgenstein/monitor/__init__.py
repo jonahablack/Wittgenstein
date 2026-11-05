@@ -29,7 +29,7 @@ pipeline in the feed).
 
 from __future__ import annotations
 
-from wittgenstein.monitor._client import configure, flush, record
+from ._client import configure, flush, record
 
 __all__ = ["instrument", "record", "configure", "flush"]
 
@@ -39,7 +39,7 @@ def instrument(*, langchain: bool = True, llamaindex: bool = True) -> list[str]:
     hooked: list[str] = []
     if langchain:
         try:
-            from wittgenstein.monitor import langchain as lc
+            from . import langchain as lc
 
             lc.install()
             hooked.append("langchain")
@@ -47,7 +47,7 @@ def instrument(*, langchain: bool = True, llamaindex: bool = True) -> list[str]:
             pass
     if llamaindex:
         try:
-            from wittgenstein.monitor import llamaindex as li
+            from . import llamaindex as li
 
             li.install()
             hooked.append("llamaindex")

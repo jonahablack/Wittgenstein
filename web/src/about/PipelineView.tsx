@@ -210,23 +210,33 @@ function Detail({ audit }: { audit: Audit }) {
 }
 
 function Connect() {
+  const base = window.location.origin;
   return (
     <div className="mt-8 max-w-2xl rounded-2xl border border-line bg-surface p-6">
-      <h2 className="font-medium text-ink">Connect your pipeline</h2>
+      <h2 className="font-medium text-ink">Connect your RAG app</h2>
       <p className="mt-1 text-sm text-ink-2">
-        Add two lines where your app starts. LangChain and LlamaIndex pipelines are detected and hooked automatically;
-        every answer then appears here with the same checks the site runs.
+        Wittgenstein runs on its own, beside your app. Connect it one of three ways; every answer then appears here
+        with the same checks the site runs. Your app is never slowed or blocked.
       </p>
-      <pre className="num mt-4 overflow-x-auto rounded-xl border border-line bg-surface-2 p-4 text-[13px] text-ink">
-        {`import wittgenstein.monitor as wm
-wm.instrument()`}
-      </pre>
-      <p className="mt-4 text-sm text-ink-2">Any other pipeline: report each answer yourself.</p>
+      <p className="mt-5 text-sm font-medium text-ink">Any language: point your model client here</p>
+      <p className="mt-1 text-sm text-ink-3">Requests go on to the real API unchanged; answers are checked afterwards.</p>
       <pre className="num mt-2 overflow-x-auto rounded-xl border border-line bg-surface-2 p-4 text-[13px] text-ink">
-        {`wm.record(question, retrieved_chunks, answer, prompt=prompt_text)`}
+        {`OpenAI-compatible   ${base}/proxy/openai/v1
+Anthropic           ${base}/proxy/anthropic`}
       </pre>
-      <p className="mt-4 text-sm text-ink-3">
-        To see it with example answers first: <code className="num text-ink-2">wittgenstein serve --demo</code>
+      <p className="mt-5 text-sm font-medium text-ink">Python with LangChain or LlamaIndex: no code changes</p>
+      <pre className="num mt-2 overflow-x-auto rounded-xl border border-line bg-surface-2 p-4 text-[13px] text-ink">
+        {`wittgenstein run python app.py`}
+      </pre>
+      <p className="mt-5 text-sm font-medium text-ink">Or in code</p>
+      <pre className="num mt-2 overflow-x-auto rounded-xl border border-line bg-surface-2 p-4 text-[13px] text-ink">
+        {`import wittgenstein.monitor as wm
+wm.instrument()                       # LangChain / LlamaIndex
+wm.record(question, chunks, answer)   # anything else`}
+      </pre>
+      <p className="mt-5 text-sm text-ink-3">
+        Keep it running in the background with <code className="num text-ink-2">wittgenstein start</code>, or at every
+        login with <code className="num text-ink-2">wittgenstein autostart enable</code>.
       </p>
     </div>
   );

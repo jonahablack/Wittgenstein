@@ -733,8 +733,6 @@ def fixture_run(
     console.print(f"Wrote diagnostic report/labels template to {output_dir}")
 
 
-if __name__ == "__main__":
-    app()
 
 
 _DEMO_PASSAGES = [
@@ -781,7 +779,7 @@ def serve(
     port: int = typer.Option(8100, help="Port for the local interface and API."),
     host: str = typer.Option("127.0.0.1", help="Keep 127.0.0.1 unless you mean to expose it."),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open the interface in a browser."),
-    audit_dir: Path = typer.Option(Path("~/.wittgenstein"), help="Where the audit feed is kept."),
+    audit_dir: Path = typer.Option(None, help="Where the audit feed is kept (default ~/.wittgenstein)."),
     demo: bool = typer.Option(False, help="Send four example audits so the feed isn't empty."),
 ) -> None:
     """Run Wittgenstein locally: the interface, the API, and the feed of audits from your
@@ -792,10 +790,14 @@ def serve(
 
     import uvicorn
 
-    home = audit_dir.expanduser()
+    from wittgenstein import service
+
+    if audit_dir is not None:
+        os.environ["WITTGENSTEIN_HOME"] = str(audit_dir.expanduser())
+    service.apply_config_env()
+    home = service.home()
     home.mkdir(parents=True, exist_ok=True)
     os.environ["WITTGENSTEIN_AUDIT_DIR"] = str(home)
-    os.environ.setdefault("WITTGENSTEIN_HOME", str(home))
     os.environ.setdefault("WITTGENSTEIN_DATABASE_URL", f"sqlite:///{home / 'wittgenstein.db'}")
     url = f"http://{'127.0.0.1' if host in {'0.0.0.0', '::'} else host}:{port}"
     console.print(f"[bold]Wittgenstein[/bold] on {url}  ·  your pipeline's audits: {url}/#/pipeline")
@@ -805,3 +807,93 @@ def serve(
     if demo:
         threading.Thread(target=_send_demo, args=(url,), daemon=True).start()
     uvicorn.run("wittgenstein.api.app:app", host=host, port=port, log_level="warning")
+
+
+autostart_app = typer.Typer(help="Start Wittgenstein when you log in.")
+app.add_typer(autostart_app, name="autostart")
+
+
+@app.command("start")
+def start_cmd(
+    port: int = typer.Option(None, help="Port (default 8100, or the last one used)."),
+    openai_upstream: str = typer.Option(
+        None, help="Where the OpenAI-compatible proxy forwards (e.g. http://localhost:11434 for Ollama)."
+    ),
+    anthropic_upstream: str = typer.Option(None, help="Where the Anthropic proxy forwards."),
+) -> None:
+    """Run Wittgenstein in the background, independent of this terminal."""
+    from wittgenstein import service
+
+    service.save_config({"openai_upstream": openai_upstream, "anthropic_upstream": anthropic_upstream})
+    _, message = service.start(port)
+    console.print(message)
+    if service.responding():
+        _print_connect(service.url())
+
+
+@app.command("stop")
+def stop_cmd() -> None:
+    """Stop the background server."""
+    from wittgenstein import service
+
+    console.print(service.stop())
+
+
+@app.command("status")
+def status_cmd() -> None:
+    """Whether it's running, where, and how many audits the feed holds."""
+    from wittgenstein import service
+
+    st = service.status()
+    console.print(f"[bold]{'Running' if st['running'] else 'Not running'}[/bold]  {st['url']}")
+    console.print(f"Starts at login: {'yes' if st['autostart'] else 'no'}")
+    if st["audits"] is not None:
+        console.print(f"Audits in the feed: {st['audits']}  ({st['url']}/#/pipeline)")
+    console.print(
+        f"Proxy upstreams: OpenAI-compatible {st['openai_upstream']}  ·  Anthropic {st['anthropic_upstream']}"
+    )
+    console.print(f"Data: {st['home']}")
+
+
+@autostart_app.command("enable")
+def autostart_enable_cmd(port: int = typer.Option(None)) -> None:
+    from wittgenstein import service
+
+    console.print(service.autostart_enable(port))
+
+
+@autostart_app.command("disable")
+def autostart_disable_cmd() -> None:
+    from wittgenstein import service
+
+    console.print(service.autostart_disable())
+
+
+@app.command(
+    "run",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def run_cmd(
+    ctx: typer.Context,
+    source: str = typer.Option(None, help="Name for this program in the feed (default: the script's name)."),
+) -> None:
+    """Run a Python program with its LangChain / LlamaIndex pipeline audited, e.g.
+    `wittgenstein run python app.py`. Nothing is installed into the program's environment."""
+    from wittgenstein import service
+
+    if not ctx.args:
+        console.print("Usage: wittgenstein run python your_app.py")
+        raise typer.Exit(2)
+    raise typer.Exit(service.run(list(ctx.args), source))
+
+
+def _print_connect(url: str) -> None:
+    console.print(f"Feed: {url}/#/pipeline")
+    console.print("Connect an app:")
+    console.print("  Python (LangChain / LlamaIndex):  [cyan]wittgenstein run python app.py[/cyan]")
+    console.print(f"  Any language, OpenAI-compatible:  base URL [cyan]{url}/proxy/openai/v1[/cyan]")
+    console.print(f"  Any language, Anthropic:          base URL [cyan]{url}/proxy/anthropic[/cyan]")
+
+
+if __name__ == "__main__":
+    app()

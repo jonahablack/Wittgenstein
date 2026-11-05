@@ -20,7 +20,7 @@ from uuid import UUID
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.tracers.context import register_configure_hook
 
-from wittgenstein.monitor._client import context_order, record
+from ._client import context_order, record
 
 _MAX_TRACES = 256
 _RECENT_SECONDS = 300

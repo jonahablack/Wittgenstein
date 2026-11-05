@@ -8,6 +8,7 @@ import { QueryAnatomy } from "./components/QueryAnatomy";
 import { Receipt } from "./components/Receipt";
 import { SourceDrawer } from "./components/SourceDrawer";
 import { TopBar } from "./components/TopBar";
+import { Epigraph } from "./about/Epigraph";
 import { useRoute } from "./route";
 import { useApp } from "./store";
 
@@ -70,6 +71,7 @@ export function App() {
             <motion.div layout="position" transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }} className={run ? "pt-6" : ""}>
               <AskBar />
             </motion.div>
+            {!run && <Epigraph quiet className="mx-auto mt-20 max-w-lg" />}
             {run && (
               <div className="mt-6 space-y-5">
                 {run.analysis && <QueryAnatomy analysis={run.analysis} />}

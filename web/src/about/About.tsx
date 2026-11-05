@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { cx } from "../lib";
 import { PATTERNS, SOURCES } from "./data";
+import { Epigraph } from "./Epigraph";
 import { LayerAnimation } from "./LayerAnimation";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -49,7 +50,10 @@ export function About() {
         <ArrowLeft className="size-4" /> Back to the app
       </a>
 
-      <h1 className="mt-8 text-4xl font-semibold tracking-tight">About Wittgenstein</h1>
+      <Epigraph className="mx-auto mt-12 mb-14 max-w-xl" />
+      <div className="mx-auto mb-12 h-px w-16 bg-line" aria-hidden />
+
+      <h1 className="text-4xl font-semibold tracking-tight">About Wittgenstein</h1>
 
       <div className="mt-6 space-y-5 text-pretty text-lg leading-relaxed text-ink-2">
         <p>
@@ -98,15 +102,15 @@ export function About() {
         </a>
         .
       </p>
-      <p>Or run it on your own machine, beside the pipeline you already have:</p>
+      <p>Or run it on your own machine, as its own process beside the RAG app you already have:</p>
       <pre className="num overflow-x-auto rounded-xl border border-line bg-surface-2 p-4 text-[13px] leading-relaxed text-ink">
         {`pip install wittgenstein-rag
-wittgenstein serve`}
+wittgenstein start`}
       </pre>
       <p>
-        Then add <code className="num text-ink">import wittgenstein.monitor as wm; wm.instrument()</code> to your app.
-        LangChain and LlamaIndex pipelines are hooked automatically, and every answer appears in a local interface
-        with the same checks as this site.
+        Then point your app’s model client at it, or start a Python app with{" "}
+        <code className="num text-ink">wittgenstein run</code>. Requests go through unchanged, and every answer appears
+        in a local interface with the same checks as this site.
       </p>
       <p>
         Wittgenstein is supported by a grant from the{" "}

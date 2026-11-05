@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import json
 import logging
 import os
@@ -80,6 +81,9 @@ def _ensure_worker() -> None:
     global _worker
     with _worker_lock:
         if _worker is None or not _worker.is_alive():
+            if _worker is None:
+                # A short script can end before its audits are sent: give them a moment.
+                atexit.register(flush, 15.0)
             _worker = threading.Thread(target=_run, name="wittgenstein-monitor", daemon=True)
             _worker.start()
 

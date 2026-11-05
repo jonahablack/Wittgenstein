@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from wittgenstein.api.routes import applicability, health, live, manifests, registry, review, traces
+from wittgenstein.api.routes import applicability, health, live, manifests, proxy, registry, review, traces
 from wittgenstein.db.session import init_db
 
 
@@ -57,6 +57,7 @@ app.include_router(applicability.router)
 app.include_router(review.router)
 app.include_router(live.router)
 app.include_router(live.v1)
+app.include_router(proxy.router)
 
 # The live web app (../web, `npm run build`), served from the same origin as the API when
 # it has been built. Mounted last so every API route above takes precedence.

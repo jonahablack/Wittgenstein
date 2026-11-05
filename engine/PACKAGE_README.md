@@ -14,31 +14,45 @@ misread a passage or was never given the right one.
 
 ```bash
 pip install wittgenstein-rag
-wittgenstein serve          # opens the local interface at http://127.0.0.1:8100
+wittgenstein start               # runs in the background; feed at http://127.0.0.1:8100/#/pipeline
+wittgenstein autostart enable    # optional: start at every login
 ```
 
-Add `--demo` to see a few example answers first. Everything runs on your machine; the
-first run downloads a small English language model (about 12 MB).
+`wittgenstein status` and `wittgenstein stop` do what they say. Everything runs on your
+machine; the first run downloads a small English language model (about 12 MB).
 
-## Connect your pipeline
+## Connect your app
 
-Add two lines where your app starts:
+Wittgenstein runs as its own process beside your app. It sees each request and checks
+the answer afterwards, so it never adds latency or blocks a response.
+
+**Any language: the model proxy.** Point your model client's base URL at Wittgenstein:
+
+```
+OpenAI-compatible   http://127.0.0.1:8100/proxy/openai/v1
+Anthropic           http://127.0.0.1:8100/proxy/anthropic
+```
+
+Requests go on to the real API unchanged, streamed or not, with your own API key. Use
+`wittgenstein start --openai-upstream http://localhost:11434` for Ollama or any other
+OpenAI-compatible server.
+
+**Python, no code changes:**
+
+```bash
+wittgenstein run python app.py
+```
+
+LangChain and LlamaIndex are hooked automatically; nothing is installed into your app's
+environment.
+
+**Or in code:**
 
 ```python
 import wittgenstein.monitor as wm
-wm.instrument()
+wm.instrument()                                     # LangChain / LlamaIndex
+wm.record(question, retrieved_chunks, answer)       # anything else
 ```
-
-LangChain and LlamaIndex pipelines are detected and hooked automatically, with no other
-code changes. Every answer then appears in the local interface with what was retrieved,
-what went into the prompt, and what needs checking. For any other pipeline, report each
-answer yourself:
-
-```python
-wm.record(question, retrieved_chunks, answer, prompt=prompt_text)
-```
-
-Reporting happens in the background and never slows or breaks your pipeline.
 
 ## Or call the API
 

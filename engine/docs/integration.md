@@ -21,14 +21,35 @@ place without failing the batch.
 endpoints require one: `Authorization: Bearer <key>` or `X-API-Key: <key>`. Unset (local
 use), they're open.
 
-## Running it locally, beside your pipeline
+## Running it locally, beside your app
 
 ```bash
 pip install wittgenstein-rag        # or, from this repo: make wheel && pip install dist/*.whl
-wittgenstein serve                   # http://127.0.0.1:8100/#/pipeline  (--demo adds 4 examples)
+wittgenstein start                   # background process; feed at http://127.0.0.1:8100/#/pipeline
+wittgenstein autostart enable        # optional: launchd (macOS), systemd user unit (Linux), Startup (Windows)
+wittgenstein status | stop
 ```
 
-Then, where your app starts:
+`wittgenstein serve` runs the same thing in the foreground (`--demo` adds 4 examples).
+State, log, settings and the feed live in `~/.wittgenstein` (`WITTGENSTEIN_HOME`).
+
+Three ways to connect an app; none of them adds latency, since each answer is checked
+after it has been returned:
+
+1. **Model proxy (any language).** Base URL `http://127.0.0.1:8100/proxy/openai/v1`
+   (OpenAI-compatible) or `http://127.0.0.1:8100/proxy/anthropic`. Requests are forwarded
+   unchanged to `WITTGENSTEIN_OPENAI_UPSTREAM` / `WITTGENSTEIN_ANTHROPIC_UPSTREAM`
+   (defaults: the providers' APIs; set with `wittgenstein start --openai-upstream ...`),
+   streamed or not, with the app's own key, which is never stored. Afterwards the request
+   is read for a question and passages (`live/prompt_parse.py`: `[1] ...`, `Source 1: ...`,
+   `<document>`, or a `Context:` section); if found, the answer is checked and recorded.
+   Requests without passages pass through unaudited. `X-Wittgenstein-Source` names the app.
+   Local requests only.
+2. **`wittgenstein run python app.py`** starts a Python program with a `sitecustomize`
+   shim on `PYTHONPATH` that loads the LangChain / LlamaIndex hooks (a standalone copy of
+   `wittgenstein.monitor`, standard library only), so nothing is installed into the
+   program's environment. An existing `sitecustomize` still runs.
+3. **In code:**
 
 ```python
 import wittgenstein.monitor as wm
@@ -45,13 +66,11 @@ wm.record(question, retrieved_chunks, answer, prompt=prompt_text)
   response's source nodes are what went into the prompt.
 - **What went into the prompt** is read from the prompt text, so custom templates,
   rerankers and filters need no configuration.
-- Reports go from a background thread and never raise; if the server is down, one
-  warning is logged.
-- Each audit goes to `POST /v1/audits` (the same check as `/v1/check`, recorded) and is
-  listed by `GET /v1/audits`. The feed is kept in `~/.wittgenstein/audits.jsonl` and,
-  unless the server sets API keys, served only to this machine.
-- Settings: `WITTGENSTEIN_URL`, `WITTGENSTEIN_API_KEY`, `WITTGENSTEIN_SOURCE`.
-- First run downloads the spaCy English model (about 12 MB) into `~/.wittgenstein/models`.
+- Reports go from a background thread and never raise; queued reports are flushed (up
+  to 15 s) when a short script exits.
+- Each audit goes to `POST /v1/audits` and is listed by `GET /v1/audits`. The feed is
+  kept in `~/.wittgenstein/audits.jsonl` and, unless the server sets API keys, served
+  only to this machine.
 
 ## Access levels
 

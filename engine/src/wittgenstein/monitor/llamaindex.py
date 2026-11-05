@@ -13,7 +13,7 @@ from llama_index.core.instrumentation.event_handlers import BaseEventHandler
 from llama_index.core.instrumentation.events.query import QueryEndEvent
 from llama_index.core.instrumentation.events.retrieval import RetrievalEndEvent
 
-from wittgenstein.monitor._client import record
+from ._client import record
 
 _RECENT_SECONDS = 300
 

@@ -121,34 +121,61 @@ export function ApiDocs() {
         <code className="num text-ink-2">summary.needs_review</code> is the one field most integrations need.
       </p>
 
-      <H2 id="local">Run it locally, beside your pipeline</H2>
+      <H2 id="local">Run it locally, beside your app</H2>
       <p className="mt-3 text-ink-2">
-        Install Wittgenstein on the machine your pipeline runs on and start the local interface:
+        Wittgenstein runs as its own process on the machine your app runs on, independent of any terminal. Your app
+        sends its requests as usual; Wittgenstein sees them and checks each answer afterwards, so it never adds
+        latency or blocks a response.
       </p>
       <Code lang="bash">{`pip install wittgenstein-rag
-wittgenstein serve            # opens http://127.0.0.1:8100/#/pipeline`}</Code>
-      <p className="mt-3 text-ink-2">
-        Then, where your app starts, hook it in. LangChain and LlamaIndex are detected and instrumented
-        automatically: every answer is sent, with what was retrieved and what went into the prompt, and appears in the
-        local interface with the same checks as this site.
+wittgenstein start                 # runs in the background; the feed is at /#/pipeline
+wittgenstein autostart enable      # optional: start at every login (macOS, Linux, Windows)
+wittgenstein status                # running? how many audits?
+wittgenstein stop`}</Code>
+
+      <h3 className="mt-6 font-medium text-ink">1. Any language: the model proxy</h3>
+      <p className="mt-2 text-ink-2">
+        Point your app’s model client at Wittgenstein instead of the provider. Each request goes on to the real API
+        unchanged, streamed or not, with your own API key; the response comes straight back. If the request carries
+        retrieved passages, the answer is checked in the background.
       </p>
+      <Code lang="text">{`OpenAI-compatible   ${BASE}/proxy/openai/v1
+Anthropic           ${BASE}/proxy/anthropic`}</Code>
+      <Code lang="javascript">{`// e.g. Node, OpenAI SDK
+const client = new OpenAI({ baseURL: "${BASE}/proxy/openai/v1" });`}</Code>
+      <p className="mt-3 text-sm text-ink-2">
+        To forward to a local or other OpenAI-compatible server (Ollama, vLLM, LM Studio, LiteLLM):{" "}
+        <code className="num">wittgenstein start --openai-upstream http://localhost:11434</code>. Passages are found in
+        the prompt in the usual shapes: <code className="num">[1] …</code>, <code className="num">Source 1: …</code>,{" "}
+        <code className="num">&lt;document&gt;…&lt;/document&gt;</code>, or a <code className="num">Context:</code>{" "}
+        section. Requests without passages pass through unaudited. Send{" "}
+        <code className="num">X-Wittgenstein-Source: my-app</code> to name your app in the feed.
+      </p>
+
+      <h3 className="mt-6 font-medium text-ink">2. Python, no code changes</h3>
+      <Code lang="bash">{`wittgenstein run python app.py`}</Code>
+      <p className="mt-2 text-sm text-ink-2">
+        Starts your program with LangChain and LlamaIndex hooked. Nothing is installed into your program’s
+        environment. What went into the prompt is read from the prompt itself, so custom templates, rerankers and
+        filters need no configuration.
+      </p>
+
+      <h3 className="mt-6 font-medium text-ink">3. In code</h3>
       <Code lang="python">{`import wittgenstein.monitor as wm
 wm.instrument()               # returns e.g. ["langchain"]
 
 # any other pipeline: report each answer yourself
 wm.record(question, retrieved_chunks, answer, prompt=prompt_text)`}</Code>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-ink-2">
-        <li>
-          What went into the prompt is read from the prompt itself, so custom templates, rerankers and filters need
-          no configuration.
-        </li>
         <li>Reports go from a background thread; your pipeline is never slowed or broken if the server is down.</li>
         <li>
           Settings: <code className="num">WITTGENSTEIN_URL</code> (default the local server),{" "}
-          <code className="num">WITTGENSTEIN_API_KEY</code>, <code className="num">WITTGENSTEIN_SOURCE</code> (a name
-          for this pipeline in the feed).
+          <code className="num">WITTGENSTEIN_API_KEY</code>, <code className="num">WITTGENSTEIN_SOURCE</code>.
         </li>
-        <li>The feed is kept in ~/.wittgenstein and is served only to this machine.</li>
+        <li>
+          The feed is kept in ~/.wittgenstein and served only to this machine. API keys passing through the proxy
+          are never stored.
+        </li>
       </ul>
 
       <H2 id="request">Request</H2>

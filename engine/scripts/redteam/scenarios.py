@@ -84,6 +84,15 @@ class Case:
     quiet: bool = False  # a control: no needs-review flag on the answer at all
 
 
+MET_CONTRA = (
+    "Metformin hydrochloride extended-release tablets are contraindicated in patients with an estimated "
+    "glomerular filtration rate (eGFR) below 30 mL/minute/1.73 m 2."
+)
+AMOX_RENAL = (
+    "Amoxicillin is primarily eliminated by the kidney and dosage adjustment is usually required in patients with "
+    "severe renal impairment (GFR less than 30 mL/min)."
+)
+
 ANSWER_STAGE = {"answer"}
 
 CASES: list[Case] = [
@@ -342,6 +351,29 @@ CASES: list[Case] = [
         },
         expect={"false_abstention"},
     ),
+    Case(
+        "M13-severity-dropped",
+        "model",
+        "'Severe renal impairment (GFR < 30)' restated as 'renal impairment': the group is kept, its extent "
+        "widened to every patient with any kidney impairment. Found testing the local install.",
+        {
+            "query": "Does amoxicillin need a dose adjustment in renal impairment?",
+            "candidates": [c("a", AMOX_RENAL)],
+            "answer": "Yes, dosage adjustment is usually required in patients with renal impairment. [1]",
+        },
+        expect={"population_qualifier_dropped"},
+    ),
+    Case(
+        "M14-severity-changed",
+        "model",
+        "'Severe' renal impairment stated as 'mild'.",
+        {
+            "query": "Does amoxicillin need a dose adjustment in renal impairment?",
+            "candidates": [c("a", AMOX_RENAL)],
+            "answer": "Dosage adjustment is usually required in patients with mild renal impairment. [1]",
+        },
+        expect={"population_qualifier_dropped"},
+    ),
     # ---------------------------------------------------------------- controls
     Case(
         "C1-question-value-echoed",
@@ -419,6 +451,40 @@ CASES: list[Case] = [
             "query": "What is the maximum daily dose of metformin extended-release?",
             "candidates": [c("a", MET_ER)],
             "answer": "Up to 2 g once daily with the evening meal. [1]",
+        },
+        quiet=True,
+    ),
+    Case(
+        "C8-threshold-for-severity",
+        "control",
+        "'Severe renal impairment' restated by its threshold, 'GFR below 30 mL/min'.",
+        {
+            "query": "When does amoxicillin need a dose adjustment?",
+            "candidates": [c("a", AMOX_RENAL)],
+            "answer": "Dosage adjustment is usually required when the GFR is below 30 mL/min. [1]",
+        },
+        quiet=True,
+    ),
+    Case(
+        "C9-severity-paraphrased",
+        "control",
+        "'Severe renal impairment' as 'severely impaired kidney function'.",
+        {
+            "query": "When does amoxicillin need a dose adjustment?",
+            "candidates": [c("a", AMOX_RENAL)],
+            "answer": "Dosage adjustment is usually required in patients with severely impaired kidney function. [1]",
+        },
+        quiet=True,
+    ),
+    Case(
+        "C10-yes-to-severity-question",
+        "control",
+        "A bare 'Yes.' to a question that itself states the severity (was a false alarm: the question's "
+        "form 'Is X contraindicated in Y?' wasn't rebuilt into a claim).",
+        {
+            "query": "Is metformin extended-release contraindicated in severe renal impairment?",
+            "candidates": [c("a", MET_CONTRA)],
+            "answer": "Yes. [1]",
         },
         quiet=True,
     ),

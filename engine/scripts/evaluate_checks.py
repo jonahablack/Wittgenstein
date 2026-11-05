@@ -59,6 +59,7 @@ EXPECTED = {
     "condition_dropped": {FlagKind.CONDITION_SATELLITE},
     "negation_flipped": {FlagKind.ANSWER_CONTRADICTS_SOURCE, FlagKind.ANSWER_SENTENCE_UNSUPPORTED},
     "hedge_strengthened": {FlagKind.MODAL_STRENGTH_MISMATCH, FlagKind.ANSWER_CONTRADICTS_SOURCE},
+    "severity_dropped": {FlagKind.POPULATION_QUALIFIER_DROPPED},
     "wrong_citation": {FlagKind.ANSWER_SENTENCE_UNSUPPORTED, FlagKind.ANSWER_CONTRADICTS_SOURCE},
 }
 _UNIT_SWAP = {
@@ -162,6 +163,39 @@ def hedge_strengthened(s: str) -> str | None:
     return s[: m.start()] + "must" + s[m.end() :] if m else None
 
 
+#: A degree in front of an organ-impairment group: "severe renal impairment",
+#: "mild to moderate hepatic impairment", "end-stage renal disease". Written
+#: independently of live/qualifiers.py, so the check isn't graded on its own pattern.
+_DEGREE_BEFORE_GROUP = re.compile(
+    r"\b(?:(?:mild|moderate|severe)(?:ly)?(?:\s+(?:to|or|and)\s+(?:mild|moderate|severe)(?:ly)?)?|end-stage|advanced)"
+    r"\s+(?=(?:[a-z]+\s+){0,2}?(?:renal|hepatic|kidney|liver)\b)",
+    re.IGNORECASE,
+)
+
+
+def severity_dropped(s: str) -> str | None:
+    """Drop how severe the patient group is, keeping the group: "contraindicated in
+    severe renal impairment (eGFR below 30)" -> "contraindicated in renal impairment" (a
+    widening the patient-group check alone didn't see)."""
+    m = _DEGREE_BEFORE_GROUP.search(s)
+    if not m:
+        return None
+    out = s[: m.start()] + s[m.end() :]
+    # The threshold that restates the degree goes too ("(eGFR below 30 mL/min)"):
+    # with it kept, the extent is still stated and nothing was widened.
+    g = re.search(r"\b(?:renal|hepatic|kidney|liver)\s+(?:impairment|disease|function|failure)", out[m.start() :])
+    if not g:
+        return None
+    end = m.start() + g.end()
+    out = out[:end] + re.sub(r"^\s*\([^)]*\d[^)]*\)", "", out[end:], count=1)
+    out = re.sub(r"\s{2,}", " ", out).strip()
+    if _DEGREE_BEFORE_GROUP.search(out) or re.search(r"\d", out[end : end + 40]) or not _well_formed(out):
+        return None  # another degree, or a threshold, still limits the group
+    if len(out.split()) < 5:
+        return None
+    return out[0].upper() + out[1:]
+
+
 TRANSFORMS = {
     "dose_changed": dose_changed,
     "unit_changed": unit_changed,
@@ -169,6 +203,7 @@ TRANSFORMS = {
     "condition_dropped": condition_dropped,
     "negation_flipped": negation_flipped,
     "hedge_strengthened": hedge_strengthened,
+    "severity_dropped": severity_dropped,
 }
 
 

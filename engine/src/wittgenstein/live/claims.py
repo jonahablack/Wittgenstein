@@ -45,6 +45,25 @@ def yes_no(text: str) -> str | None:
     return m.group(1).lower() if m else None
 
 
+_ATTRIBUTIVE_NEXT = {"NOUN", "PROPN", "ADJ"}
+
+
+def _copula_predicate(doc) -> int | None:  # noqa: ANN001 -- a spaCy Doc
+    """Index where the predicate of "Is <subject> <predicate>?" starts, or None."""
+    for t in doc[2:]:
+        nxt = doc[t.i + 1] if t.i + 1 < len(doc) else None
+        hyphenated = (nxt is not None and nxt.text == "-") or doc[t.i - 1].text == "-"
+        if hyphenated:
+            continue
+        if t.tag_ in {"VBN", "JJ", "JJR", "JJS"} or t.pos_ == "ADJ":
+            if nxt is not None and nxt.pos_ in _ATTRIBUTIVE_NEXT:
+                continue  # "renal impairment": modifies a noun, still the subject
+            return t.i
+        if (t.pos_ == "ADP" and t.lower_ != "of") or t.pos_ == "NUM" or t.lower_ in {"a", "an", "the"}:
+            return t.i
+    return None
+
+
 def _declarative(question: str, negate: bool) -> str | None:
     """ "Can a patient with X take Y?" -> "A patient with X can (not) take Y." """
     q = question.strip().rstrip("?").strip()
@@ -54,12 +73,16 @@ def _declarative(question: str, negate: bool) -> str | None:
     aux = doc[0]
     root = next((t for t in doc if t.dep_ == "ROOT"), doc[0])
     if root.i == 0:
-        # Copula question ("Is X contraindicated in Y?"): the subject is the root's
-        # nominal subject; everything after it is the predicate.
-        subj = next((t for t in doc if t.dep_ in {"nsubj", "nsubjpass", "expl"} and t.i > 0), None)
-        if subj is None:
-            return None
-        end = subj.right_edge.i + 1
+        # Copula question ("Is X contraindicated in Y?"). The small parser often gets
+        # these wrong ("metformin" as a verb, "extended-release" as the object), so the
+        # predicate is found by word class: the first predicative adjective or
+        # participle, preposition, number or article after the subject has started.
+        end = _copula_predicate(doc)
+        if end is None:
+            subj = next((t for t in doc if t.dep_ in {"nsubj", "nsubjpass", "expl"} and t.i > 0), None)
+            if subj is None:
+                return None
+            end = subj.right_edge.i + 1
     else:
         # The subject runs from after the auxiliary to the first auxiliary, negation or
         # verb that belongs to the main clause ("Should metformin | be started ...").

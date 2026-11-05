@@ -25,6 +25,7 @@ from wittgenstein.core.enums import (
 from wittgenstein.ingestion.parser import split_sentences
 from wittgenstein.live import nli
 from wittgenstein.live import phrases as P
+from wittgenstein.live import qualifiers as Q
 from wittgenstein.live.claims import abstains, drug_names, reconstruct, referent_conflict
 from wittgenstein.live.corpus import Unit, UnitSet
 from wittgenstein.live.flags import AwarenessFlag, FlagCollector
@@ -917,6 +918,40 @@ def verify_answer(
                     )
                     population_flags.append(f)
                     vs.flag_ids.append(f.flag_id)
+                else:
+                    # The group is named, but how far it extends ("severe", "eGFR below
+                    # 30") may not be (live/qualifiers.py).
+                    for w in Q.widened(best[1], text, question):
+                        if w.kind == "changed":
+                            title = f"The answer may give a different extent of the group than “{w.source_phrase}”"
+                            observation = (
+                                f"The source is about “{w.source_phrase}”; the answer says "
+                                f"{' and '.join(sorted(w.answer_degrees))}."
+                            )
+                        else:
+                            title = f"The answer may have widened “{w.source_phrase}” to everyone in that group"
+                            observation = (
+                                f"The source is about “{w.source_phrase}”; the answer names the group without "
+                                "saying how severe or below which threshold."
+                            )
+                        f = out.flag(
+                            FlagKind.POPULATION_QUALIFIER_DROPPED,
+                            origin=FlagOrigin.TEXT,
+                            stage="answer",
+                            severity=FlagSeverity.WARNING,
+                            disposition=FlagDisposition.NEEDS_REVIEW,
+                            title=title,
+                            observation=observation,
+                            why_it_matters="A rule for severe impairment, or below a threshold, read as applying "
+                            "to the whole group changes who it applies to: a contraindication for severe kidney "
+                            "impairment is not one for mild.",
+                            what_to_check="How severe the patient's condition is, against the source's limit.",
+                            refs=[ref(best[0], best[2], best[3])],
+                            metrics={"sentence_id": sid, "group": w.group, "problem": w.kind},
+                            measurement="pattern_match",
+                        )
+                        population_flags.append(f)
+                        vs.flag_ids.append(f.flag_id)
 
         # Recommendation strength: a weak/conditional recommendation, or one *against*,
         # must not become a plain rule (or the opposite) in the answer.

@@ -25,7 +25,7 @@ use), they're open.
 
 ```bash
 pip install wittgenstein-rag        # or, from this repo: make wheel && pip install dist/*.whl
-wittgenstein serve                   # http://127.0.0.1:8100/#/pipeline  (--demo adds 3 examples)
+wittgenstein serve                   # http://127.0.0.1:8100/#/pipeline  (--demo adds 4 examples)
 ```
 
 Then, where your app starts:
@@ -205,7 +205,7 @@ def generate(body: dict):
 
 ## What the checks catch (red-team suite)
 
-`engine/scripts/redteam/scenarios.py` holds 28 cases -- pipeline errors, model errors
+`engine/scripts/redteam/scenarios.py` holds 33 cases -- pipeline errors, model errors
 and correct-answer controls -- each a request with the flags it must (or must not)
 raise; `tests/unit/test_live_redteam.py` runs them on every test run. Pipeline errors:
 injected instructions, hidden characters, superseded versions, another document's
@@ -213,7 +213,8 @@ passage, off-by-one and out-of-range citations, a retrieved-but-dropped passage 
 a false "not stated", severed chunks, duplicates. Model errors: a number from the
 wrong referent (immediate- vs extended-release), bare "Yes."/"2,550 mg." answers,
 narrowed ranges, lost negation, swapped drug names, frequency changes, generalized
-populations, dropped conditions, parametric additions, false abstention. Controls:
+populations, a group's severity or threshold dropped ("severe renal impairment" as "renal
+impairment"), dropped conditions, parametric additions, false abstention. Controls:
 values echoed from the question, worked-out doses, equal amounts in other units,
 faithful paraphrase, correct abstention.
 

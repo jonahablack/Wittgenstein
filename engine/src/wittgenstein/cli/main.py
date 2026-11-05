@@ -752,6 +752,10 @@ _DEMO_RUNS = [
     ),
     ("What is the maximum dose of metformin extended-release?", "The maximum dose is 2,550 mg per day. [2]"),
     ("Can metformin extended-release be used in severe renal impairment?", "[3]"),
+    (
+        "Is metformin extended-release contraindicated in renal impairment?",
+        "Yes, metformin extended-release is contraindicated in renal impairment. [3]",
+    ),
 ]
 
 
@@ -778,7 +782,7 @@ def serve(
     host: str = typer.Option("127.0.0.1", help="Keep 127.0.0.1 unless you mean to expose it."),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open the interface in a browser."),
     audit_dir: Path = typer.Option(Path("~/.wittgenstein"), help="Where the audit feed is kept."),
-    demo: bool = typer.Option(False, help="Send three example audits so the feed isn't empty."),
+    demo: bool = typer.Option(False, help="Send four example audits so the feed isn't empty."),
 ) -> None:
     """Run Wittgenstein locally: the interface, the API, and the feed of audits from your
     own pipeline (connect it with `import wittgenstein.monitor as wm; wm.instrument()`)."""

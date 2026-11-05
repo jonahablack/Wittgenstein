@@ -55,8 +55,9 @@ export function About() {
           Retrieving information from a body of text is a fundamentally interpretive act. But interpretations can be
           misleading, especially given the presence of linguistic complexities. Large language models have
           documented weaknesses untangling these complexities
-          <Refs ns={[1, 2, 3, 4]} />, and any assertion, claim, or inference based on information they retrieve is therefore
-          subject to scrutiny.
+          <Refs ns={[1, 2, 3, 4, 5]} />, and any assertion, claim, or inference based on information they retrieve is therefore
+          subject to scrutiny
+          <Ref n={6} />.
         </p>
         <p>
           Wittgenstein aims to make retrieved information legible to human review. Text segments are flagged for the
@@ -158,7 +159,7 @@ function PatternChart() {
         The entailment judge is the kind of model behind most automatic “faithfulness” scores, with its threshold set
         to flag 5% of correct answers; Wittgenstein flagged none of 240. Both catch a flipped “not”, but the judge
         rarely notices what is missing. A recent study finds the same gap in larger LLM judges of clinical notes
-        <Ref n={5} />. Held-out labels for lisinopril, atorvastatin and levothyroxine; 17–60 errors per pattern.
+        <Ref n={7} />. Held-out labels for lisinopril, atorvastatin and levothyroxine; 17–60 errors per pattern.
       </p>
     </figure>
   );

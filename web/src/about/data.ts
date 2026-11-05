@@ -33,6 +33,16 @@ export const SOURCES = [
     label: "arxiv.org/abs/2512.04408",
   },
   {
+    text: "Yoon et al., How Do LLMs Change Predictions Under Negation?, 2026.",
+    href: "https://arxiv.org/abs/2610.09571",
+    label: "arxiv.org/abs/2610.09571",
+  },
+  {
+    text: "Ma et al., VERICITE: Evaluating Sentence-Level Citation Faithfulness in Retrieval-Augmented Medical Question Answering, BioNLP 2026.",
+    href: "https://aclanthology.org/2026.bionlp-1.62",
+    label: "aclanthology.org/2026.bionlp-1.62",
+  },
+  {
     text: "Fox et al., LLM Judges Verify Presence, Not Absence: Omission Blindness in AI Clinical Notes and What Recovers It, 2026.",
     href: "https://arxiv.org/abs/2608.31016",
     label: "arxiv.org/abs/2608.31016",

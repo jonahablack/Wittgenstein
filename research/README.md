@@ -45,6 +45,11 @@ the entries below are symlinks to them, so nothing breaks and nothing is duplica
   failures (citations, omissions, conflicts, drug labels, automation bias), features
   ranked, and a possible pilot design.
 
+### `case-studies/`
+- `2026-11-04_public-llm-document-failures.md` — Air Canada chatbot (Moffatt v. Air Canada),
+  NYC MyCity chatbot, Stanford legal-RAG study; the Air Canada case run through the checker,
+  including what it didn't catch.
+
 ### `user-study/`
 - `2026-08_pilot-sessions_PARTICIPANT-DATA` → `study_data/` (participant sessions from
   the original app's study harness). **Never commit or share without the study's consent

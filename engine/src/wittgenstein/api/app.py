@@ -60,5 +60,16 @@ app.include_router(live.router)
 # The live web app (../web, `npm run build`), served from the same origin as the API when
 # it has been built. Mounted last so every API route above takes precedence.
 _WEB_DIST = Path(__file__).resolve().parents[4] / "web" / "dist"
+class _WebApp(StaticFiles):
+    """The built web app. The HTML page is never cached, so a browser always picks up
+    the current build after a restart (asset files are content-hashed and can be)."""
+
+    async def get_response(self, path, scope):  # noqa: ANN001, ANN201
+        response = await super().get_response(path, scope)
+        if response.media_type == "text/html" or path in {"", ".", "index.html"}:
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return response
+
+
 if _WEB_DIST.is_dir():
-    app.mount("/", StaticFiles(directory=_WEB_DIST, html=True), name="web")
+    app.mount("/", _WebApp(directory=_WEB_DIST, html=True), name="web")

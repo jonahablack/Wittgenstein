@@ -44,9 +44,24 @@ export function AskBar() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [q]);
 
+  const [hint, setHint] = useState<string>();
+  // Why asking is blocked right now, if it is. Shown instead of a silent no-op.
+  const blocked = !corpus
+    ? "Choose a document first."
+    : corpus.status === "loading"
+      ? `“${corpus.title}” is still being prepared — this takes a few seconds.`
+      : corpus.status === "error"
+        ? `“${corpus.title}” couldn't be loaded${corpus.error ? `: ${corpus.error}` : "."} Choose another document.`
+        : undefined;
+
   const submit = (text = q) => {
     const t = text.trim();
-    if (t.length < 2 || !ready) return;
+    const why = blocked ?? (t.length < 2 ? "Type a question first." : undefined);
+    if (why) {
+      setHint(why);
+      return;
+    }
+    setHint(undefined);
     setQ(t);
     void ask(t);
   };
@@ -66,7 +81,10 @@ export function AskBar() {
           ref={ref}
           rows={1}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setHint(undefined);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -107,14 +125,20 @@ export function AskBar() {
           </span>
           <button
             type="submit"
-            disabled={!ready || q.trim().length < 2}
-            className="ml-auto flex size-8 items-center justify-center rounded-lg bg-ink text-bg transition disabled:opacity-30"
+            aria-disabled={!ready || q.trim().length < 2}
+            title={blocked ?? (q.trim().length < 2 ? "Type a question first" : "Ask")}
+            className="ml-auto flex size-8 items-center justify-center rounded-lg bg-ink text-bg transition aria-disabled:opacity-30"
             aria-label="Ask"
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
           </button>
         </div>
       </form>
+      {hint && (
+        <p role="status" className="mt-2 px-1 text-sm text-look">
+          {hint}
+        </p>
+      )}
       {!run && examples.length > 0 && (
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {examples.map((x) => (

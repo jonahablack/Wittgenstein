@@ -2,9 +2,20 @@
 name = "wittgenstein-rag"
 version = "0.2.0"
 description = "A self-aware review layer for RAG pipelines: flags the retrieved text and answer sentences most likely to hide an LLM misreading, with a local interface."
-readme = "README.md"
+readme = "PACKAGE_README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
+keywords = ["rag", "retrieval-augmented generation", "llm", "verification", "hallucination", "langchain", "llamaindex"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 authors = [{ name = "Wittgenstein RAG Reliability contributors" }]
 
 dependencies = [
@@ -60,6 +71,7 @@ langchain = [
 
 [project.urls]
 Homepage = "https://github.com/jonahablack/Wittgenstein"
+Source = "https://github.com/jonahablack/Wittgenstein/tree/Cosmos/engine"
 
 [project.scripts]
 wittgenstein = "wittgenstein.cli.main:app"

@@ -144,10 +144,41 @@ POPULATION_CUES = [
     "adults", "adult", "elderly", "geriatric", "older adults", "older patients", "pregnant", "pregnancy",
     "lactating", "lactation", "breastfeeding", "breastfed", "nursing", "renal impairment", "hepatic impairment",
     "kidney disease", "liver disease", "renal function", "kidney function", "hepatic function", "liver function",
-    "debilitated", "asian patients", "egfr", "creatinine clearance", "crcl", "dialysis", "weighing",
+    "debilitated", "asian patients", "egfr", "gfr", "glomerular filtration", "creatinine clearance", "crcl",
+    "dialysis", "weighing",
     "body weight", "years of age", "years and older", "years or older", "months of age", "females", "males",
-    "women", "men", "premenopausal", "postmenopausal",
+    "women", "men", "premenopausal", "postmenopausal", "cardiac disease", "heart disease", "heart failure",
+    "coronary artery disease", "at risk for",
 ]  # fmt: skip
+#: Cues that name almost everyone a label addresses. Keeping "adults" while dropping
+#: "geriatric" or "cardiac disease" still generalizes the statement (red-team case M8).
+GENERIC_POPULATION_CUES = {"adults", "adult", "patients"}
+#: Cues that name the same group in different words: an answer saying "GFR below 30"
+#: keeps a source's "renal impairment" (red-team control C6).
+POPULATION_GROUPS: dict[str, str] = {
+    **{c: "renal" for c in ("renal impairment", "kidney disease", "renal function", "kidney function", "egfr",
+                            "gfr", "glomerular filtration", "creatinine clearance", "crcl", "dialysis")},
+    **{c: "hepatic" for c in ("hepatic impairment", "liver disease", "hepatic function", "liver function")},
+    **{c: "pediatric" for c in ("pediatric", "children", "child", "infants", "infant", "neonates", "neonatal",
+                                "newborns", "adolescents", "months of age")},
+    **{c: "older" for c in ("elderly", "geriatric", "older adults", "older patients")},
+    **{c: "pregnancy" for c in ("pregnant", "pregnancy")},
+    **{c: "lactation" for c in ("lactating", "lactation", "breastfeeding", "breastfed", "nursing")},
+    **{c: "cardiac" for c in ("cardiac disease", "heart disease", "heart failure", "coronary artery disease")},
+}  # fmt: skip
+
+#: Clinical wording variants, for deciding whether a passage covers a question
+#: ("started" is "initiation" in a label; "taken" is "administer").
+CLINICAL_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "start": ("initiat", "begin", "starting"), "started": ("initiat", "begin", "start"),
+    "begin": ("initiat", "start"), "stop": ("discontinu", "withdraw", "stopp"),
+    "stopped": ("discontinu", "withdraw", "stop"), "take": ("administ", "taken", "taking", "dose"),
+    "taken": ("administ", "take", "taking"), "avoid": ("not recommended", "contraindicat", "should not"),
+    "safe": ("risk", "recommended"), "kidney": ("renal",), "liver": ("hepatic",),
+    "meals": ("food", "breakfast", "meal"),
+    "pregnancy": ("pregnan",), "breastfeeding": ("lactation", "nursing", "breastfe"), "children": ("pediatric",),
+    "elderly": ("geriatric", "older"), "dose": ("dosage", "dosing"), "dosage": ("dose", "dosing"),
+}  # fmt: skip
 
 
 def contains_word_prefix(text: str, term: str) -> bool:
@@ -161,3 +192,27 @@ def contains_word_prefix(text: str, term: str) -> bool:
 ENUMERATION_CUES = ["list", "all", "every", "each", "how many", "enumerate", "name the", "what are the"]
 COMPARISON_CUES = ["compare", "comparison", "difference", "differences", "differ", "versus", "vs", "compared"]
 EXPLANATION_CUES = ["why", "explain", "how does", "how do", "how did", "reason", "reasons", "cause", "caused"]
+
+
+#: Common clinical abbreviations a question uses and a document spells out (or the
+#: reverse): "max dose of metformin ER" is covered by "maximum ... extended-release".
+ABBREVIATIONS: dict[str, tuple[str, ...]] = {
+    "max": ("maximum",), "maximum": ("max",), "min": ("minimum",), "er": ("extended-release", "extended release"),
+    "xr": ("extended-release", "extended release"), "xl": ("extended-release",),
+    "ir": ("immediate-release", "immediate release"), "dr": ("delayed-release", "delayed release"),
+    "iv": ("intravenous",), "im": ("intramuscular",), "po": ("oral", "orally"), "sc": ("subcutaneous",),
+    "bp": ("blood pressure",), "mi": ("myocardial infarction",), "af": ("atrial fibrillation",),
+    "afib": ("atrial fibrillation",), "ckd": ("chronic kidney disease", "renal impairment"),
+    "gfr": ("glomerular filtration",), "egfr": ("glomerular filtration",), "dose": ("dosage", "dosing"),
+    "dosage": ("dose",), "hf": ("heart failure",), "vte": ("venous thromboembolism",),
+    "dvt": ("deep venous thrombosis", "deep vein thrombosis"), "pe": ("pulmonary embolism",),
+    "uti": ("urinary tract infection",), "kids": ("pediatric", "children"),
+}  # fmt: skip
+
+
+def covers_term(text: str, term: str) -> bool:
+    """`contains_word_prefix`, also accepting the term's common abbreviation or expansion."""
+    if contains_word_prefix(text, term):
+        return True
+    return any(contains_phrase(text, alt) for alt in ABBREVIATIONS.get(term, ()))
+

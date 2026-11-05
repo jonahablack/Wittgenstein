@@ -53,9 +53,23 @@ export type FlagKind =
   | "quantity_mismatch"
   | "population_qualifier_dropped"
   | "recommendation_strength_dropped"
-  | "context_conflict";
+  | "answer_contradicts_source"
+  | "context_conflict"
+  | "instruction_in_context"
+  | "hidden_characters"
+  | "truncated_passage"
+  | "citation_out_of_range"
+  | "citation_misattributed"
+  | "false_abstention"
+  | "quantity_referent"
+  | "entity_not_in_source"
+  | "derived_value"
+  | "citation_missing"
+  | "answer_empty"
+  | "answer_off_question"
+  | "context_ignored";
 /**
- * measured | inferred_from_rankings | pattern_match -- how the observation was obtained.
+ * measured | inferred_from_rankings | pattern_match | model_judgment -- how the observation was obtained. model_judgment: a language-inference model's verdict (can be wrong).
  */
 export type Measurement = string;
 /**
@@ -236,6 +250,7 @@ export type Tokens1 = number;
 export type UnitId2 = string;
 export type BestEvidenceSpan = [unknown, unknown] | null;
 export type BestEvidenceUnit = string | null;
+export type CheckedAs = string | null;
 export type Cited = number[];
 export type CitedUnitIds = string[];
 export type FlagIds1 = string[];
@@ -436,6 +451,7 @@ export interface UnitPoint {
 export interface VerifiedSentence {
   best_evidence_span: BestEvidenceSpan;
   best_evidence_unit: BestEvidenceUnit;
+  checked_as?: CheckedAs;
   cited: Cited;
   cited_unit_ids: CitedUnitIds;
   flag_ids?: FlagIds1;

@@ -912,6 +912,23 @@ class FlagKind(str, Enum):
     ANSWER_CONTRADICTS_SOURCE = "answer_contradicts_source"
     # Evidence consistency
     CONTEXT_CONFLICT = "context_conflict"
+    # Context integrity (what reached the model; red-team cases P1, P2, P8)
+    INSTRUCTION_IN_CONTEXT = "instruction_in_context"
+    HIDDEN_CHARACTERS = "hidden_characters"
+    TRUNCATED_PASSAGE = "truncated_passage"
+    # Answer plumbing and grounding (red-team cases P5-P7, M1, M2, M6, M12)
+    CITATION_OUT_OF_RANGE = "citation_out_of_range"
+    CITATION_MISATTRIBUTED = "citation_misattributed"
+    FALSE_ABSTENTION = "false_abstention"
+    QUANTITY_REFERENT = "quantity_referent"
+    ENTITY_NOT_IN_SOURCE = "entity_not_in_source"
+    DERIVED_VALUE = "derived_value"
+    CITATION_MISSING = "citation_missing"
+    ANSWER_EMPTY = "answer_empty"
+    ANSWER_OFF_QUESTION = "answer_off_question"
+    # Generator behavior (counterfactual probe, live/counterfactual.py)
+    CONTEXT_IGNORED = "context_ignored"
+    ANSWER_UNSTABLE = "answer_unstable"
 
 
 class FlagDisposition(str, Enum):

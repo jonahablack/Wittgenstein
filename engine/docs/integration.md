@@ -9,8 +9,17 @@ sources don't, and the few places a person should look.
 your pipeline:  question -> retrieve -> choose context -> generate answer
                                                  |
                                                  v
-                         POST /live/check  ->  checks, flags, ledger, receipt
+                           POST /v1/check  ->  summary, checks, flags, ledger, receipt
 ```
+
+`/v1/check` and `/live/check` are the same endpoint; `/v1/...` is the stable path to
+build against. `POST /v1/check/batch` takes `{"items": [request, ...]}` (up to 50) and
+returns the results in order -- one item's failure comes back as `{"error": ...}` in its
+place without failing the batch.
+
+**API keys.** When the server sets `WITTGENSTEIN_API_KEYS` (comma-separated), the check
+endpoints require one: `Authorization: Bearer <key>` or `X-API-Key: <key>`. Unset (local
+use), they're open.
 
 ## Access levels
 
@@ -22,6 +31,11 @@ it ran, passed, flagged something, or was not possible at your access level (and
 | question, candidates, context, answer | `trace` | Answer verification (each sentence vs. the passage it cites: support, doses/units, patient-population qualifiers, conditions and exceptions, certainty, recommendation grade); conflicting values or polarity between passages used; near-miss identifiers; per-part coverage; redundancy; cutoff checks |
 | + `corpus_id` (document uploaded to this server) | `document` | Whether the document covers the question at all; what keyword or meaning search would have found that your retriever didn't; severed context; cross-references and definitions your pipeline didn't follow |
 | + `embed_url` (your embedding model) | `+embeddings` | Your model is measured: input window, how much it registers negation and exact values, dilution in long passages; then the embedding probes run against it |
+| + `generator_url` (your LLM) | `+generator` | The counterfactual probe: a value the answer took from a passage is changed in the passages and your generator is asked again. Same value back = answering from memory; the answer jumping elsewhere = unstable. Up to 2 extra generations |
+
+At every level, what reached the model is checked too: instructions aimed at the model
+inside a passage (prompt injection), invisible characters, passages cut off
+mid-sentence, and duplicates.
 
 Without `embed_url`, comparisons "by meaning" use the checker's own model and say so;
 probes that are only meaningful for your model report "needs access" instead of guessing.
@@ -55,6 +69,9 @@ POST /live/check
 - `corpus_id`: a document uploaded to this server (`POST /live/corpora`, or the web
   app's "Add document"). Your candidates are matched to its passages by text; any that
   don't match are listed in `unmatched_candidates` and still checked as sent.
+- `generator_url`: an endpoint that answers with your pipeline's own LLM:
+  `POST {"question": "...", "passages": [{"n": 1, "text": "..."}, ...]}` → `{"answer": "..."}`.
+  Same localhost rule as `embed_url`; `generator_headers` is passed through.
 - `embed_url`: an endpoint that embeds texts with your model:
   `POST {"texts": ["...", ...]}` → `{"embeddings": [[...], ...]}`. For safety, only
   `localhost` URLs are accepted unless the server sets `WITTGENSTEIN_ALLOW_REMOTE_EMBED=1`.
@@ -64,6 +81,13 @@ POST /live/check
 
 ```json
 {
+  "api_version": "1.1",
+  "summary": {"needs_review": true, "retrieval_needs_review": false, "worst_severity": "warning",
+              "answer_flags": 1, "context_flags": 0, "retrieval_flags": 0,
+              "sentences": [{"sentence_id": "s1", "text": "2,550 mg.", "status": "review",
+                             "checked_as": "The maximum daily dose of metformin extended-release is 2,550 mg.",
+                             "flags": [{"kind": "quantity_referent", "severity": "warning",
+                                        "title": "“2,550 mg” belongs to immediate-release, not extended-release"}]}]},
   "access": {"level": "document+embeddings", "scope": "document", "notes": ["..."]},
   "receipt": {"candidates": 5, "in_prompt": 1, "worth_a_look": 2, "checks_passed": 14, "checks_run": 16,
               "checks_not_possible": 3},
@@ -82,6 +106,12 @@ POST /live/check
 }
 ```
 
+`summary.needs_review` is the one field most integrations need: the answer, or what
+reached the model, has something a person should look at. `retrieval_needs_review`
+says the search may have missed evidence even when the answer is fine.
+`checked_as` shows the claim actually checked when a sentence can't be checked alone
+("Yes." is checked as the question's statement, affirmed).
+
 Flags never say an answer is wrong. Each states what was measured or matched, why it
 could matter, what to check, and the exact source span. Flags that correspond to a
 registry failure mechanism carry its id and epistemic status as recorded in the registry.
@@ -94,8 +124,9 @@ registry failure mechanism carry its id and epistemic status as recorded in the 
 from wittgenstein_check import check, needs_review
 
 report = check("http://127.0.0.1:8100", query=q, candidates=cands, context_ids=ctx, answer=answer)
-for f in needs_review(report):
-    print(f["title"], "->", f["what_to_check"])
+if report["summary"]["needs_review"]:
+    for f in needs_review(report):
+        print(f["title"], "->", f["what_to_check"])
 ```
 
 ### LangChain
@@ -131,10 +162,38 @@ def embed(body: dict):
 # uvicorn embed_server:app --port 9000   ->   embed_url="http://localhost:9000/embed"
 ```
 
+### Exposing your generator (`generator_url`)
+
+```python
+@app.post("/generate")
+def generate(body: dict):
+    context = "\n\n".join(f"[{p['n']}] {p['text']}" for p in body["passages"])
+    return {"answer": your_llm(question=body["question"], context=context)}
+```
+
+## What the checks catch (red-team suite)
+
+`engine/scripts/redteam/scenarios.py` holds 28 cases -- pipeline errors, model errors
+and correct-answer controls -- each a request with the flags it must (or must not)
+raise; `tests/unit/test_live_redteam.py` runs them on every test run. Pipeline errors:
+injected instructions, hidden characters, superseded versions, another document's
+passage, off-by-one and out-of-range citations, a retrieved-but-dropped passage behind
+a false "not stated", severed chunks, duplicates. Model errors: a number from the
+wrong referent (immediate- vs extended-release), bare "Yes."/"2,550 mg." answers,
+narrowed ranges, lost negation, swapped drug names, frequency changes, generalized
+populations, dropped conditions, parametric additions, false abstention. Controls:
+values echoed from the question, worked-out doses, equal amounts in other units,
+faithful paraphrase, correct abstention.
+
 ## Limits
 
 - The checker measures text and rankings; it does not see your model's internals
   (attention, logits). Token-level attribution is planned for open-weights models.
+- Drug-name and patient-group checks use vocabularies tuned on drug labels; other
+  domains need their own (the document-name check is domain-independent).
+- The meaning-level model (NLI) is small and misreads numbers and entity swaps as
+  agreement; it can add warnings but never clears a sentence a deterministic check
+  flagged.
 - Matching your candidates to an uploaded document is textual; heavily rewritten or
   summarized chunks may not match and are reported as unmatched.
 - Each call is independent; nothing is stored unless you also use the web app.

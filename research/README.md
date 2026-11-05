@@ -42,6 +42,15 @@ the entries below are symlinks to them, so nothing breaks and nothing is duplica
 - `2026-11-04_check-evaluation.md` (+ folder): planted-error evaluation. Held-out FDA labels: 0/240 false
   alarms, 90–100% detection per error type; run history from a 44% false-alarm start.
 
+### `red-team/` — attacking the checker (Nov 2026)
+- `2026-11-05_red-team-report.md` — 28 constructed pipeline/model/control scenarios (7/28 → 28/28),
+  a real open model (Qwen2-1.5B, local) on 100 clinical questions with a 40-question held-out set
+  labeled per answer (10/11 content errors and 9/9 non-answers flagged; 4/18 correct answers with a
+  content false alarm), the NLI model's unsafe entailments, and the counterfactual "does it read its
+  context?" probe.
+- `2026-11-05_scenarios/`, `2026-11-05_local-qwen/` — raw scenario results, model answers, labels,
+  probes.
+
 ### `medical-education/` — University of Arizona College of Medicine conversation
 - `2026-11-04_medical-ai-problems-and-features.md` — evidence on medical LLM/RAG
   failures (citations, omissions, conflicts, drug labels, automation bias), features

@@ -30,6 +30,8 @@ export function AskBar() {
   const setCorpus = useApp((s) => s.setCorpus);
   const provider = useApp((s) => s.provider);
   const setProvider = useApp((s) => s.setProvider);
+  const counterfactual = useApp((s) => s.counterfactual);
+  const setCounterfactual = useApp((s) => s.setCounterfactual);
   const providers = useApp((s) => s.config?.providers) ?? DEFAULT_PROVIDERS;
   const [q, setQ] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -116,10 +118,24 @@ export function AskBar() {
           >
             {Object.entries(providers).map(([name, ok]) => (
               <option key={name} value={name} disabled={!ok}>
-                {name === "extractive" ? "Quote" : name === "claude" ? "Claude" : "OpenAI"}
+                {name === "extractive" ? "Quote" : name === "claude" ? "Claude" : name === "local" ? "Open model" : "OpenAI"}
               </option>
             ))}
           </select>
+          {provider !== "extractive" && (
+            <label
+              className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-1.5 text-xs text-ink-3 hover:text-ink-2"
+              title="Change a value in the passages and ask again: does the model follow the document or its memory? (up to 2 extra generations)"
+            >
+              <input
+                type="checkbox"
+                checked={counterfactual}
+                onChange={(e) => setCounterfactual(e.target.checked)}
+                className="size-3.5 accent-current"
+              />
+              Test the model
+            </label>
+          )}
           <span className="hidden text-xs text-ink-4 sm:block">
             {corpus?.units ? `${corpus.units.toLocaleString()} passages` : ""}
           </span>

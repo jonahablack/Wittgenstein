@@ -27,7 +27,7 @@
           "$ref": "#/$defs/FlagKind"
         },
         "measurement": {
-          "description": "measured | inferred_from_rankings | pattern_match -- how the observation was obtained.",
+          "description": "measured | inferred_from_rankings | pattern_match | model_judgment -- how the observation was obtained. model_judgment: a language-inference model's verdict (can be wrong).",
           "title": "Measurement",
           "type": "string"
         },
@@ -260,7 +260,21 @@
         "quantity_mismatch",
         "population_qualifier_dropped",
         "recommendation_strength_dropped",
-        "context_conflict"
+        "answer_contradicts_source",
+        "context_conflict",
+        "instruction_in_context",
+        "hidden_characters",
+        "truncated_passage",
+        "citation_out_of_range",
+        "citation_misattributed",
+        "false_abstention",
+        "quantity_referent",
+        "entity_not_in_source",
+        "derived_value",
+        "citation_missing",
+        "answer_empty",
+        "answer_off_question",
+        "context_ignored"
       ],
       "title": "FlagKind",
       "type": "string"
@@ -828,6 +842,18 @@
             }
           ],
           "title": "Best Evidence Unit"
+        },
+        "checked_as": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked As"
         },
         "cited": {
           "items": {

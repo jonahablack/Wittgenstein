@@ -386,3 +386,26 @@ measured like any other).
 Not yet done: retriever-only access (ranking callbacks without texts), a reranker
 channel, LLM answers exercised against a live API (no credentials configured here), and
 a browser-level test suite.
+
+Added 2026-11-05 (red-teaming; scripts/redteam/, tests/unit/test_live_redteam.py):
+
+- An open-weights provider (`local`: any OpenAI-compatible server on this machine) --
+  real model answers now run through the full pipeline.
+- Context integrity checks (injected instructions, invisible characters, truncated
+  passages, duplicates); claim reconstruction for bare answers; unit-aware, range-aware,
+  frequency-aware quantity checks with question values and per-kg arithmetic
+  recognized; referent, drug-name and wrong-document grounding; citation checks
+  (wrong passage, nonexistent, section numbers, missing); empty, off-question and
+  false-"not stated" answers.
+- The NLI model may add warnings but never clears a sentence a deterministic check
+  flagged (measured: it rates wrong-referent, entity-swap and narrowed-range claims as
+  entailed, 0.89-0.99).
+- Counterfactual probe (`live/counterfactual.py`): change a value the answer took from
+  a passage, regenerate, and see whether the model follows -- in the live pipeline as
+  an option ("Test the model") and in the API via `generator_url`.
+- Integration API: `/v1/check`, `/v1/check/batch`, optional API keys, and a `summary`
+  block (`needs_review`, per-sentence status, `checked_as`).
+
+Measured on a 40-question held-out set answered by Qwen2-1.5B (labels by Claude, not
+clinicians): 10/11 content errors and 9/9 non-answers flagged; 4/18 correct answers drew
+a content false alarm (paraphrase), 7/18 a true missing-citation flag only.

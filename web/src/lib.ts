@@ -46,6 +46,7 @@ export const STAGE_LABEL: Record<string, string> = {
   pack: "Assemble context",
   generate: "Write answer",
   verify: "Verify answer",
+  "probe-generator": "Test the model",
 };
 
 export const CHANNEL: Record<string, { label: string; color: string }> = {

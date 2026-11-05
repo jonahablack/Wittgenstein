@@ -8,6 +8,7 @@ const PROVIDER_LABEL: Record<string, string> = {
   extractive: "Quote the document",
   claude: "Claude",
   openai: "OpenAI",
+  local: "Open model (local)",
 };
 
 export function TopBar() {

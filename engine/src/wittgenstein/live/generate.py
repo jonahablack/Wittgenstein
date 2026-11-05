@@ -9,6 +9,8 @@ Providers:
   UI; it can never state anything the document doesn't.
 - `claude` and `openai` (optional extras): live LLM answers, in their own modules
   (live/providers/), imported lazily so the base install never needs either SDK.
+- `local`: an open-weights model behind any OpenAI-compatible server on this machine
+  (live/providers/local_provider.py).
 
 Reserved for later (plan §11): an optional attribution channel from an open-weights
 model, mapping answer spans to context spans with weights.
@@ -145,7 +147,7 @@ def _has_term(low: str, term: str) -> bool:
 
 _DANGLING_ENUM = re.compile(r"\s+(?:\d{1,3}|[a-z]|[ivx]{1,4})[.)]$")
 
-PROVIDER_CHOICES = ["extractive", "claude", "openai"]
+PROVIDER_CHOICES = ["extractive", "claude", "openai", "local"]
 
 
 def available_providers() -> dict[str, bool]:
@@ -164,6 +166,10 @@ def available_providers() -> dict[str, bool]:
         out["openai"] = bool(os.environ.get("OPENAI_API_KEY"))
     except ImportError:
         out["openai"] = False
+    from wittgenstein.live.providers.local_provider import local_url, local_url_allowed
+
+    url = local_url()
+    out["local"] = bool(url and local_url_allowed(url))
     return out
 
 
@@ -178,4 +184,8 @@ def get_provider(name: str, inst: Instruments) -> AnswerProvider:
         from wittgenstein.live.providers.openai_provider import OpenAIProvider
 
         return OpenAIProvider()
+    if name == "local":
+        from wittgenstein.live.providers.local_provider import LocalProvider
+
+        return LocalProvider()
     raise ValueError(f"Unknown provider {name!r}; choose one of {PROVIDER_CHOICES}")

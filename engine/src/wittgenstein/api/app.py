@@ -56,6 +56,7 @@ app.include_router(traces.router)
 app.include_router(applicability.router)
 app.include_router(review.router)
 app.include_router(live.router)
+app.include_router(live.v1)
 
 # The live web app (../web, `npm run build`), served from the same origin as the API when
 # it has been built. Mounted last so every API route above takes precedence.

@@ -87,7 +87,7 @@ class Instruments:
         fs = self._facets[facet_id]
         terms = list(dict.fromkeys(fs.facet.terms))
         text = self.lower_text(i)
-        share = sum(1 for t in terms if P.contains_word_prefix(text, t)) / len(terms) if terms else 0.0
+        share = sum(1 for t in terms if P.covers_term(text, t)) / len(terms) if terms else 0.0
         mz = fs.dense.z(i) if fs.dense is not None else None
         if share >= TERM_SHARE:
             return FacetCoverage(True, "terms", share, mz)

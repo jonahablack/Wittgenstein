@@ -6,6 +6,7 @@ verified answer.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import threading
 import time
@@ -18,7 +19,9 @@ from pathlib import Path
 from typing import Any
 
 from wittgenstein.core.enums import CheckOutcome, FlagDisposition, FlagKind, LiveEventType, TraceStatus
+from wittgenstein.live import counterfactual
 from wittgenstein.live.characterize import EmbedderProfile, get_profile
+from wittgenstein.live.context_checks import check_context
 from wittgenstein.live.corpus import LiveCorpus, UnitSet
 from wittgenstein.live.coverage import Instruments
 from wittgenstein.live.embedding import DEFAULT_EMBEDDER, get_embedder
@@ -125,8 +128,9 @@ class _Shared:
     """Per-run caches shared by pipeline threads: query analysis and field events per
     chunker, and model profiles per embedder."""
 
-    def __init__(self, corpus: LiveCorpus, query: str, em: Emitter) -> None:
+    def __init__(self, corpus: LiveCorpus, query: str, em: Emitter, counterfactual: bool = False) -> None:
         self.corpus, self.query, self.em = corpus, query, em
+        self.counterfactual = counterfactual
         self._lock = threading.Lock()
         self._analysis: dict[str, QueryAnalysis] = {}
         self._fields: set[str] = set()
@@ -262,6 +266,9 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         tokens=packed.final_prompt_token_count,
         budget=spec.token_budget,
     )
+    nf, nc = len(out.flags), len(out.checks)
+    check_context(passages, out)
+    flush(nf, nc)
     stage("pack", ts)
 
     ts = time.perf_counter()
@@ -288,7 +295,15 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
 
     ts = time.perf_counter()
     nf, nc = len(out.flags), len(out.checks)
-    sentences, claims, edges = verify_answer(answer, passages, units, out)
+    in_prompt = {p.unit.unit_id for p in passages}
+    sentences, claims, edges = verify_answer(
+        answer,
+        passages,
+        units,
+        out,
+        question=analysis.query,
+        others=[u for u in units.units if u.unit_id not in in_prompt],
+    )
     by_n = {p.n: p.unit.unit_id for p in passages}
     for s in sentences:
         em.emit(
@@ -298,6 +313,24 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         )
     flush(nf, nc)
     stage("verify", ts)
+
+    if shared.counterfactual and provider.info.uses_llm:
+        # Does the model answer from the passages or from memory? Change a value the
+        # answer took from a passage and ask again (live/counterfactual.py).
+        ts = time.perf_counter()
+        nf, nc = len(out.flags), len(out.checks)
+        by_unit = {p.n: p.unit for p in passages}
+
+        def regenerate(question: str, edited: list[tuple[int, str]]) -> str:
+            ps = [ContextPassage(n, dataclasses.replace(by_unit[n], text=t)) for n, t in edited]
+            return "".join(provider.stream(question, ps))
+
+        counterfactual.report(
+            counterfactual.run_probes(analysis.query, [(p.n, p.unit.text) for p in passages], answer, regenerate),
+            out,
+        )
+        flush(nf, nc)
+        stage("probe-generator", ts)
 
     manifest = spec.to_manifest(corpus.corpus_id, embedder.info if embedder else None)
     trace = QueryTrace(
@@ -385,6 +418,7 @@ def run_query(
     provider: str = "extractive",
     sink: Callable[[LiveEvent], None] | None = None,
     specs: dict[str, PipelineSpec] | None = None,
+    counterfactual: bool = False,
 ) -> RunResult:
     specs = specs or PRESETS
     pipeline_ids = pipeline_ids or ["aware"]
@@ -403,7 +437,7 @@ def run_query(
             {"pipeline_id": p, "label": specs[p].label, "description": specs[p].description} for p in pipeline_ids
         ],
     )
-    shared = _Shared(corpus, query, em)
+    shared = _Shared(corpus, query, em, counterfactual)
     outcomes: dict[str, PipelineOutcome] = {}
     try:
         with ThreadPoolExecutor(max_workers=max(1, len(pipeline_ids))) as pool:

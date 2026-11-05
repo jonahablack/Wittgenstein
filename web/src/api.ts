@@ -74,6 +74,8 @@ export interface RunRequest {
   query: string;
   pipelines: string[];
   provider: string;
+  /** Also test whether the model answers from the passages (LLM providers only). */
+  counterfactual?: boolean;
 }
 
 /** POSTs a run and parses the Server-Sent Events stream as it arrives. EventSource

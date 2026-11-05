@@ -43,6 +43,7 @@ from wittgenstein.core.enums import (
 )
 from wittgenstein.ingestion.parser import split_sentences
 from wittgenstein.live.characterize import get_profile
+from wittgenstein.live.context_checks import check_context
 from wittgenstein.live.corpus import STRUCTURAL, LiveCorpus, Unit, UnitSet
 from wittgenstein.live.coverage import Instruments
 from wittgenstein.live.embedding import DEFAULT_EMBEDDER, Embedder, get_embedder
@@ -107,6 +108,13 @@ class ExternalCheckRequest(BaseModel):
         default=None, description='Callback to the pipeline\'s own embedding model: POST {"texts": [...]}.'
     )
     embed_headers: dict[str, str] | None = None
+    generator_url: str | None = Field(
+        default=None,
+        description="Callback to the pipeline's own answer generator, for the counterfactual probe: "
+        'POST {"question": str, "passages": [{"n": 1, "text": str}, ...]} -> {"answer": str}. '
+        "Costs up to 2 extra generations.",
+    )
+    generator_headers: dict[str, str] | None = None
 
     @model_validator(mode="after")
     def _ids(self) -> ExternalCheckRequest:
@@ -329,13 +337,38 @@ def check_external(
 
     # --- answer verification on exactly the text the caller's model saw ---------------------
     sentences: list[dict[str, Any]] = []
+    ctx_units = _synthetic_units([by_id[cid] for cid in context_ids])
+    passages = [ContextPassage(i + 1, u) for i, u in enumerate(ctx_units)]
+    check_context(passages, out)
     if req.answer:
-        ctx_units = _synthetic_units([by_id[cid] for cid in context_ids])
-        passages = [ContextPassage(i + 1, u) for i, u in enumerate(ctx_units)]
-        verified, _, _ = verify_answer(req.answer, passages, UnitSet("external-context", ctx_units), out)
+        ctx_ids = set(context_ids)
+        left_out = _synthetic_units([c for c in req.candidates if c.id not in ctx_ids])
+        if corpus is not None:
+            in_prompt_units = {u for cid in context_ids for u in cand_units.get(cid, [])}
+            left_out += [u for u in units.units if u.unit_id not in in_prompt_units]
+        verified, _, _ = verify_answer(
+            req.answer,
+            passages,
+            UnitSet("external-context", ctx_units),
+            out,
+            question=req.query,
+            others=left_out,
+        )
         sentences = [asdict(s) for s in verified]
     else:
         notes.append("No answer was sent, so answer verification didn't run.")
+
+    probes: list[dict[str, Any]] = []
+    if req.generator_url and req.answer:
+        from wittgenstein.live import counterfactual
+
+        gen = _callback_generator(req.generator_url, req.generator_headers)
+        probes = counterfactual.report(
+            counterfactual.run_probes(req.query, [(p.n, p.unit.text) for p in passages], req.answer, gen),
+            out,
+        )
+    elif req.generator_url:
+        notes.append("A generator callback was given but no answer, so the counterfactual probe didn't run.")
 
     level = "document" if corpus is not None else "trace"
     if embedder is not None:
@@ -344,6 +377,8 @@ def check_external(
     for cid, uids in cand_units.items():
         for u in uids:
             unit_to_candidates.setdefault(u, []).append(cid)
+    if req.generator_url:
+        level += "+generator"
     flags = [f.model_dump(mode="json") for f in out.flags]
     checks = [c.model_dump(mode="json") for c in out.checks]
     return {
@@ -368,7 +403,9 @@ def check_external(
             {**{k: v for k, v in asdict(e).items() if k != "pull_in_reason"}, "fate": e.fate.value}
             for e in ledger.values()
         ],
+        "summary": summarize(flags, sentences),
         "sentences": sentences,
+        "counterfactual": probes,
         "unit_to_candidates": unit_to_candidates,
         "unmatched_candidates": unmatched,
         "model_profile": {
@@ -380,4 +417,84 @@ def check_external(
     }
 
 
-__all__ = ["ExternalCheckRequest", "ExternalCandidate", "ExternalPipeline", "check_external"]
+class GeneratorCallbackError(RuntimeError):
+    pass
+
+
+def _callback_generator(url: str, headers: dict[str, str] | None):  # noqa: ANN202
+    """The caller's own generator, reached like an embedding callback (and under the same
+    rule: this machine only, unless the server allows remote callbacks)."""
+    import httpx
+
+    from wittgenstein.live.embedding import embed_url_allowed
+
+    if not embed_url_allowed(url):
+        raise GeneratorCallbackError(
+            "Generator callbacks must point at this machine (localhost) unless the server sets "
+            "WITTGENSTEIN_ALLOW_REMOTE_EMBED=1."
+        )
+
+    def generate(question: str, passages: list[tuple[int, str]]) -> str:
+        r = httpx.post(
+            url,
+            json={"question": question, "passages": [{"n": n, "text": t} for n, t in passages]},
+            headers=dict(headers or {}),
+            timeout=120.0,
+        )
+        r.raise_for_status()
+        answer = r.json().get("answer")
+        if not isinstance(answer, str):
+            raise GeneratorCallbackError('The generator callback must return {"answer": "..."}.')
+        return answer
+
+    return generate
+
+
+_SEVERITY_ORDER = {"warning": 0, "caution": 1, "info": 2}
+
+
+def summarize(flags: list[dict[str, Any]], sentences: list[dict[str, Any]]) -> dict[str, Any]:
+    """The decision an integrator needs first: does this answer need a person to look,
+    and which sentences. (The full flags and checks follow it in the response.)"""
+    review = [f for f in flags if f["disposition"] == "needs_review"]
+    by_sentence: dict[str, list[dict[str, Any]]] = {}
+    for f in review:
+        sid = (f.get("metrics") or {}).get("sentence_id")
+        if sid:
+            by_sentence.setdefault(sid, []).append(f)
+    worst = min((f["severity"] for f in review), key=lambda s: _SEVERITY_ORDER.get(s, 3), default=None)
+    answer_side = [f for f in review if f.get("stage") in {"answer", "context"}]
+    return {
+        # The answer, or what reached the model, has something a person should look at.
+        "needs_review": bool(answer_side),
+        # The search may have missed evidence -- worth knowing even when the answer is fine.
+        "retrieval_needs_review": any(f.get("stage") not in {"answer", "context"} for f in review),
+        "worst_severity": worst,
+        "answer_flags": sum(1 for f in review if f.get("stage") == "answer"),
+        "context_flags": sum(1 for f in review if f.get("stage") == "context"),
+        "retrieval_flags": sum(1 for f in review if f.get("stage") not in {"answer", "context"}),
+        "sentences": [
+            {
+                "sentence_id": s["sentence_id"],
+                "text": s["text"],
+                "status": "review" if s["sentence_id"] in by_sentence else "ok",
+                "support": s.get("support"),
+                "checked_as": s.get("checked_as"),
+                "flags": [
+                    {"kind": f["kind"], "title": f["title"], "severity": f["severity"]}
+                    for f in by_sentence.get(s["sentence_id"], [])
+                ],
+            }
+            for s in sentences
+        ],
+    }
+
+
+__all__ = [
+    "ExternalCheckRequest",
+    "ExternalCandidate",
+    "ExternalPipeline",
+    "GeneratorCallbackError",
+    "check_external",
+    "summarize",
+]

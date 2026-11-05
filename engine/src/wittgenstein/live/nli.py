@@ -24,6 +24,7 @@ part.
 from __future__ import annotations
 
 import json
+import os
 import platform
 import re
 import threading
@@ -31,7 +32,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
-REPO = "cross-encoder/nli-deberta-v3-xsmall"
+#: Override with WITTGENSTEIN_NLI_MODEL (any cross-encoder NLI repo with ONNX exports,
+#: e.g. cross-encoder/nli-deberta-v3-base: slower, more accurate).
+REPO = os.environ.get("WITTGENSTEIN_NLI_MODEL", "cross-encoder/nli-deberta-v3-xsmall")
 #: Starting thresholds; see the module docstring.
 CONTRADICTION = 0.9
 POSSIBLE_CONTRADICTION = 0.6

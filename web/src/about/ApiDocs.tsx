@@ -48,6 +48,7 @@ function Field({ name, children }: { name: string; children: React.ReactNode }) 
 
 const SECTIONS = [
   ["quickstart", "Quickstart"],
+  ["local", "Run locally"],
   ["request", "Request"],
   ["response", "Response"],
   ["levels", "Access levels"],
@@ -119,6 +120,36 @@ export function ApiDocs() {
       <p className="mt-3 text-sm text-ink-3">
         <code className="num text-ink-2">summary.needs_review</code> is the one field most integrations need.
       </p>
+
+      <H2 id="local">Run it locally, beside your pipeline</H2>
+      <p className="mt-3 text-ink-2">
+        Install Wittgenstein on the machine your pipeline runs on and start the local interface:
+      </p>
+      <Code lang="bash">{`pip install wittgenstein-rag
+wittgenstein serve            # opens http://127.0.0.1:8100/#/pipeline`}</Code>
+      <p className="mt-3 text-ink-2">
+        Then, where your app starts, hook it in. LangChain and LlamaIndex are detected and instrumented
+        automatically: every answer is sent, with what was retrieved and what went into the prompt, and appears in the
+        local interface with the same checks as this site.
+      </p>
+      <Code lang="python">{`import wittgenstein.monitor as wm
+wm.instrument()               # returns e.g. ["langchain"]
+
+# any other pipeline: report each answer yourself
+wm.record(question, retrieved_chunks, answer, prompt=prompt_text)`}</Code>
+      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-ink-2">
+        <li>
+          What went into the prompt is read from the prompt itself, so custom templates, rerankers and filters need
+          no configuration.
+        </li>
+        <li>Reports go from a background thread; your pipeline is never slowed or broken if the server is down.</li>
+        <li>
+          Settings: <code className="num">WITTGENSTEIN_URL</code> (default the local server),{" "}
+          <code className="num">WITTGENSTEIN_API_KEY</code>, <code className="num">WITTGENSTEIN_SOURCE</code> (a name
+          for this pipeline in the feed).
+        </li>
+        <li>The feed is kept in ~/.wittgenstein and is served only to this machine.</li>
+      </ul>
 
       <H2 id="request">Request</H2>
       <p className="mt-3 text-ink-2">

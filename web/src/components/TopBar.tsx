@@ -31,11 +31,14 @@ export function TopBar() {
           <span className="font-semibold tracking-tight">Wittgenstein</span>
         </a>
 
-        <a href="#/about" className="ml-3 text-sm text-ink-3 hover:text-ink">
+        <a href="#/about" className="ml-3 text-sm whitespace-nowrap text-ink-3 hover:text-ink">
           About
         </a>
-        <a href="#/api" className="ml-1 text-sm text-ink-3 hover:text-ink">
+        <a href="#/api" className="ml-1 text-sm whitespace-nowrap text-ink-3 hover:text-ink">
           API
+        </a>
+        <a href="#/pipeline" className="ml-1 hidden text-sm whitespace-nowrap text-ink-3 hover:text-ink sm:inline">
+          Pipeline
         </a>
 
         <div className="ml-auto flex min-w-0 items-center gap-2">

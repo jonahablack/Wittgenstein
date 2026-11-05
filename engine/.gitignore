@@ -36,3 +36,6 @@ frontend/dist/
 /docs/*-results.md
 /docs/*-run-summary.md
 /docs/*-annotation-summary*.md
+
+# Built web interface copied in for the wheel (make wheel)
+src/wittgenstein/web_dist/

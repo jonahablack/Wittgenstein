@@ -10,6 +10,8 @@
 - POST /live/check                          check an EXTERNAL pipeline's run (docs/integration.md)
 - POST /live/check/batch                    up to MAX_BATCH such checks (e.g. replaying logs)
 - POST /v1/check, /v1/check/batch           the same, under a stable versioned path
+- POST /v1/audits                           check AND record, for the local "Your pipeline" feed
+- GET  /v1/audits, /v1/audits/{id}          the recorded feed (DELETE /v1/audits clears it)
 
 Integration endpoints require an API key when the server sets WITTGENSTEIN_API_KEYS
 (comma-separated): send it as `Authorization: Bearer <key>` or `X-API-Key: <key>`.
@@ -25,11 +27,12 @@ import threading
 from collections.abc import AsyncIterator
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from wittgenstein.core.enums import LiveEventType
+from wittgenstein.live.audit_log import audit_log
 from wittgenstein.live.embedding import (
     DEFAULT_EMBEDDER,
     EMBEDDER_CHOICES,
@@ -63,6 +66,24 @@ def require_api_key(
     )
     if not given or not any(hmac.compare_digest(given, k) for k in keys):
         raise HTTPException(401, "A valid API key is required (Authorization: Bearer <key> or X-API-Key).")
+
+
+_LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
+
+
+def local_or_keyed(
+    request: Request,
+    authorization: str | None = Header(default=None),
+    x_api_key: str | None = Header(default=None),
+) -> None:
+    """The audit feed holds a user's own pipeline traffic. Without API keys configured it
+    is served only to this machine; with keys, a valid key is required."""
+    if os.environ.get("WITTGENSTEIN_API_KEYS", "").strip():
+        require_api_key(authorization, x_api_key)
+        return
+    host = request.client.host if request.client else ""
+    if host not in _LOCAL_HOSTS:
+        raise HTTPException(403, "The audit feed is only available from this machine unless API keys are set.")
 
 
 MAX_UPLOAD_BYTES = 40 * 1024 * 1024
@@ -279,6 +300,41 @@ def check_batch(req: BatchRequest) -> dict[str, Any]:
         "retrieval_needs_review": sum(1 for r in results if r.get("summary", {}).get("retrieval_needs_review")),
         "errors": sum(1 for r in results if "error" in r),
     }
+
+
+class AuditRequest(ExternalCheckRequest):
+    source: str | None = Field(
+        default=None, max_length=200, description="Which pipeline sent it, e.g. 'langchain' or your app's name."
+    )
+
+
+@v1.post("/audits", dependencies=[Depends(local_or_keyed)])
+def create_audit(req: AuditRequest) -> dict[str, Any]:
+    """Check a run of the caller's pipeline and record it in the local feed (what
+    wittgenstein.monitor sends). Returns the same report as /v1/check, plus audit_id."""
+    report = _check_one(req)
+    body = req.model_dump(exclude={"source", "embed_headers", "generator_headers"}, exclude_none=True)
+    item = audit_log().add(body, report, req.source)
+    return {"audit_id": item["audit_id"], **report}
+
+
+@v1.get("/audits", dependencies=[Depends(local_or_keyed)])
+def list_audits() -> dict[str, Any]:
+    return {"api_version": API_VERSION, "audits": audit_log().list()}
+
+
+@v1.get("/audits/{audit_id}", dependencies=[Depends(local_or_keyed)])
+def get_audit(audit_id: str) -> dict[str, Any]:
+    item = audit_log().get(audit_id)
+    if item is None:
+        raise HTTPException(404, f"No audit {audit_id!r}.")
+    return item
+
+
+@v1.delete("/audits", dependencies=[Depends(local_or_keyed)])
+def clear_audits() -> dict[str, Any]:
+    audit_log().clear()
+    return {"cleared": True}
 
 
 @router.get("/runs/{run_id}")

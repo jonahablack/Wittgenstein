@@ -735,3 +735,69 @@ def fixture_run(
 
 if __name__ == "__main__":
     app()
+
+
+_DEMO_PASSAGES = [
+    "The recommended starting dosage of metformin hydrochloride extended-release is 500 mg orally once daily "
+    "with the evening meal.",
+    "Increase the dose in increments of 500 mg weekly on the basis of glycemic control and tolerability, up to a "
+    "maximum of 2,000 mg once daily with the evening meal.",
+    "Metformin hydrochloride extended-release tablets are contraindicated in patients with severe renal "
+    "impairment (eGFR below 30 mL/min/1.73 m2).",
+]
+_DEMO_RUNS = [
+    (
+        "What is the starting dose of metformin extended-release?",
+        "The starting dose is 500 mg once daily with the evening meal. [1]",
+    ),
+    ("What is the maximum dose of metformin extended-release?", "The maximum dose is 2,550 mg per day. [2]"),
+    ("Can metformin extended-release be used in severe renal impairment?", "[3]"),
+]
+
+
+def _send_demo(url: str) -> None:
+    import time
+    import urllib.request
+
+    for _ in range(120):  # wait for the server
+        try:
+            urllib.request.urlopen(url + "/live/config", timeout=2)
+            break
+        except OSError:
+            time.sleep(0.5)
+    from wittgenstein import monitor
+
+    monitor.configure(url=url, source="demo pipeline")
+    for q, a in _DEMO_RUNS:
+        monitor.record(q, _DEMO_PASSAGES, a)
+
+
+@app.command("serve")
+def serve(
+    port: int = typer.Option(8100, help="Port for the local interface and API."),
+    host: str = typer.Option("127.0.0.1", help="Keep 127.0.0.1 unless you mean to expose it."),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open the interface in a browser."),
+    audit_dir: Path = typer.Option(Path("~/.wittgenstein"), help="Where the audit feed is kept."),
+    demo: bool = typer.Option(False, help="Send three example audits so the feed isn't empty."),
+) -> None:
+    """Run Wittgenstein locally: the interface, the API, and the feed of audits from your
+    own pipeline (connect it with `import wittgenstein.monitor as wm; wm.instrument()`)."""
+    import os
+    import threading
+    import webbrowser
+
+    import uvicorn
+
+    home = audit_dir.expanduser()
+    home.mkdir(parents=True, exist_ok=True)
+    os.environ["WITTGENSTEIN_AUDIT_DIR"] = str(home)
+    os.environ.setdefault("WITTGENSTEIN_HOME", str(home))
+    os.environ.setdefault("WITTGENSTEIN_DATABASE_URL", f"sqlite:///{home / 'wittgenstein.db'}")
+    url = f"http://{'127.0.0.1' if host in {'0.0.0.0', '::'} else host}:{port}"
+    console.print(f"[bold]Wittgenstein[/bold] on {url}  ·  your pipeline's audits: {url}/#/pipeline")
+    console.print("Connect a pipeline:  [cyan]import wittgenstein.monitor as wm; wm.instrument()[/cyan]")
+    if open_browser:
+        threading.Timer(1.5, lambda: webbrowser.open(url + "/#/pipeline")).start()
+    if demo:
+        threading.Thread(target=_send_demo, args=(url,), daemon=True).start()
+    uvicorn.run("wittgenstein.api.app:app", host=host, port=port, log_level="warning")

@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { cx } from "../lib";
 import { PATTERNS, SOURCES } from "./data";
+import { LayerAnimation } from "./LayerAnimation";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
@@ -60,19 +61,17 @@ export function About() {
           <Ref n={6} />.
         </p>
         <p>
-          Wittgenstein aims to make retrieved information legible to human review. Text segments are flagged for the
-          specific linguistic patterns most associated with LLM interpretive error, enabling humans to quickly and
-          efficiently review potentially-problematic text while reducing alert fatigue. What makes this possible is
-          that the review layer is aware of its own RAG architecture: how the documents were split, what the
-          embedding model can and cannot register, what the search found, and what was left out of the model’s
-          context. So a flag can say where an error came from, whether the model misread a passage or the pipeline
-          never gave it the right one.
+          Wittgenstein makes retrieved information legible to human review. It flags the text most likely to hide an
+          LLM misreading, so people can review quickly without alert fatigue. It can do this because it knows its own
+          RAG architecture: how documents were split, what the search found, and what never reached the model.
         </p>
         <p>
           More broadly, this project explores how humans can remain engaged in AI-mediated information retrieval by
           making model failure modes transparent and auditable.
         </p>
       </div>
+
+      <LayerAnimation />
 
       <PatternChart />
 
@@ -97,6 +96,16 @@ export function About() {
           Read the API docs
         </a>
         .
+      </p>
+      <p>Or run it on your own machine, beside the pipeline you already have:</p>
+      <pre className="num overflow-x-auto rounded-xl border border-line bg-surface-2 p-4 text-[13px] leading-relaxed text-ink">
+        {`pip install wittgenstein-rag
+wittgenstein serve`}
+      </pre>
+      <p>
+        Then add <code className="num text-ink">import wittgenstein.monitor as wm; wm.instrument()</code> to your app.
+        LangChain and LlamaIndex pipelines are hooked automatically, and every answer appears in a local interface
+        with the same checks as this site.
       </p>
       <p>
         Wittgenstein is supported by a grant from the{" "}

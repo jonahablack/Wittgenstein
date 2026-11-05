@@ -1,4 +1,4 @@
-.PHONY: sync fmt lint typecheck test schemas validate-registry examples api dev-check
+.PHONY: wheel sync fmt lint typecheck test schemas validate-registry examples api dev-check
 
 sync:
 	uv sync --extra dev
@@ -38,3 +38,10 @@ live:
 
 live-sample:
 	uv run python scripts/fetch_sample_corpora.py
+
+# Installable package with the web interface inside: dist/wittgenstein_rag-*.whl.
+# Then: pip install dist/wittgenstein_rag-*.whl && wittgenstein serve
+wheel:
+	cd ../web && npm install --no-audit --no-fund && npm run build
+	rm -rf src/wittgenstein/web_dist && cp -R ../web/dist src/wittgenstein/web_dist
+	rm -rf dist && uv build --wheel

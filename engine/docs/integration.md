@@ -21,6 +21,38 @@ place without failing the batch.
 endpoints require one: `Authorization: Bearer <key>` or `X-API-Key: <key>`. Unset (local
 use), they're open.
 
+## Running it locally, beside your pipeline
+
+```bash
+pip install wittgenstein-rag        # or, from this repo: make wheel && pip install dist/*.whl
+wittgenstein serve                   # http://127.0.0.1:8100/#/pipeline  (--demo adds 3 examples)
+```
+
+Then, where your app starts:
+
+```python
+import wittgenstein.monitor as wm
+wm.instrument()          # hooks LangChain and LlamaIndex if installed; returns what it hooked
+# any other pipeline, after each answer:
+wm.record(question, retrieved_chunks, answer, prompt=prompt_text)
+```
+
+- **LangChain**: a callback handler is registered through LangChain's configure hook,
+  so every chain, retriever and model call reports without code changes. A model call
+  is audited when its prompt contains retrieved passages (question rewriting and other
+  calls without them are skipped).
+- **LlamaIndex**: an event handler on the root instrumentation dispatcher; the
+  response's source nodes are what went into the prompt.
+- **What went into the prompt** is read from the prompt text, so custom templates,
+  rerankers and filters need no configuration.
+- Reports go from a background thread and never raise; if the server is down, one
+  warning is logged.
+- Each audit goes to `POST /v1/audits` (the same check as `/v1/check`, recorded) and is
+  listed by `GET /v1/audits`. The feed is kept in `~/.wittgenstein/audits.jsonl` and,
+  unless the server sets API keys, served only to this machine.
+- Settings: `WITTGENSTEIN_URL`, `WITTGENSTEIN_API_KEY`, `WITTGENSTEIN_SOURCE`.
+- First run downloads the spaCy English model (about 12 MB) into `~/.wittgenstein/models`.
+
 ## Access levels
 
 What can be checked depends on what you send. Every check in the response says whether
@@ -196,4 +228,4 @@ faithful paraphrase, correct abstention.
   flagged.
 - Matching your candidates to an uploaded document is textual; heavily rewritten or
   summarized chunks may not match and are reported as unmatched.
-- Each call is independent; nothing is stored unless you also use the web app.
+- `/v1/check` calls are independent and nothing is stored; `/v1/audits` records to the local feed.

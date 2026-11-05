@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
 import threading
 from collections import OrderedDict
@@ -28,9 +29,18 @@ from wittgenstein.live.pipelines import PRESETS
 from wittgenstein.live.runner import RunResult, save_run
 
 ENGINE_ROOT = Path(__file__).resolve().parents[3]
-LIVE_CORPORA = ENGINE_ROOT / "data" / "live_corpora"
-LIVE_RUNS = ENGINE_ROOT / "data" / "live_runs"
-FIXTURE = ENGINE_ROOT / "data" / "fixtures" / "asteria_manual" / "documents"
+#: Installed as a package (`wittgenstein serve` sets this to ~/.wittgenstein), data lives
+#: in the user's folder rather than inside site-packages; from the repo, under data/.
+_HOME = os.environ.get("WITTGENSTEIN_HOME")
+_DATA = Path(_HOME).expanduser() if _HOME else ENGINE_ROOT / "data"
+LIVE_CORPORA = _DATA / "live_corpora"
+LIVE_RUNS = _DATA / "live_runs"
+_PACKAGED_FIXTURE = Path(__file__).resolve().parents[1] / "_data" / "asteria"
+FIXTURE = (
+    _PACKAGED_FIXTURE
+    if _PACKAGED_FIXTURE.is_dir()
+    else ENGINE_ROOT / "data" / "fixtures" / "asteria_manual" / "documents"
+)
 _TEXT_SUFFIXES = {".txt", ".md", ".markdown"}
 MAX_RUNS_IN_MEMORY = 50
 

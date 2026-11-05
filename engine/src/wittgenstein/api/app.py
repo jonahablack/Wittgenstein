@@ -60,7 +60,11 @@ app.include_router(live.v1)
 
 # The live web app (../web, `npm run build`), served from the same origin as the API when
 # it has been built. Mounted last so every API route above takes precedence.
-_WEB_DIST = Path(__file__).resolve().parents[4] / "web" / "dist"
+# Installed as a package (`pip install wittgenstein-rag`), the build ships inside it.
+_PACKAGED_WEB = Path(__file__).resolve().parents[1] / "web_dist"
+_WEB_DIST = _PACKAGED_WEB if _PACKAGED_WEB.is_dir() else Path(__file__).resolve().parents[4] / "web" / "dist"
+
+
 class _WebApp(StaticFiles):
     """The built web app. The HTML page is never cached, so a browser always picks up
     the current build after a restart (asset files are content-hashed and can be)."""

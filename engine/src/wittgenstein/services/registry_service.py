@@ -10,7 +10,10 @@ from pathlib import Path
 from wittgenstein.registry.loader import load_registry
 from wittgenstein.registry.repository import Registry
 
-DEFAULT_SEED_DIR = Path(__file__).resolve().parents[3] / "data" / "registry"
+_PACKAGED_SEEDS = Path(__file__).resolve().parents[1] / "_data" / "registry"  # installed wheel
+DEFAULT_SEED_DIR = (
+    _PACKAGED_SEEDS if _PACKAGED_SEEDS.is_dir() else Path(__file__).resolve().parents[3] / "data" / "registry"
+)
 
 
 def default_seed_dir() -> Path:

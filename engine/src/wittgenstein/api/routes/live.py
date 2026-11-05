@@ -111,7 +111,14 @@ def config() -> dict[str, Any]:
         "providers": {name: available_providers().get(name, False) for name in PROVIDER_CHOICES},
         "embedders": sorted(EMBEDDER_CHOICES),
         "default_embedder": DEFAULT_EMBEDDER,
+        "meaning_checks": _nli_status(),
     }
+
+
+def _nli_status() -> dict[str, Any]:
+    from wittgenstein.live import nli
+
+    return nli.status()
 
 
 @router.get("/corpora")

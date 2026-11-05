@@ -2,6 +2,7 @@ import { ArrowUp, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "../store";
 import { ModelCapacity } from "./ModelCapacity";
+import { ServerNotice } from "./ServerNotice";
 
 const EXAMPLES: Record<string, string[]> = {
   asteria: [
@@ -152,6 +153,7 @@ export function AskBar() {
         </div>
       </form>
       {provider !== "extractive" && providers[provider] && <ModelCapacity provider={provider} />}
+      <ServerNotice className="mt-2 px-1" />
       {hint && (
         <p role="status" className="mt-2 px-1 text-sm text-look">
           {hint}

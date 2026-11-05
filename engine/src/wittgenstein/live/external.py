@@ -380,6 +380,11 @@ def check_external(
         sentences = [asdict(s) for s in verified]
     else:
         notes.append("No answer was sent, so answer verification didn't run.")
+    if req.answer:
+        from wittgenstein.live import nli
+
+        if nli.disabled():
+            notes.append(nli.DISABLED_NOTE)
 
     probes: list[dict[str, Any]] = []
     if req.generator_url and req.answer:

@@ -1,8 +1,10 @@
 # Wittgenstein on Render (the existing "Wittgenstein" service, wittgenstein.onrender.com):
 # one web service on Render's Python runtime that builds the web app and runs the engine,
 # which serves both. (The Dockerfile at the repo root builds the same thing as an image.)
-# Memory: about 650-700 MB once the models are loaded (measured in the Docker image),
-# so a 512 MB plan may restart under load.
+# Memory: about 650-700 MB with the meaning-level model loaded (measured in the Docker
+# image), more than the Starter plan's 512 MB; with WITTGENSTEIN_NLI=off, 465 MB peak.
+# The meaning-level checks are therefore off on this server for now (users are told so);
+# remove WITTGENSTEIN_NLI on a plan with 1 GB or more to turn them back on.
 services:
   - type: web
     name: Wittgenstein
@@ -17,7 +19,7 @@ services:
       && cd ../engine && uv sync --frozen
       && uv run --no-sync python -c "from wittgenstein.live.nlp import nlp; nlp();
       from wittgenstein.live.embedding import get_embedder; get_embedder();
-      from wittgenstein.live import nli; assert nli.model() is not None, nli.load_error()"
+      from wittgenstein.live import nli; nli.model()"
       && (uv run --no-sync python scripts/fetch_sample_corpora.py || echo 'sample corpora not fetched')
       && rm -rf data/live_corpora/austen
     startCommand: cd engine && uv run --no-sync uvicorn wittgenstein.api.app:app --host 0.0.0.0 --port $PORT
@@ -29,6 +31,9 @@ services:
       # Models downloaded at build time must stay inside the project folder to exist at runtime.
       - key: HF_HOME
         value: /opt/render/project/src/engine/.cache/hf
+      # Temporarily off to fit 512 MB; shown to users in the app and API responses.
+      - key: WITTGENSTEIN_NLI
+        value: "off"
       # Optional, set in the dashboard: language-model answers, and keys for the public /v1 API.
       - key: OPENAI_API_KEY
         sync: false

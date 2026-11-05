@@ -1115,7 +1115,9 @@ def verify_answer(
         "contradicting their source."
         if nli_seen
         else (
-            f"The language-inference model is unavailable ({nli.load_error()})."
+            nli.DISABLED_NOTE
+            if nli.disabled()
+            else f"The language-inference model is unavailable ({nli.load_error()})."
             if nli.load_error()
             else "No answer sentences needed a meaning-level check (all quoted verbatim)."
         ),

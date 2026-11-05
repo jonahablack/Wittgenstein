@@ -18,8 +18,11 @@ Environment variables (set in the dashboard, never in the repo):
 - `WITTGENSTEIN_API_KEYS`: comma-separated keys required by the public `/v1` API.
 
 Notes:
-- Memory: about 650-700 MB once the models are loaded (measured in the Docker image).
-  The Starter plan's 512 MB may restart under load; a 2 GB plan holds it.
+- Memory: about 650-700 MB with all models loaded (measured in the Docker image), more
+  than the Starter plan's 512 MB (Render killed it: "oomKilled, memoryLimit 512Mi"). So
+  the service runs with `WITTGENSTEIN_NLI=off`: the meaning-level checks are turned off
+  and the app, the API docs and every /v1/check response say so; peak 465 MB. On a plan
+  with 1 GB or more, remove that variable to turn them back on.
 - The disk is not persistent: uploaded documents and saved runs reset on each deploy or
   restart. The built-in manual and the FDA label samples come back with every build.
 - The model proxy (`/proxy/...`) and the audit feed (`/v1/audits`) accept only requests

@@ -1,5 +1,6 @@
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { ServerNotice } from "../components/ServerNotice";
 
 // API documentation for checking an existing RAG pipeline. Source of truth for the
 // contract: engine/docs/integration.md and the OpenAPI schema at /docs (FastAPI).
@@ -73,6 +74,8 @@ export function ApiDocs() {
         pipeline already has: the question, what it retrieved, what went into the prompt, and the answer. You get back
         the sentences a person should look at, and why.
       </p>
+
+      <ServerNotice className="mt-4 rounded-xl border border-line bg-surface p-3" />
 
       <nav className="mt-6 flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {SECTIONS.map(([id, label]) => (

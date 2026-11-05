@@ -100,9 +100,30 @@ class _Model:
         return {self._labels[i]: float(x) for i, x in enumerate(p)}
 
 
+#: Shown wherever meaning-level checks would have run, when a server turns them off.
+DISABLED_NOTE = (
+    "Meaning-level checks (contradiction and paraphrase judged by a language-inference model) are "
+    "temporarily turned off on this server to fit its memory. All other checks run. They run in the "
+    "installed version (pip install wittgenstein-rag) and will be on in production."
+)
+
+
+def disabled() -> bool:
+    """WITTGENSTEIN_NLI=off: never load the model (a small hosted demo server; the model
+    needs about 280 MB). Reported as turned off, never as a passed check."""
+    return os.environ.get("WITTGENSTEIN_NLI", "").strip().lower() in {"off", "0", "false", "no"}
+
+
+def status() -> dict[str, object]:
+    return {"enabled": not disabled(), "note": DISABLED_NOTE if disabled() else None}
+
+
 def model() -> _Model | None:
-    """The shared model, or None if it can't be loaded (e.g. offline on first use)."""
+    """The shared model, or None if it can't be loaded (e.g. offline on first use) or is
+    turned off on this server."""
     global _MODEL, _LOAD_ERROR
+    if disabled():
+        return None
     with _LOCK:
         if _MODEL is None and _LOAD_ERROR is None:
             try:
@@ -113,7 +134,7 @@ def model() -> _Model | None:
 
 
 def load_error() -> str | None:
-    return _LOAD_ERROR
+    return DISABLED_NOTE if disabled() else _LOAD_ERROR
 
 
 _QUALIFIER = re.compile(

@@ -34,6 +34,12 @@ FDA_LABELS = {
     "warfarin": "598e5e2e-9264-8371-e063-6394a90aaf18",
     "amoxicillin": "102c62ca-da20-4866-84a8-e3513824af4a",
 }
+#: Held out from all check development: used only to evaluate (scripts/evaluate_checks.py).
+FDA_LABELS_HELDOUT = {
+    "lisinopril": "0e6364a4-6d66-4151-8197-d45e2a762895",
+    "atorvastatin": "09cb8375-075c-47e8-a4eb-8ac667ed849e",
+    "levothyroxine": "13e03769-9a4f-497f-9afa-95bf525090b3",
+}
 MAIN_SECTIONS = [
     "boxed_warning",
     "indications_and_usage",
@@ -153,19 +159,27 @@ def main() -> None:
                 print(f"fetched {target}")
         (d / "meta.json").write_text(json.dumps({"title": spec["title"], "license": spec["license"]}, indent=2))
 
-    d = ROOT / "fda-labels"
-    d.mkdir(parents=True, exist_ok=True)
-    for name, set_id in FDA_LABELS.items():
-        url = f'https://api.fda.gov/drug/label.json?search=set_id:"{set_id}"&limit=1'
-        label = json.loads(_get(url))["results"][0]
-        (d / f"{name}.md").write_text(label_markdown(label, name))
-        print(f"wrote {d / name}.md")
-    meta = {
-        "title": "FDA drug labels: metformin, warfarin, amoxicillin",
-        "license": "US government works (openFDA), public domain. Demo only; not for clinical use.",
-        "set_ids": FDA_LABELS,
-    }
-    (d / "meta.json").write_text(json.dumps(meta, indent=2))
+    for folder, labels, title in [
+        ("fda-labels", FDA_LABELS, "FDA drug labels: metformin, warfarin, amoxicillin"),
+        (
+            "fda-labels-heldout",
+            FDA_LABELS_HELDOUT,
+            "FDA drug labels (held out): lisinopril, atorvastatin, levothyroxine",
+        ),
+    ]:
+        d = ROOT / folder
+        d.mkdir(parents=True, exist_ok=True)
+        for name, set_id in labels.items():
+            url = f'https://api.fda.gov/drug/label.json?search=set_id:"{set_id}"&limit=1'
+            label = json.loads(_get(url))["results"][0]
+            (d / f"{name}.md").write_text(label_markdown(label, name))
+            print(f"wrote {d / name}.md")
+        meta = {
+            "title": title,
+            "license": "US government works (openFDA), public domain. Demo only; not for clinical use.",
+            "set_ids": labels,
+        }
+        (d / "meta.json").write_text(json.dumps(meta, indent=2))
 
 
 if __name__ == "__main__":

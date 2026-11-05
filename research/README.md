@@ -39,6 +39,8 @@ the entries below are symlinks to them, so nothing breaks and nothing is duplica
 - `2026-11-04_live-pipeline-plan-and-status.md` → `engine/docs/live-pipeline-plan.md`.
 - `2026-11-04_verification-audit.md` (+ folder): what the integration demo's checks caught, each flag
   verified against the label text, three checker bugs found and fixed, and what is not yet established.
+- `2026-11-04_check-evaluation.md` (+ folder): planted-error evaluation. Held-out FDA labels: 0/240 false
+  alarms, 90–100% detection per error type; run history from a 44% false-alarm start.
 
 ### `medical-education/` — University of Arizona College of Medicine conversation
 - `2026-11-04_medical-ai-problems-and-features.md` — evidence on medical LLM/RAG

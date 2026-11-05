@@ -166,6 +166,22 @@ def judge(premises: list[str], sentence: str) -> tuple[Verdict, Verdict] | None:
     return best_c, best_e
 
 
+def best_entailment(premises: list[str], sentence: str) -> Verdict | None:
+    """The strongest entailment of the *whole* sentence by any premise."""
+    m = model()
+    if m is None or not premises:
+        return None
+    best: Verdict | None = None
+    for premise in premises:
+        p = m.probs(premise, sentence.strip())
+        v = Verdict(
+            p.get("contradiction", 0.0), p.get("entailment", 0.0), p.get("neutral", 0.0), sentence, premise
+        )
+        if best is None or v.entailment > best.entailment:
+            best = v
+    return best
+
+
 def pair(premise: str, hypothesis: str) -> Verdict | None:
     m = model()
     if m is None:

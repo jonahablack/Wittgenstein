@@ -29,7 +29,7 @@ from wittgenstein.live.corpus import UnitSet
 from wittgenstein.live.flags import AwarenessFlag, FlagCollector
 from wittgenstein.live.generate import ContextPassage
 from wittgenstein.live.probes import ref
-from wittgenstein.live.quantities import checkable, compare, quantities
+from wittgenstein.live.quantities import checkable, compare_focused, quantities
 from wittgenstein.live.strength import find_strength, summarize
 from wittgenstein.live.text_artifacts import classify_severance, modal_mismatch, modal_strength, passage_artifacts
 from wittgenstein.retrieval.lexical import tokenize
@@ -37,6 +37,13 @@ from wittgenstein.review.claim_linking import link_claim_detailed
 from wittgenstein.schemas.trace import AnswerClaim, AnswerSupportEdge, ContextItem
 
 NLI_PREMISES = 3
+_ATTRIBUTION = re.compile(
+    r"^(?:according to|per|as (?:stated|noted|described) in|based on)\s+(?:the\s+)?"
+    r"(?:label|labeling|document|source|sources|guideline|guidelines|passage|passages|text|"
+    r"prescribing information)"
+    r"\s*,\s*",
+    re.IGNORECASE,
+)
 _CITE = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 _UNSUPPORTED = {
     ClaimSupportCandidateStatus.NO_SUPPORT_EDGE_FOUND,
@@ -139,8 +146,12 @@ def verify_answer(
     contradiction_flags: list[AwarenessFlag] = []
     nli_seen = 0
 
-    for i, (text, cites) in enumerate(split_answer(answer)):
+    for i, (shown, cites) in enumerate(split_answer(answer)):
         sid = f"s{i + 1}"
+        # Attribution phrasing ("According to the label, ...") doesn't change what is
+        # claimed; it is left out of every comparison but kept in what is shown.
+        text = _ATTRIBUTION.sub("", shown, count=1)
+        text = text[:1].upper() + text[1:] if text else shown
         cited_units = [by_n[n] for n in cites if n in by_n]
         pool = cited_units or [p.unit for p in passages]
         claim = AnswerClaim(claim_id=sid, text=text, extraction_method="programmatic_rule_based")
@@ -164,7 +175,7 @@ def verify_answer(
         )
         vs = VerifiedSentence(
             sentence_id=sid,
-            text=text,
+            text=shown,
             cited=cites,
             cited_unit_ids=[u.unit_id for u in cited_units],
             support="verbatim_quote" if verbatim else (status.value if status else "unresolved"),
@@ -183,11 +194,17 @@ def verify_answer(
                 ((u, s, s0, s1) for u in pool for s, s0, s1 in u.sentences),
                 key=lambda t: -_overlap(text, t[1]),
             )[:NLI_PREMISES]
-            verdict = nli.judge([t[1] for t in ranked], text)
-            if verdict is not None:
+            # Contradiction is judged against the sentence this one restates (the best
+            # match), never against whichever other nearby sentence happens to conflict
+            # with some fragment -- measured: that produced most false alarms. A sentence
+            # some source sentence fully entails is never called contradicted.
+            judged = nli.judge([ranked[0][1]], text) if ranked else None
+            entail = nli.best_entailment([t[1] for t in ranked], text)
+            if judged is not None and entail is not None:
                 nli_seen += 1
-                c, e = verdict
-                if c.contradiction >= nli.POSSIBLE_CONTRADICTION:
+                c, _ = judged
+                e = entail
+                if c.contradiction >= nli.POSSIBLE_CONTRADICTION and e.entailment < nli.ENTAILMENT:
                     contradicted = True
                     src_sent = next((t for t in ranked if t[1] == c.premise), ranked[0])
                     strong = c.contradiction >= nli.CONTRADICTION
@@ -320,7 +337,7 @@ def verify_answer(
         source_text = " ".join(u.text for u in pool)
         sentence_quantities = [q for q in quantities(text) if checkable(q)]
         quantities_seen += len(sentence_quantities)
-        for q, problem, found in compare(text, source_text):
+        for q, problem, found in compare_focused(text, best[1] if best else "", source_text):
             f = out.flag(
                 FlagKind.QUANTITY_MISMATCH,
                 origin=FlagOrigin.PIPELINE,

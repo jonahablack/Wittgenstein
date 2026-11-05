@@ -143,7 +143,8 @@ POPULATION_CUES = [
     "pediatric", "children", "child", "infants", "infant", "neonates", "neonatal", "newborns", "adolescents",
     "adults", "adult", "elderly", "geriatric", "older adults", "older patients", "pregnant", "pregnancy",
     "lactating", "lactation", "breastfeeding", "breastfed", "nursing", "renal impairment", "hepatic impairment",
-    "kidney disease", "liver disease", "egfr", "creatinine clearance", "crcl", "dialysis", "weighing",
+    "kidney disease", "liver disease", "renal function", "kidney function", "hepatic function", "liver function",
+    "debilitated", "asian patients", "egfr", "creatinine clearance", "crcl", "dialysis", "weighing",
     "body weight", "years of age", "years and older", "years or older", "months of age", "females", "males",
     "women", "men", "premenopausal", "postmenopausal",
 ]  # fmt: skip

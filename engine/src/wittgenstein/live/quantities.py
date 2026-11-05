@@ -96,6 +96,18 @@ def checkable(q: Quantity) -> bool:
     return q.unit is not None or "." in q.value or float(q.value) >= 100
 
 
+def compare_focused(answer: str, focus: str, source: str) -> list[tuple[Quantity, str, str | None]]:
+    """Like `compare`, but a unit mismatch against `focus` -- the source sentence the
+    answer restates -- is reported even when the same number appears unit-less elsewhere
+    in the passage (a tablet imprint "10" must not excuse "10 mcg" for "10 mg")."""
+    problems = compare(answer, source)
+    flagged = {(q.value, q.unit) for q, _, _ in problems}
+    for q, problem, found in compare(answer, focus):
+        if problem == "different_unit" and (q.value, q.unit) not in flagged:
+            problems.append((q, problem, found))
+    return problems
+
+
 def compare(answer: str, source: str) -> list[tuple[Quantity, str, str | None]]:
     """(answer quantity, problem, what the source has) for each checkable quantity in
     `answer` that `source` doesn't state. problem: "value_not_in_source" or
@@ -112,7 +124,9 @@ def compare(answer: str, source: str) -> list[tuple[Quantity, str, str | None]]:
         units = by_value.get(q.value)
         if units is None:
             problems.append((q, "value_not_in_source", None))
-        elif q.unit is not None and q.unit not in units and None not in units:
+        elif q.unit is not None and q.unit not in units and any(u for u in units):
+            # The source states this value with another unit; a unit-less mention of the
+            # same number elsewhere (an imprint, a list number) doesn't excuse it.
             other = sorted(u for u in units if u)
             problems.append((q, "different_unit", f"{q.value} {other[0]}" if other else None))
     return problems

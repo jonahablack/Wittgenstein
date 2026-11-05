@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { AnswerCard } from "./components/AnswerCard";
 import { AskBar } from "./components/AskBar";
 import { ChecksPanel } from "./components/Checks";
@@ -8,6 +8,7 @@ import { QueryAnatomy } from "./components/QueryAnatomy";
 import { Receipt } from "./components/Receipt";
 import { SourceDrawer } from "./components/SourceDrawer";
 import { TopBar } from "./components/TopBar";
+import { useRoute } from "./route";
 import { useApp } from "./store";
 
 // The process view (PixiJS evidence field, timeline, ledger) is code-split: the default
@@ -16,24 +17,6 @@ const ProcessView = lazy(() => import("./process/ProcessView"));
 const ApiDocs = lazy(() => import("./about/ApiDocs").then((m) => ({ default: m.ApiDocs })));
 const PipelineView = lazy(() => import("./about/PipelineView").then((m) => ({ default: m.PipelineView })));
 const About = lazy(() => import("./about/About").then((m) => ({ default: m.About })));
-
-/** "#/about" shows the About page. A hash route, because the built app is served as
- *  static files and a path like /about has no file behind it. */
-function useRoute() {
-  const [hash, setHash] = useState(() => window.location.hash);
-  useEffect(() => {
-    const on = () => {
-      setHash(window.location.hash);
-      window.scrollTo(0, 0);
-    };
-    window.addEventListener("hashchange", on);
-    return () => window.removeEventListener("hashchange", on);
-  }, []);
-  if (hash === "#/about") return "about";
-  if (hash === "#/api") return "api";
-  if (hash === "#/pipeline") return "pipeline";
-  return "app";
-}
 
 export function App() {
   const init = useApp((s) => s.init);

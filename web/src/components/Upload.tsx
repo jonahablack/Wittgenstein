@@ -1,5 +1,6 @@
 import { FileText, Loader2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { uploadCorpus } from "../api";
 import { useApp } from "../store";
 
@@ -34,12 +35,30 @@ export function Upload({ onClose }: { onClose: () => void }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", esc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", esc);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  // Rendered into <body>: inside the header, whose backdrop blur makes it the
+  // containing block for fixed elements, the dialog was pinned to the header and
+  // opened half under it.
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm sm:items-center"
+      onClick={onClose}
+    >
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Add a document"
-        className="w-full max-w-lg rounded-2xl border border-line bg-elev p-5 shadow-glow"
+        className="my-auto w-full max-w-lg rounded-2xl border border-line bg-elev p-5 shadow-glow"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -101,6 +120,7 @@ export function Upload({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

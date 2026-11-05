@@ -896,10 +896,14 @@ def measure_model_cmd(
     flags context beyond that. Every probe and answer is saved for audit."""
     from wittgenstein import service
     from wittgenstein.live import generator_profile as gp
-    from wittgenstein.live.generate import get_provider
+    from wittgenstein.live.generate import ProviderError, get_provider
 
     service.apply_config_env()
-    p = get_provider(provider)
+    try:
+        p = get_provider(provider)
+    except (ProviderError, ValueError) as e:
+        console.print(f"Can't use {provider!r}: {e}")
+        raise typer.Exit(1) from e
     model = p.info.model_identifier or provider
     if show:
         prof = gp.load(p.info.provider_id, model)

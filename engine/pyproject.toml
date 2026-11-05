@@ -1,6 +1,6 @@
 [project]
 name = "wittgenstein-rag"
-version = "0.2.0"
+version = "0.3.0"
 description = "A self-aware review layer for RAG pipelines: flags the retrieved text and answer sentences most likely to hide an LLM misreading, with a local interface."
 readme = "PACKAGE_README.md"
 requires-python = ">=3.11"

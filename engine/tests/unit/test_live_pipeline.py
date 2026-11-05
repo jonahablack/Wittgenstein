@@ -397,3 +397,8 @@ def test_cutoff_wording_says_higher_when_the_cut_result_scores_higher() -> None:
     run_gaps(spec, r, inst, sel, out, weak=False)
     flags = [f for f in out.flags if f.kind == FlagKind.AMBIGUOUS_CUTOFF]
     assert flags and "scores higher than" in flags[0].title
+
+
+def test_question_parts_do_not_start_with_modal_verbs() -> None:
+    a = analyze_query("Should adults over 70 take statins?")
+    assert all(not f.span.text.lower().startswith(("should", "can", "do ")) for f in a.facets)

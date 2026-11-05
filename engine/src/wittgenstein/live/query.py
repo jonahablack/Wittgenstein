@@ -26,6 +26,7 @@ _STOP = {
     "did", "there", "i", "we", "you", "me", "my", "our", "your", "they", "them", "he", "she", "his", "her",
     "about", "into", "than", "as", "if", "all", "each", "every", "list", "name", "tell", "explain", "describe",
 }  # fmt: skip
+_MODAL_STARTS = {"should", "can", "could", "may", "might", "must", "shall", "will", "would", "do", "does", "did"}
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9'\-]*")
 
 _NUMBER = re.compile(
@@ -187,6 +188,10 @@ def analyze_query(query: str, term_weight: Callable[[str], float] | None = None)
         doc = pipeline(query)
     for chunk in doc.noun_chunks:
         toks = [t for t in chunk if t.lower_ not in _WH and t.pos_ not in {"DET", "PRON"}]
+        # A chunk can swallow a leading modal or auxiliary ("should adults"); a question
+        # part is what is asked about, so those are dropped from its start.
+        while toks and (toks[0].pos_ == "AUX" or toks[0].lower_ in _MODAL_STARTS):
+            toks = toks[1:]
         if not toks:
             continue
         start, end = toks[0].idx, toks[-1].idx + len(toks[-1].text)

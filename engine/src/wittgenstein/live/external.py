@@ -345,10 +345,9 @@ def check_external(
         # flag a prompt with more passages than it was measured to use reliably.
         from types import SimpleNamespace
 
-        from wittgenstein.live.runner import fit_to_generator
+        from wittgenstein.live.runner import note_generator_capacity
 
-        fit_to_generator(
-            SimpleNamespace(fit_to_generator=False),  # type: ignore[arg-type]
+        note_generator_capacity(
             SimpleNamespace(selected=list(range(len(passages)))),
             SimpleNamespace(uses_llm=True, provider_id="callback", model_identifier=req.pipeline.llm),
             out,

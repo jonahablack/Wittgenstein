@@ -161,13 +161,7 @@ export type FacetsCovered = string[];
  * via the `definition` "CandidateFate".
  */
 export type CandidateFate =
-  | "selected"
-  | "pulled_in"
-  | "skipped_redundant"
-  | "below_elbow"
-  | "omitted_budget"
-  | "omitted_capacity"
-  | "not_reached";
+  "selected" | "pulled_in" | "skipped_redundant" | "below_elbow" | "omitted_budget" | "not_reached";
 export type FusedRank = number | null;
 export type Order = number | null;
 /**

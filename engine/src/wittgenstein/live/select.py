@@ -397,35 +397,3 @@ def select(
 def redundancy_matrix(units: UnitSet, ids: list[str], vecs: np.ndarray, pos: dict[str, int]) -> np.ndarray:
     m = vecs[[pos[i] for i in ids]]
     return m @ m.T
-
-
-def fit_to_capacity(sel: SelectionResult, cap: int, reason: str) -> list[str]:
-    """Keep at most `cap` passages: first one passage for each part of the question that
-    the selection covers (in selection order), then the rest in selection order. The
-    rest are recorded as left out for the model's capacity. Returns the removed ids."""
-    if len(sel.selected) <= cap:
-        return []
-    keep: list[str] = []
-    for facet in sel.coverable_facets:
-        if len(keep) >= cap:
-            break
-        uid = next((u for u in sel.selected if facet in sel.ledger[u].facets_covered), None)
-        if uid is not None and uid not in keep:
-            keep.append(uid)
-    for u in sel.selected:
-        if len(keep) >= cap:
-            break
-        if u not in keep:
-            keep.append(u)
-    removed = [u for u in sel.selected if u not in keep]
-    sel.selected = [u for u in sel.selected if u in keep]
-    sel.pulled_in = [u for u in sel.pulled_in if u in keep]
-    for u in removed:
-        e = sel.ledger[u]
-        e.fate = CandidateFate.OMITTED_CAPACITY
-        e.reason = reason
-        e.order = None
-    for i, u in enumerate(sel.selected):
-        sel.ledger[u].order = i + 1
-    sel.tokens_used = sum(sel.ledger[u].tokens for u in sel.selected)
-    return removed

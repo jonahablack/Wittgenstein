@@ -1,5 +1,6 @@
 """How much context the answering model uses reliably (live/generator_profile.py), and
-what the pipeline does with that measurement (runner.fit_to_generator)."""
+what the pipeline does with that measurement (runner.note_generator_capacity): a note for
+the reviewer, never a change to the context."""
 
 from __future__ import annotations
 
@@ -11,8 +12,8 @@ import pytest
 from wittgenstein.core.enums import CandidateFate, CheckOutcome, FlagDisposition, FlagKind
 from wittgenstein.live import generator_profile as gp
 from wittgenstein.live.flags import FlagCollector
-from wittgenstein.live.runner import fit_to_generator
-from wittgenstein.live.select import LedgerEntry, SelectionResult, fit_to_capacity
+from wittgenstein.live.runner import note_generator_capacity
+from wittgenstein.live.select import LedgerEntry, SelectionResult
 
 
 @pytest.fixture(autouse=True)
@@ -80,41 +81,28 @@ def _selection(n: int) -> SelectionResult:
     return SelectionResult([f"u{i}" for i in range(n)], ledger, 2000, 10 * n, None, ["f1", "f2"], [], "k")
 
 
-def test_fit_to_capacity_keeps_every_part_of_the_question() -> None:
-    sel = _selection(8)
-    removed = fit_to_capacity(sel, 3, "capacity")
-    assert len(sel.selected) == 3 and "u5" in sel.selected  # the only passage for part f2
-    assert all(sel.ledger[u].fate == CandidateFate.OMITTED_CAPACITY for u in removed)
-
-
-def _run(n: int, trim: bool, measured: bool = True, model: str = "small") -> tuple[FlagCollector, SelectionResult]:
+def _run(n: int, measured: bool = True, model: str = "small") -> tuple[FlagCollector, SelectionResult]:
     if measured:
         gp.save(gp.measure(small_model(4), "local", model))
     out = FlagCollector("t")
     sel = _selection(n)
     info = SimpleNamespace(uses_llm=True, provider_id="local", model_identifier=model)
-    fit_to_generator(SimpleNamespace(fit_to_generator=False), sel, info, out, trim=trim)  # type: ignore[arg-type]
+    note_generator_capacity(sel, info, out)
     return out, sel
 
 
 def test_over_capacity_is_flagged_with_its_evidence() -> None:
-    out, sel = _run(8, trim=False)
+    out, sel = _run(8)
     f = next(f for f in out.flags if f.kind == FlagKind.CONTEXT_OVER_CAPACITY)
     # Informational: count alone is a weak predictor (held-out: flagged 38 of 40 runs), so no alarm.
-    assert f.disposition == FlagDisposition.INFORMATIONAL and len(sel.selected) == 8
+    assert f.disposition == FlagDisposition.INFORMATIONAL
+    assert len(sel.selected) == 8  # noted for the reviewer; the context is never changed
     assert f.metrics["reliable_passages"] == 4 and "measured" in f.observation.lower()
     assert out.checks[-1].outcome == CheckOutcome.FLAGGED
 
 
-def test_fit_context_trims_and_records_it() -> None:
-    out, sel = _run(8, trim=True)
-    assert len(sel.selected) == 4
-    f = next(f for f in out.flags if f.kind == FlagKind.CONTEXT_OVER_CAPACITY)
-    assert f.disposition == FlagDisposition.HANDLED and len(f.metrics["left_out"]) == 4
-
-
 def test_within_capacity_passes_and_unmeasured_says_so() -> None:
-    out, _ = _run(3, trim=False)
+    out, _ = _run(3)
     assert out.checks[-1].outcome == CheckOutcome.PASSED and not out.flags
-    out, _ = _run(8, trim=False, measured=False, model="never-measured")
+    out, _ = _run(8, measured=False, model="never-measured")
     assert out.checks[-1].outcome == CheckOutcome.NOT_APPLICABLE and "measure-model" in out.checks[-1].detail

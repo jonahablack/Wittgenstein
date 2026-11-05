@@ -25,8 +25,8 @@ right). So the pipeline's own generator is measured, not assumed:
   profile (~/.wittgenstein/models/<provider>__<model>.json), with the date and the
   exact rule used.
 
-The runner then flags any run that gives this model more passages than its reliable
-size, and the self-aware pipeline trims to that size (live/runner.py). Measuring costs
+The runner then notes any run that gives this model more passages than its reliable
+size (live/runner.py), for the person reviewing; it never changes the context. Measuring costs
 len(PROBES) x len(SIZES) generations, so it only runs when asked.
 """
 

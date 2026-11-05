@@ -182,11 +182,6 @@ class RunRequest(BaseModel):
         description="Also test whether the model answers from the passages (LLM providers only; up to 2 extra "
         "generations).",
     )
-    fit_context: bool = Field(
-        default=False,
-        description="Trim the self-aware pipeline's context to what the answering model was measured to use "
-        "reliably (wittgenstein measure-model). Over-capacity is flagged either way.",
-    )
 
 
 @router.post("/runs")
@@ -220,7 +215,6 @@ async def start_run(req: RunRequest) -> EventSourceResponse:
                 req.provider,
                 sink=forward,
                 counterfactual=req.counterfactual,
-                fit_context=req.fit_context,
             )
             runs.put(result)
         except Exception:  # noqa: BLE001 -- the runner already emitted an ERROR event on the stream

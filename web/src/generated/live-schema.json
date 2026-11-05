@@ -140,7 +140,6 @@
         "skipped_redundant",
         "below_elbow",
         "omitted_budget",
-        "omitted_capacity",
         "not_reached"
       ],
       "title": "CandidateFate",

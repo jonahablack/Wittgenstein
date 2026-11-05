@@ -80,11 +80,11 @@ The answering model's capacity is measured, not assumed: `wittgenstein measure-m
 generations). Fictional probes with near-identical decoys at 2, 4, 8 and 12 passages,
 graded by value and citation; the result, with every probe and answer, is saved in
 `~/.wittgenstein/models/`. Afterwards any run (or `/v1/check` with `pipeline.llm`) that
-gives the model more passages than its measured reliable size is flagged
-(`context_over_capacity`), with the measured curve as evidence. Trimming to that size is
-opt-in (`fit_context`): on 40 held-out drug-label questions it fixed 2 answers and broke 4
-for Qwen2-1.5B. The over-capacity note is informational: passage count alone is a weak
-predictor.
+gives the model more passages than its measured reliable size gets a note
+(`context_over_capacity`, informational), with the measured curve as evidence. The
+context is never changed: Wittgenstein surfaces things for a person to review, it doesn't
+act on them (trimming to the measured size was tried: on 40 held-out drug-label questions
+it fixed 2 answers and broke 4).
 
 Two per-answer checks look for misleading context directly:
 - `answer_from_neighbor`: a part of the question (a definition, an amount, a frequency;

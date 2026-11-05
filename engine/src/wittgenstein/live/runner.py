@@ -38,7 +38,7 @@ from wittgenstein.live.events import Emitter, LiveEvent, UnitPoint
 from wittgenstein.live.flags import FlagCollector
 from wittgenstein.live.gaps import run_gaps
 from wittgenstein.live.generate import ContextPassage, ExtractiveProvider, ProviderError, get_provider
-from wittgenstein.live.pipelines import DEFAULT_PIPELINE, PRESETS, PipelineSpec
+from wittgenstein.live.pipelines import PRESETS, PipelineSpec
 from wittgenstein.live.probes import run_probes
 from wittgenstein.live.query import QueryAnalysis, analyze_query
 from wittgenstein.live.retrieve import retrieve
@@ -137,12 +137,9 @@ class _Shared:
     """Per-run caches shared by pipeline threads: query analysis and field events per
     chunker, and model profiles per embedder."""
 
-    def __init__(
-        self, corpus: LiveCorpus, query: str, em: Emitter, counterfactual: bool = False, fit_context: bool = False
-    ) -> None:
+    def __init__(self, corpus: LiveCorpus, query: str, em: Emitter, counterfactual: bool = False) -> None:
         self.corpus, self.query, self.em = corpus, query, em
         self.counterfactual = counterfactual
-        self.fit_context = fit_context
         self._lock = threading.Lock()
         self._analysis: dict[str, QueryAnalysis] = {}
         self._fields: set[str] = set()
@@ -179,11 +176,12 @@ class _Shared:
         )
 
 
-def fit_to_generator(spec: PipelineSpec, sel: Any, info: Any, out: FlagCollector, trim: bool = False) -> None:
-    """Give the answering model no more passages than it was measured to use reliably
-    (live/generator_profile.py): trim (pipelines with fit_to_generator) or flag."""
+def note_generator_capacity(sel: Any, info: Any, out: FlagCollector) -> None:
+    """Whether the answering model is given more passages than it was measured to use
+    reliably (live/generator_profile.py). A note for the person reviewing, never an
+    action: the context isn't changed (trimming to the measured size fixed 2 held-out
+    answers and broke 4), and count alone is a weak predictor, so it isn't an alarm."""
     from wittgenstein.live import generator_profile as gp
-    from wittgenstein.live.select import fit_to_capacity
 
     label = "The model is given no more passages than it reliably uses"
     if not info.uses_llm:
@@ -206,44 +204,8 @@ def fit_to_generator(spec: PipelineSpec, sel: Any, info: Any, out: FlagCollector
     evidence = f"Measured on {model}: {prof.summary()}. Reliable size: {cap} passages ({prof.rule})." + (
         f" {prof.note}" if prof.note else ""
     )
-    metrics = {
-        "model": model,
-        "reliable_passages": cap,
-        "passages": n,
-        "accuracy": prof.accuracy,
-        "wrong_passage": prof.wrong_passage,
-        "measured_at": prof.measured_at,
-        "profile": str(gp.path_for(info.provider_id, model)),
-    }
     if n <= cap:
         out.check(FlagKind.CONTEXT_OVER_CAPACITY, label, CheckOutcome.PASSED, f"{n} passages; {evidence}")
-        return
-    if spec.fit_to_generator or trim:
-        removed = fit_to_capacity(
-            sel,
-            cap,
-            f"Left out so the model gets no more than the {cap} passages it was measured to use reliably.",
-        )
-        f = out.flag(
-            FlagKind.CONTEXT_OVER_CAPACITY,
-            origin=FlagOrigin.PIPELINE,
-            stage="select",
-            severity=FlagSeverity.INFO,
-            disposition=FlagDisposition.HANDLED,
-            title=f"Context trimmed to the {cap} passages this model reliably uses",
-            observation=f"{n} passages were chosen; with more than {cap}, this model was measured answering from "
-            f"the wrong passage more often. {evidence}",
-            why_it_matters="A small model given more text than it handles well picks the wrong passage: an answer "
-            "built from a neighbouring rule, class or definition.",
-            action_taken=f"Kept one passage for each part of the question, then the best-ranked, up to {cap}; "
-            f"left out {len(removed)}.",
-            what_to_check=None,
-            refs=[],
-            metrics={**metrics, "left_out": removed},
-            measurement="measured",
-        )
-        out.check(FlagKind.CONTEXT_OVER_CAPACITY, label, CheckOutcome.PASSED,
-                  f"Trimmed from {n} to {cap} passages. {evidence}", [f])  # fmt: skip
         return
     f = out.flag(
         FlagKind.CONTEXT_OVER_CAPACITY,
@@ -253,11 +215,19 @@ def fit_to_generator(spec: PipelineSpec, sel: Any, info: Any, out: FlagCollector
         disposition=FlagDisposition.INFORMATIONAL,
         title=f"More passages than this model reliably uses ({n}; measured reliable: {cap})",
         observation=evidence,
-        why_it_matters="A small model given more text than it handles well picks the wrong passage: an answer "
-        "built from a neighbouring rule, class or definition.",
+        why_it_matters="A model given more text than it handles well is more likely to answer from a passage "
+        "that only looks like the answer. Worth keeping in mind when reading this answer.",
         what_to_check=None,
         refs=[],
-        metrics=metrics,
+        metrics={
+            "model": model,
+            "reliable_passages": cap,
+            "passages": n,
+            "accuracy": prof.accuracy,
+            "wrong_passage": prof.wrong_passage,
+            "measured_at": prof.measured_at,
+            "profile": str(gp.path_for(info.provider_id, model)),
+        },
         measurement="measured",
     )
     out.check(FlagKind.CONTEXT_OVER_CAPACITY, label, CheckOutcome.FLAGGED, evidence, [f])
@@ -325,10 +295,7 @@ def run_pipeline(spec: PipelineSpec, shared: _Shared, provider_name: str) -> Pip
         profile.pairwise_similarity.p90 if profile.pairwise_similarity else None,
     )
     provider = get_provider(provider_name, inst) if provider_name != "extractive" else ExtractiveProvider(inst)
-    # "Fit context to the model" applies to the self-aware pipeline; the baselines stay as configured.
-    fit_to_generator(
-        spec, sel, provider.info, out, trim=shared.fit_context and spec.pipeline_id == DEFAULT_PIPELINE
-    )
+    note_generator_capacity(sel, provider.info, out)
     for e in sel.ledger.values():
         em.emit(LiveEventType.DECISION, pid, entry=_ledger_json(e))
     run_gaps(spec, retrieval, inst, sel, out, weak)
@@ -546,7 +513,6 @@ def run_query(
     sink: Callable[[LiveEvent], None] | None = None,
     specs: dict[str, PipelineSpec] | None = None,
     counterfactual: bool = False,
-    fit_context: bool = False,
 ) -> RunResult:
     specs = specs or PRESETS
     pipeline_ids = pipeline_ids or ["aware"]
@@ -565,7 +531,7 @@ def run_query(
             {"pipeline_id": p, "label": specs[p].label, "description": specs[p].description} for p in pipeline_ids
         ],
     )
-    shared = _Shared(corpus, query, em, counterfactual, fit_context)
+    shared = _Shared(corpus, query, em, counterfactual)
     outcomes: dict[str, PipelineOutcome] = {}
     try:
         with ThreadPoolExecutor(max_workers=max(1, len(pipeline_ids))) as pool:

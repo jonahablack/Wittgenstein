@@ -240,7 +240,6 @@ export function EvidenceField({ field, frame, steps, t, corpusId }: Props) {
                 scale = 0.38;
                 break;
               case "omitted_budget":
-              case "omitted_capacity":
                 tint = palette.omit;
                 alpha = 0.95;
                 scale = 0.5;

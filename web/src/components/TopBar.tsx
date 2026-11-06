@@ -217,8 +217,24 @@ function Compare() {
   const comparePipelines = useApp((s) => s.comparePipelines);
   const toggle = useApp((s) => s.toggleComparePipeline);
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  // Close on a click outside or Escape, like the header menu; otherwise the panel can
+  // sit over the ask button.
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
   return (
-    <div className="relative shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => (compare ? setOpen((o) => !o) : setCompare(true))}
         title="Compare pipelines"

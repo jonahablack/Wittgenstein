@@ -31,6 +31,9 @@ export default function ProcessView() {
   const frame = useMemo(() => frameAt(replay.steps, replay.index, replay.progress), [replay.steps, replay.index, replay.progress]);
   const feed = frame.flags.filter((f) => f.disposition !== "informational").slice(-6).reverse();
 
+  // Just after a question is sent, the run's pipelines haven't arrived yet.
+  if (!pipeline) return <div className="h-[520px] animate-pulse rounded-2xl border border-line bg-surface" />;
+
   return (
     <section className="rounded-2xl border border-line bg-surface p-4 shadow-glow sm:p-5" aria-label="How the answer was produced">
       <header className="mb-3 flex flex-wrap items-center gap-3">

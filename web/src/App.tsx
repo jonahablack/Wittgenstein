@@ -7,6 +7,7 @@ import { CompareView } from "./components/CompareView";
 import { QueryAnatomy } from "./components/QueryAnatomy";
 import { Receipt } from "./components/Receipt";
 import { SourceDrawer } from "./components/SourceDrawer";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { TopBar } from "./components/TopBar";
 import { useRoute } from "./route";
 import { useApp } from "./store";
@@ -71,6 +72,9 @@ export function App() {
               <AskBar />
             </motion.div>
             {run && (
+              // resetKey: retry as the run updates, so a view that failed on a half-arrived
+              // run recovers once the rest of it streams in.
+              <ErrorBoundary resetKey={run}>
               <div className="mt-6 space-y-5">
                 {run.analysis && <QueryAnatomy analysis={run.analysis} />}
                 {run.status === "error" && (
@@ -107,6 +111,7 @@ export function App() {
                   )}
                 </AnimatePresence>
               </div>
+              </ErrorBoundary>
             )}
           </>
         )}

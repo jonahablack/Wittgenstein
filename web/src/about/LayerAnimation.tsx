@@ -1,80 +1,113 @@
-import { motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useState } from "react";
 
-// About page: Wittgenstein as a third layer beside an existing RAG pipeline. A question
-// moves through the user's pipeline unchanged; at each step, Wittgenstein reads what
-// happened and, at the end, routes one sentence to a reviewer. Two layouts (wide,
-// narrow) from one step sequence; reduced motion shows the final frame. Each step carries a
-// small abstract figure (a ripple, a scatter of stored passages, assembled context, a
-// network, lines of text), and the band is a faint field of points Wittgenstein reads.
+// About page: Wittgenstein as a third layer beside an existing RAG pipeline, told through
+// one real case from the metformin label. The question asks for the extended-release
+// maximum; search returns two look-alike passages (extended-release 2,000 mg, and a
+// sentence about switching to immediate-release, 2,550 mg); the model answers 2,550 mg;
+// Wittgenstein sees the number came from the immediate-release passage and routes the
+// sentence to a reviewer. A panel above the pipeline shows what is passing through at each
+// step; the taps into the band say what Wittgenstein noted there. Two layouts (wide,
+// narrow) from one step sequence; reduced motion shows the final frame. Each step also
+// carries a small abstract figure, and the band is a faint field of points.
 
-const STEPS = 7; // 0 question · 1 search · 2 prompt · 3 model · 4 answer · 5 flag · 6 hold
-const STEP_MS = 1300;
+// 0 question · 1 search · 2 prompt · 3 model · 4 answer · 5 flag · 6 hold
+const STEP_MS = [2400, 3200, 3200, 1700, 2600, 5000, 900];
+const STEPS = STEP_MS.length;
 
 type P = { x: number; y: number };
 type Layout = {
   w: number;
   h: number;
+  panel: { x: number; y: number; w: number; h: number };
   nodes: P[]; // question, search, prompt, model, answer
   band: { x: number; y: number; w: number; h: number };
-  taps: { from: P; to: P; label: [string, string]; at: P; anchor: "middle" | "start" }[];
+  taps: { from: P; to: P; at: P; anchor: "middle" | "start" | "end" }[];
   flag: { x: number; y: number; w: number };
   bandLabel: P;
 };
 
 const NH = 66; // node height
+const FH = 82; // flag height
 
 const NAMES = ["Question", "Search", "Prompt", "LLM", "Answer"];
 const SUBS = ["from a user", "vector store", "context builder", "your model", "to the user"];
 
+// What Wittgenstein notes at each tap, shown once the question has passed it.
+const TAP_STEP = [1, 2, 4];
+const TAP_TEXT: [string, string][] = [
+  ["Two look-alikes:", "2,000 mg · 2,550 mg"],
+  ["Both in the prompt,", "a few words apart"],
+  ["“2,550 mg” is from [2],", "immediate-release"],
+];
+
+const QUESTION = "What is the maximum daily dose of metformin extended-release?";
+
+// What is passing through the pipeline at each step (the answer stays from step 4 on).
+const PANEL: { label: string; lines: React.ReactNode[] }[] = [
+  { label: "The question", lines: [`“${QUESTION}”`] },
+  {
+    label: "Search returns",
+    lines: [
+      <>[1] Extended-release: “…up to a maximum of <b>2,000 mg</b> once daily…”</>,
+      <>[2] “…may switch to immediate-release tablets and titrate to the maximum total daily dosage of <b>2,550 mg</b>.”</>,
+    ],
+  },
+  {
+    label: "The prompt sent to the model",
+    lines: ["Answer only from the context.  [1] …2,000 mg once daily…  [2] …immediate-release… 2,550 mg.", `Question: ${QUESTION}`],
+  },
+  { label: "The model", lines: ["Reads the two passages and writes an answer…"] },
+];
+
 const WIDE: Layout = (() => {
   const xs = [70, 215, 360, 505, 650];
-  const y = 70;
-  const by = 200;
+  const y = 152;
+  const by = 282;
   return {
     w: 720,
-    h: 362,
+    h: by + 64 + FH + 20,
+    panel: { x: 10, y: 6, w: 700, h: 92 },
     nodes: xs.map((x) => ({ x, y })),
-    band: { x: 10, y: by - 30, w: 700, h: 182 },
+    band: { x: 10, y: by - 30, w: 700, h: 64 + FH + 40 },
     bandLabel: { x: 26, y: by - 10 },
-    taps: [
-      { from: { x: xs[1], y: y + NH / 2 }, to: { x: xs[1], y: by + 12 }, label: ["What the search", "found and missed"], at: { x: xs[1], y: by + 34 }, anchor: "middle" },
-      { from: { x: xs[2], y: y + NH / 2 }, to: { x: xs[2], y: by + 12 }, label: ["What was left", "out of the prompt"], at: { x: xs[2], y: by + 34 }, anchor: "middle" },
-      { from: { x: xs[4], y: y + NH / 2 }, to: { x: xs[4], y: by + 12 }, label: ["Each sentence vs", "its passage"], at: { x: xs[4], y: by + 34 }, anchor: "middle" },
-    ],
-    flag: { x: 290, y: by + 72, w: 410 },
+    taps: [1, 2, 4].map((k) => ({
+      from: { x: xs[k], y: y + NH / 2 },
+      to: { x: xs[k], y: by + 6 },
+      // the last label sits right-aligned so it stays inside the band
+      at: { x: k === 4 ? 700 : xs[k], y: by + 28 },
+      anchor: k === 4 ? ("end" as const) : ("middle" as const),
+    })),
+    flag: { x: 250, y: by + 60, w: 450 },
   };
 })();
 
 const NARROW: Layout = (() => {
-  const ys = [44, 134, 224, 314, 404];
+  const ys = [190, 280, 370, 460, 550];
   const x = 70;
   const bx = 160;
+  const bandTop = ys[0] - 42;
+  const bandH = ys[4] + NH / 2 + 10 - bandTop;
   return {
     w: 360,
-    h: 540,
+    h: bandTop + bandH + FH + 28,
+    panel: { x: 6, y: 4, w: 348, h: 128 },
     nodes: ys.map((y) => ({ x, y })),
-    band: { x: bx - 12, y: 8, w: 360 - bx + 8, h: 440 },
-    bandLabel: { x: bx, y: 28 },
-    taps: [
-      { from: { x: x + 58, y: ys[1] }, to: { x: bx + 4, y: ys[1] }, label: ["What the search", "found and missed"], at: { x: bx + 12, y: ys[1] - 4 }, anchor: "start" },
-      { from: { x: x + 58, y: ys[2] }, to: { x: bx + 4, y: ys[2] }, label: ["What was left", "out of the prompt"], at: { x: bx + 12, y: ys[2] - 4 }, anchor: "start" },
-      { from: { x: x + 58, y: ys[4] }, to: { x: bx + 4, y: ys[4] }, label: ["Each sentence vs", "its passage"], at: { x: bx + 12, y: ys[4] - 4 }, anchor: "start" },
-    ],
-    flag: { x: 10, y: 466, w: 340 },
+    band: { x: bx - 12, y: bandTop, w: 360 - bx + 8, h: bandH },
+    bandLabel: { x: bx, y: bandTop + 20 },
+    taps: [1, 2, 4].map((k) => ({ from: { x: x + 58, y: ys[k] }, to: { x: bx + 4, y: ys[k] }, at: { x: bx + 12, y: ys[k] - 4 }, anchor: "start" as const })),
+    flag: { x: 6, y: bandTop + bandH + 14, w: 348 },
   };
 })();
-
-const TAP_STEP = [1, 2, 4]; // the step at which each tap lights
 
 export function LayerAnimation() {
   const reduce = useReducedMotion();
   const [step, setStep] = useState(reduce ? 5 : 0);
   useEffect(() => {
     if (reduce) return;
-    const t = setInterval(() => setStep((s) => (s + 1) % STEPS), STEP_MS);
-    return () => clearInterval(t);
-  }, [reduce]);
+    const t = setTimeout(() => setStep((s) => (s + 1) % STEPS), STEP_MS[step]);
+    return () => clearTimeout(t);
+  }, [reduce, step]);
 
   return (
     <figure className="mt-10 rounded-2xl border border-line bg-surface p-4 sm:p-6">
@@ -82,31 +115,62 @@ export function LayerAnimation() {
         <div className="font-medium text-ink">A third layer, beside the pipeline you already run</div>
         <p className="mt-1 text-sm text-ink-3">
           Your retrieval and your model are unchanged. Wittgenstein reads each step as it happens and sends the few
-          sentences worth checking to a person.
+          sentences worth checking to a person. Here, one question about a drug label, from search to answer.
         </p>
       </figcaption>
       <div className="mt-4 hidden sm:block">
-        <Scene l={WIDE} step={step} />
+        <Scene l={WIDE} step={step} narrow={false} />
       </div>
       <div className="mt-4 sm:hidden">
-        <Scene l={NARROW} step={step} />
+        <Scene l={NARROW} step={step} narrow />
       </div>
     </figure>
   );
 }
 
-function Scene({ l, step }: { l: Layout; step: number }) {
+function Panel({ l, step, narrow }: { l: Layout; step: number; narrow: boolean }) {
+  const k = Math.min(step, 4);
+  const flagged = step >= 5;
+  return (
+    <foreignObject x={l.panel.x} y={l.panel.y} width={l.panel.w} height={l.panel.h}>
+      <div className="h-full overflow-hidden rounded-[10px] border border-line bg-surface-2 px-3 py-2">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={k} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3 }}>
+            <div className="text-[10.5px] font-medium tracking-wide text-ink-3 uppercase">{k === 4 ? "The answer" : PANEL[k].label}</div>
+            <div className={narrow ? "mt-1 space-y-1 text-[11.5px] leading-snug text-ink" : "mt-1 space-y-0.5 text-[12.5px] leading-snug text-ink"}>
+              {k === 4 ? (
+                <p>
+                  “The maximum daily dose is{" "}
+                  <span className="rounded px-0.5 transition-colors duration-500" style={flagged ? { background: "color-mix(in oklab, var(--look) 22%, transparent)", color: "var(--ink)" } : undefined}>
+                    2,550 mg
+                  </span>{" "}
+                  [2].”
+                </p>
+              ) : (
+                PANEL[k].lines.map((line, j) => <p key={j}>{line}</p>)
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </foreignObject>
+  );
+}
+
+function Scene({ l, step, narrow }: { l: Layout; step: number; narrow: boolean }) {
   const packetAt = Math.min(step, 4);
   const p = l.nodes[packetAt];
   const ease = [0.2, 0.7, 0.2, 1] as const;
   const dots = useId().replace(/:/g, "");
   return (
-    <svg viewBox={`0 0 ${l.w} ${l.h}`} className="h-auto w-full" role="img" aria-label="A question passes through search, prompt building and the model to an answer. At the search, the prompt and the answer, Wittgenstein records what happened, and it sends one flagged sentence to a reviewer.">
+    <svg viewBox={`0 0 ${l.w} ${l.h}`} className="h-auto w-full" role="img" aria-label="A question about the maximum daily dose of metformin extended-release passes through search, prompt building and the model. Search returns two look-alike passages, 2,000 mg for extended-release and 2,550 mg for immediate-release. The model answers 2,550 mg. Wittgenstein sees the number came from the immediate-release passage and sends the sentence to a reviewer.">
       <defs>
         <pattern id={dots} width={14} height={14} patternUnits="userSpaceOnUse">
           <circle cx={7} cy={7} r={0.9} fill="var(--mn)" opacity={0.28} />
         </pattern>
       </defs>
+
+      <Panel l={l} step={step} narrow={narrow} />
 
       {/* Wittgenstein band: a faint field of points */}
       <rect x={l.band.x} y={l.band.y} width={l.band.w} height={l.band.h} rx={14} fill="color-mix(in oklab, var(--mn) 6%, transparent)" />
@@ -132,8 +196,8 @@ function Scene({ l, step }: { l: Layout; step: number }) {
             )}
             <motion.g initial={false} animate={{ opacity: on ? 1 : 0.25 }} transition={{ duration: 0.4 }}>
               <circle cx={t.to.x} cy={t.to.y} r={4} fill="var(--mn)" />
-              {t.label.map((line, j) => (
-                <text key={j} x={t.at.x} y={t.at.y + j * 15} fontSize={12} textAnchor={t.anchor} fill="var(--ink-2)">
+              {TAP_TEXT[i].map((line, j) => (
+                <text key={j} x={t.at.x} y={t.at.y + j * 15} fontSize={11.5} textAnchor={t.anchor} fill="var(--ink-2)">
                   {line}
                 </text>
               ))}
@@ -166,15 +230,15 @@ function Scene({ l, step }: { l: Layout; step: number }) {
 
       {/* the flag to a reviewer */}
       <motion.g initial={false} animate={{ opacity: step >= 5 ? 1 : 0, y: step >= 5 ? 0 : 8 }} transition={{ duration: 0.45, ease }}>
-        <rect x={l.flag.x} y={l.flag.y} width={l.flag.w} height={64} rx={10} fill="var(--bg-elev)" stroke="var(--look)" strokeOpacity={0.8} />
+        <rect x={l.flag.x} y={l.flag.y} width={l.flag.w} height={FH} rx={10} fill="var(--bg-elev)" stroke="var(--look)" strokeOpacity={0.8} />
         <text x={l.flag.x + 14} y={l.flag.y + 22} fontSize={11} fill="var(--look)" fontWeight={600}>
           To a reviewer · worth a look
         </text>
-        <text x={l.flag.x + 14} y={l.flag.y + 42} fontSize={12.5} fill="var(--ink)">
-          “2,550 mg” is the immediate-release maximum,
+        <text x={l.flag.x + 14} y={l.flag.y + 43} fontSize={12.5} fill="var(--ink)">
+          “2,550 mg” is the immediate-release maximum [2].
         </text>
-        <text x={l.flag.x + 14} y={l.flag.y + 57} fontSize={12.5} fill="var(--ink)">
-          not extended-release.
+        <text x={l.flag.x + 14} y={l.flag.y + 62} fontSize={12.5} fill="var(--ink-2)">
+          The extended-release maximum is 2,000 mg [1].
         </text>
       </motion.g>
     </svg>

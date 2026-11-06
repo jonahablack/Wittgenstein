@@ -65,7 +65,10 @@ export function About() {
           <Ref n={6} />.
         </p>
         <p>
-          Wittgenstein makes retrieved information legible to human review. It is built to be self-aware. It
+          Wittgenstein makes retrieved information legible to human review. It is a checking layer for AI systems
+          that answer questions from documents, often called retrieval-augmented generation (RAG). It runs alongside
+          such a system, reads each answer against the passages it was drawn from, and flags the sentences a person
+          should look at, without changing the answers itself. It is built to be self-aware. It
           understands the system it sits inside, from how documents are stored and searched to what the AI model is
           finally shown, and it can tell how a problem early in that process carries through to the answer a person
           reads. That lets it point reviewers to the few passages most likely to have been misread, so they can check

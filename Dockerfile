@@ -21,9 +21,9 @@ ENV PYTHONUNBUFFERED=1 \
 RUN pip install --no-cache-dir uv
 WORKDIR /app/engine
 COPY engine/pyproject.toml engine/uv.lock engine/README.md engine/PACKAGE_README.md ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --no-install-project --extra openai
 COPY engine/ ./
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --extra openai
 # The engine serves ../web/dist when it exists (api/app.py).
 COPY --from=web /web/dist /app/web/dist
 # Fetch the models once at build time, so the first request doesn't wait for downloads:

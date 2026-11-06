@@ -16,7 +16,7 @@ services:
     buildCommand: >-
       pip install uv
       && cd web && npm ci --no-audit --no-fund && npm run build
-      && cd ../engine && uv sync --frozen
+      && cd ../engine && uv sync --frozen --extra openai
       && uv run --no-sync python -c "from wittgenstein.live.nlp import nlp; nlp();
       from wittgenstein.live.embedding import get_embedder; get_embedder();
       from wittgenstein.live import nli; nli.model()"

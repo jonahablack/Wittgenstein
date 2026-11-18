@@ -94,6 +94,8 @@ artifacts = ["src/wittgenstein/web_dist/**"]
 [tool.hatch.build.targets.wheel.force-include]
 # The example document the interface opens with.
 "data/fixtures/asteria_manual/documents" = "wittgenstein/_data/asteria"
+# Public-domain FDA drug label samples (openFDA) for the demo document list.
+"data/fixtures/fda_labels" = "wittgenstein/_data/fda_labels"
 # The failure-mechanism registry the flags link to.
 "data/registry" = "wittgenstein/_data/registry"
 

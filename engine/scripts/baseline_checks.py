@@ -74,7 +74,7 @@ def _sentences_entailed(passage: str, answer: str) -> float:
 
 
 def planted(limit: int) -> dict:
-    folder = ROOT / "data" / "live_corpora" / "fda-labels-heldout"
+    folder = ROOT / "data" / "fixtures" / "fda_labels" / "fda-labels-heldout"
     docs = {p.stem: p.read_text() for p in sorted(folder.glob("*.md"))}
     corpus = LiveCorpus("baseline-heldout", docs)
     units = corpus.units()

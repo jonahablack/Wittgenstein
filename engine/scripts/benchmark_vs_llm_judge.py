@@ -26,7 +26,7 @@ from wittgenstein.live.corpus import LiveCorpus
 from wittgenstein.live.generate import ContextPassage
 
 N_OK, PER_KIND = 20, 3
-folder = ROOT / "data" / "live_corpora" / "fda-labels"
+folder = ROOT / "data" / "fixtures" / "fda_labels" / "fda-labels"
 docs = {p.stem: p.read_text() for p in sorted(folder.glob("*.md"))}
 units = LiveCorpus("bench", docs).units()
 pool = []

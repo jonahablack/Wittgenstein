@@ -21,8 +21,7 @@ services:
       && uv run --no-sync python -c "from wittgenstein.live.nlp import nlp; nlp();
       from wittgenstein.live.embedding import get_embedder; get_embedder();
       from wittgenstein.live import nli; nli.model()"
-      && (uv run --no-sync python scripts/fetch_sample_corpora.py || echo 'sample corpora not fetched')
-      && rm -rf data/live_corpora/austen
+
     startCommand: cd engine && uv run --no-sync uvicorn wittgenstein.api.app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION

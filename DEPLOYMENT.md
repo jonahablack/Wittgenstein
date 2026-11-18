@@ -9,8 +9,8 @@ root builds both; `render.yaml` deploys it on Render.
 The `Wittgenstein` service (https://wittgenstein.onrender.com) runs on Render's Python
 runtime with the build and start commands in `render.yaml`: it builds `web/`, installs the
 engine with `uv`, downloads the models at build time (kept under `engine/.cache` so they
-exist at runtime), fetches the public FDA label samples, and serves everything from the
-engine on `$PORT`. Every push to `Cosmos` redeploys.
+exist at runtime), and serves everything from the engine on `$PORT`. The public FDA label
+samples are tracked in `engine/data/fixtures/fda_labels` (openFDA refused Render's builds). Every push to `Cosmos` redeploys.
 
 Environment variables (set in the dashboard, never in the repo):
 - `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`: language-model answers in the app (without
@@ -30,7 +30,7 @@ Notes:
   the local model scored below its threshold. To run them locally instead, remove the
   variable on a plan with 1 GB or more; `WITTGENSTEIN_NLI=off` turns them off.
 - The disk is not persistent: uploaded documents and saved runs reset on each deploy or
-  restart. The built-in manual and the FDA label samples come back with every build.
+  restart. The built-in manual and the FDA label samples ship with the code.
 - The model proxy (`/proxy/...`) and the audit feed (`/v1/audits`) accept only requests
   from the same machine; they're for the local install, not the hosted site.
 

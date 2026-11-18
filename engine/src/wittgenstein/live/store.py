@@ -41,6 +41,12 @@ FIXTURE = (
     if _PACKAGED_FIXTURE.is_dir()
     else ENGINE_ROOT / "data" / "fixtures" / "asteria_manual" / "documents"
 )
+#: Public-domain FDA drug labels (openFDA), tracked and bundled with the package so the
+#: demo documents never depend on openFDA being reachable (it answered 503 to Render's builds).
+_PACKAGED_SAMPLES = Path(__file__).resolve().parents[1] / "_data" / "fda_labels"
+SAMPLES = (
+    _PACKAGED_SAMPLES if _PACKAGED_SAMPLES.is_dir() else ENGINE_ROOT / "data" / "fixtures" / "fda_labels"
+)
 _TEXT_SUFFIXES = {".txt", ".md", ".markdown"}
 MAX_RUNS_IN_MEMORY = 50
 
@@ -154,23 +160,26 @@ class CorpusStore:
         rec.warm_ms = round((time.perf_counter() - t0) * 1000, 1)
 
     def load_defaults(self) -> None:
-        """The tracked Asteria fixture, plus every folder under data/live_corpora/
-        (gitignored; e.g. fetched public-domain samples), one corpus per folder."""
+        """The tracked Asteria fixture and FDA label samples, plus every folder under
+        data/live_corpora/ (gitignored: fetched or the user's own), one corpus per folder.
+        A live_corpora folder with a sample's name replaces the bundled copy."""
         if FIXTURE.exists():
             docs = {p.stem: p.read_text() for p in sorted(FIXTURE.glob("*.md"))}
             self.add("Asteria certification manual (fictional)", docs, "fixture", corpus_id="asteria")
-        if LIVE_CORPORA.exists():
-            for folder in sorted(p for p in LIVE_CORPORA.iterdir() if p.is_dir()):
-                meta_path = folder / "meta.json"
-                meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-                sample: dict[str, str] = {}
-                for f in sorted(folder.iterdir()):
-                    if f.suffix.lower() in _TEXT_SUFFIXES or f.suffix.lower() == ".pdf":
-                        sample[f.stem] = extract_text(f.name, f.read_bytes())
-                if sample:
-                    self.add(
-                        meta.get("title", folder.name.replace("-", " ").title()), sample, "sample", folder.name
-                    )
+        def subfolders(root: Path) -> list[Path]:
+            return sorted(p for p in root.iterdir() if p.is_dir()) if root.exists() else []
+
+        local = subfolders(LIVE_CORPORA)
+        names = {p.name for p in local}
+        for folder in [p for p in subfolders(SAMPLES) if p.name not in names] + local:
+            meta_path = folder / "meta.json"
+            meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+            sample: dict[str, str] = {}
+            for f in sorted(folder.iterdir()):
+                if f.suffix.lower() in _TEXT_SUFFIXES or f.suffix.lower() == ".pdf":
+                    sample[f.stem] = extract_text(f.name, f.read_bytes())
+            if sample:
+                self.add(meta.get("title", folder.name.replace("-", " ").title()), sample, "sample", folder.name)
 
 
 class RunStore:

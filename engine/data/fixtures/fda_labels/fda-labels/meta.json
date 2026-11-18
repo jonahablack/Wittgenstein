@@ -1,0 +1,9 @@
+{
+  "title": "FDA drug labels: metformin, warfarin, amoxicillin",
+  "license": "US government works (openFDA), public domain. Demo only; not for clinical use.",
+  "set_ids": {
+    "metformin": "05999192-ebc6-4198-bd1e-f46abbfb4f8a",
+    "warfarin": "598e5e2e-9264-8371-e063-6394a90aaf18",
+    "amoxicillin": "102c62ca-da20-4866-84a8-e3513824af4a"
+  }
+}

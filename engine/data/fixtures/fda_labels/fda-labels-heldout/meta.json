@@ -1,0 +1,9 @@
+{
+  "title": "FDA drug labels (held out): lisinopril, atorvastatin, levothyroxine",
+  "license": "US government works (openFDA), public domain. Demo only; not for clinical use.",
+  "set_ids": {
+    "lisinopril": "0e6364a4-6d66-4151-8197-d45e2a762895",
+    "atorvastatin": "09cb8375-075c-47e8-a4eb-8ac667ed849e",
+    "levothyroxine": "13e03769-9a4f-497f-9afa-95bf525090b3"
+  }
+}

@@ -1,7 +1,7 @@
 """Measure the answer checks with planted errors (detection rate and false alarms).
 
 Method, deliberately simple and fully reproducible:
-1. Take sentences from the FDA label sample (data/live_corpora/fda-labels) that contain
+1. Take sentences from the FDA label sample (data/fixtures/fda_labels/fda-labels) that contain
    something an error could change: a dose or other quantity, a patient group, a
    condition, a negation, or a hedge.
 2. Make a correct answer from each: "According to the label, <sentence>." It is not a
@@ -39,7 +39,7 @@ from wittgenstein.live.text_artifacts import find_satellite
 from wittgenstein.live.verify import verify_answer
 
 ROOT = Path(__file__).resolve().parents[1]
-LABELS = ROOT / "data" / "live_corpora" / "fda-labels"
+LABELS = ROOT / "data" / "fixtures" / "fda_labels" / "fda-labels"
 
 ANSWER_KINDS = {
     FlagKind.ANSWER_SENTENCE_UNSUPPORTED,
@@ -217,12 +217,12 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=60, help="source sentences per error type (max)")
     ap.add_argument("--out", type=Path, default=None)
-    ap.add_argument("--corpus", default="fda-labels", help="folder under data/live_corpora/")
+    ap.add_argument("--corpus", default="fda-labels", help="folder under data/fixtures/fda_labels/")
     args = ap.parse_args()
-    folder = ROOT / "data" / "live_corpora" / args.corpus
+    folder = ROOT / "data" / "fixtures" / "fda_labels" / args.corpus
     docs = {p.stem: p.read_text() for p in sorted(folder.glob("*.md"))}
     if not docs:
-        raise SystemExit("Fetch the sample first: uv run python scripts/fetch_sample_corpora.py")
+        raise SystemExit(f"No documents in {folder}")
     corpus = LiveCorpus(f"eval-{args.corpus}", docs)
     units = corpus.units()
     pool: list[tuple[Unit, str]] = []

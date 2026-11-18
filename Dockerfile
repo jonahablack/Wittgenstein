@@ -32,9 +32,6 @@ RUN mkdir -p data && uv run --no-dev python -c "\
 from wittgenstein.live.nlp import nlp; nlp(); \
 from wittgenstein.live.embedding import get_embedder; get_embedder(); \
 from wittgenstein.live import nli; assert nli.model() is not None, nli.load_error()"
-# Public FDA label samples for the demo document list (best effort: needs openFDA at build time).
-# The novel is left out of the hosted image: 2,200 passages for a demo, about 100 MB of memory.
-RUN (uv run --no-dev python scripts/fetch_sample_corpora.py || echo "sample corpora not fetched; the built-in manual still works") \
-    && rm -rf data/live_corpora/austen
+# The FDA label samples are tracked in data/fixtures/fda_labels (no fetch at build time).
 EXPOSE 10000
 CMD ["sh", "-c", "uv run --no-sync uvicorn wittgenstein.api.app:app --host 0.0.0.0 --port ${PORT:-10000}"]

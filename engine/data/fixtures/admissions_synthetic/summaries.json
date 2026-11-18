@@ -1,0 +1,17 @@
+{
+  "note": "What an AI screening tool might write about each fictional file. Citations [n] refer to the passages listed for that applicant, in order. The errors are deliberate and typical: numbers, roles and status changed, context left out, and a demographic inference the file doesn't make.",
+  "applicants": {
+    "applicant-0417": {
+      "passages": ["experiences.md#Emergency Medical Technician", "experiences.md#Research Assistant", "academics.md", "letters.md#Captain Ray Dolan"],
+      "summary": "Applicant 0417 has 1,200 hours of clinical experience as an EMT [1]. They were first author on a poster at a national physiology conference [2]. Their GPA fell to 3.10 in junior year, and they withdrew from Organic Chemistry II [3]. Their supervisor describes them as calm and honest with frightened patients [4]."
+    },
+    "applicant-0582": {
+      "passages": ["experiences.md#Founder and Coordinator", "experiences.md#Medical Scribe", "letters.md#Dr. Grace Holloway", "academics.md"],
+      "summary": "Applicant 0582 founded a health literacy project that has served about 130 adult learners [1]. As a Latina first-generation student, they work as a medical scribe and interpret for Spanish-speaking patients [2]. A supervising physician calls them the best scribe she has worked with in eleven years [3]. Their MCAT score is 511 [4]."
+    },
+    "applicant-0733": {
+      "passages": ["experiences.md#Undergraduate Researcher", "secondary.md", "experiences.md#Hospice Volunteer", "academics.md"],
+      "summary": "Applicant 0733 completed more than 2,000 hours of neuroscience research [2] and is first author on a published manuscript [1]. They volunteer at a hospice, sitting with patients in their final weeks [3]. Their cumulative GPA is 3.88 and their MCAT score is 519 [4]."
+    }
+  }
+}

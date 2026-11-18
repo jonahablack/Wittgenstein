@@ -935,6 +935,10 @@ class FlagKind(str, Enum):
     ANSWER_FROM_NEIGHBOR = "answer_from_neighbor"
     # The answer's substance changes with fewer passages or another order (live/consistency.py)
     ANSWER_CONTEXT_SENSITIVE = "answer_context_sensitive"
+    # Admissions review (wittgenstein/admissions.py)
+    PROTECTED_CHARACTERISTIC = "protected_characteristic"
+    SOURCE_FIGURES_DISAGREE = "source_figures_disagree"
+    CONTEXT_OMITTED = "context_omitted"
 
 
 class FlagDisposition(str, Enum):

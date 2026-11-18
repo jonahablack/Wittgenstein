@@ -98,8 +98,14 @@ def _cite_chunks(answer: str) -> list[str]:
     brackets in quoted text ("deep venous thrombosis [DVT]") are not cut points."""
     chunks, last = [], 0
     for m in _CITE.finditer(answer):
-        chunks.append(answer[last : m.end()])
-        last = m.end()
+        # The full stop after a marker ("... 130 learners [1]. As a ...") stays with it:
+        # left at the head of the next chunk, it became a one-character "sentence" whose
+        # merge back gave the previous sentence the next one's citations too.
+        end = m.end() + len(re.match(r"[.!?]*", answer[m.end() :]).group(0))
+        if end < last:
+            continue
+        chunks.append(answer[last:end])
+        last = end
     chunks.append(answer[last:])
     return [c for c in chunks if c.strip()]
 
@@ -112,7 +118,7 @@ def split_answer(answer: str) -> list[tuple[str, list[int]]]:
     out = []
     for chunk in _cite_chunks(answer):
         cites = sorted({int(n) for m in _CITE.finditer(chunk) for n in m.group(1).split(",")})
-        for s, _, _ in split_sentences(_CITE.sub("", chunk)):
+        for s, _, _ in split_sentences(re.sub(r"\s+([.!?])", r"\1", _CITE.sub("", chunk))):
             clean = s.strip()
             if clean:
                 out.append((clean, cites))

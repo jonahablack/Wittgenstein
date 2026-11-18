@@ -285,6 +285,38 @@ def check(req: ExternalCheckRequest) -> dict[str, Any]:
     return _check_one(req)
 
 
+class AdmissionsCheckRequest(BaseModel):
+    documents: dict[str, str] = Field(
+        ..., min_length=1, max_length=40, description='The application\'s parts: {"experiences.md": "...", ...}.'
+    )
+    summary: str = Field(..., min_length=2, max_length=20_000, description="The AI-written summary to check.")
+    citations: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=60,
+        description='What the summary\'s [n] markers point to, in order: a file name, or "file#Section heading".',
+    )
+
+
+@router.post("/admissions/check", dependencies=[Depends(require_api_key)])
+@v1.post("/admissions/check", dependencies=[Depends(require_api_key)])
+def admissions_check(req: AdmissionsCheckRequest) -> dict[str, Any]:
+    """Check an AI summary of one application against the application itself
+    (wittgenstein/admissions.py). Flags go to a person; nothing is scored or decided."""
+    from wittgenstein.admissions import check_summary, sections
+
+    refs = [r for r, _ in sections(req.documents)]
+    resolved = []
+    for c in req.citations:
+        match = next((r for r in refs if r == c), None) or next((r for r in refs if r.startswith(c)), None)
+        if match is None:
+            raise HTTPException(422, f"Citation {c!r} matches no part of the application. Parts: {refs}")
+        resolved.append(match)
+    if sum(len(t) for t in req.documents.values()) > 400_000:
+        raise HTTPException(413, "The application is too long to check in one request (400,000 characters).")
+    return check_summary(req.documents, req.summary, resolved)
+
+
 class BatchRequest(BaseModel):
     items: list[ExternalCheckRequest] = Field(..., min_length=1, max_length=MAX_BATCH)
 

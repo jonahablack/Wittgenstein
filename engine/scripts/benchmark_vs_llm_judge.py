@@ -3,7 +3,8 @@
 Items: the planted-error evaluation's construction (scripts/evaluate_checks.py): a correct
 restatement of an FDA label sentence, or one with exactly one planted error. Wittgenstein
 is timed in-process after warm-up (as a running server would be); the judge is one
-Messages API call per answer, no extended thinking (its fastest setup).
+Messages API call per answer at the model's default settings (it may think first;
+max_tokens leaves room for that so every call returns a verdict).
 
 Run: WITTGENSTEIN_NLI=jev uv run --with anthropic python scripts/benchmark_vs_llm_judge.py OUT.json
 (needs ANTHROPIC_API_KEY, and TYPESAFE_API_KEY for Jev; JUDGE_MODEL overrides the judge)."""
@@ -60,7 +61,7 @@ for u, ans, _ in items:
 # Frontier LLM judge
 client = anthropic.Anthropic()
 MODEL = os.environ.get("JUDGE_MODEL", "claude-opus-5-5")
-c_t, c_flag, c_in, c_out = [], [], 0, 0
+c_t, c_flag, c_in, c_out, c_noverdict = [], [], 0, 0, 0
 for u, ans, _ in items:
     prompt = (
         f"Source passage [1]:\n{u.text}\n\nAnswer:\n{ans} [1]\n\n"
@@ -69,11 +70,12 @@ for u, ans, _ in items:
         'Reply with JSON only: {"faithful": true|false, "problem": "<short reason or empty>"}'
     )
     t = time.perf_counter()
-    r = client.messages.create(model=MODEL, max_tokens=200, messages=[{"role": "user", "content": prompt}])
+    r = client.messages.create(model=MODEL, max_tokens=1024, messages=[{"role": "user", "content": prompt}])
     c_t.append(time.perf_counter() - t)
     text = "".join(b.text for b in r.content if b.type == "text")
     m = re.search(r'"faithful"\s*:\s*(true|false)', text)
     c_flag.append(m is not None and m.group(1) == "false")
+    c_noverdict += m is None
     c_in += r.usage.input_tokens
     c_out += r.usage.output_tokens
 
@@ -101,6 +103,7 @@ out = {
         "total_s": sum(c_t),
         "input_tokens": c_in,
         "output_tokens": c_out,
+        "no_verdict": c_noverdict,
         **acc(c_flag),
     },
 }

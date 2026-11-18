@@ -75,6 +75,22 @@ wm.record(question, retrieved_chunks, answer, prompt=prompt_text)
   kept in `~/.wittgenstein/audits.jsonl` and, unless the server sets API keys, served
   only to this machine.
 
+## Meaning-level checks: local or hosted
+
+Contradiction and paraphrase checks use a small language-inference model that runs on
+your computer (downloaded once, about 280 MB of memory). To use TypeSafe's hosted Jev
+model instead (no model in memory, one request per answer sentence, about $0.04 per
+million input tokens), set:
+
+```bash
+export WITTGENSTEIN_NLI=jev
+export TYPESAFE_API_KEY=...   # from console.typesafe.ai
+```
+
+With Jev, the passages and answer sentences being compared are sent to TypeSafe. On the
+planted-error evaluation it matched the local model (0/240 false alarms, 332/340 errors
+flagged). `WITTGENSTEIN_NLI=off` turns these checks off; every report says so.
+
 ## How much context your model handles
 
 The answering model's capacity is measured, not assumed: `wittgenstein measure-model

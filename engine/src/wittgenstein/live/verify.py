@@ -646,7 +646,7 @@ def verify_answer(
                             "sentence_id": sid,
                             "contradiction": round(c.contradiction, 3),
                             "entailment": round(e.entailment, 3),
-                            "model": nli.REPO,
+                            "model": nli.identifier(),
                         },
                         measurement="model_judgment",
                     )
@@ -1111,8 +1111,8 @@ def verify_answer(
         FlagKind.ANSWER_CONTRADICTS_SOURCE,
         "Answer doesn't contradict its sources (meaning-level)",
         outcome(contradiction_flags) if nli_seen else CheckOutcome.NOT_APPLICABLE,
-        f"{nli_seen} sentences judged by a language-inference model; {len(contradiction_flags)} read as "
-        "contradicting their source."
+        f"{nli_seen} sentences judged by a language-inference model ({nli.identifier()}); "
+        f"{len(contradiction_flags)} read as contradicting their source."
         if nli_seen
         else (
             nli.DISABLED_NOTE

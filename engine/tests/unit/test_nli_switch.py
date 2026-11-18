@@ -22,7 +22,8 @@ def test_model_is_not_loaded_and_the_reason_is_given(off) -> None:  # noqa: ANN0
 
 def test_config_and_api_tell_the_user(off) -> None:  # noqa: ANN001
     c = TestClient(app)
-    assert c.get("/live/config").json()["meaning_checks"] == {"enabled": False, "note": nli.DISABLED_NOTE}
+    meaning = c.get("/live/config").json()["meaning_checks"]
+    assert meaning == {"enabled": False, "note": nli.DISABLED_NOTE, "backend": None}
     r = c.post(
         "/v1/check",
         json={

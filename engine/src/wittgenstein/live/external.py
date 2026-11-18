@@ -383,8 +383,8 @@ def check_external(
     if req.answer:
         from wittgenstein.live import nli
 
-        if nli.disabled():
-            notes.append(nli.DISABLED_NOTE)
+        if nli.note():
+            notes.append(nli.note())
 
     probes: list[dict[str, Any]] = []
     if req.generator_url and req.answer:

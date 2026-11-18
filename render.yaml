@@ -2,9 +2,10 @@
 # one web service on Render's Python runtime that builds the web app and runs the engine,
 # which serves both. (The Dockerfile at the repo root builds the same thing as an image.)
 # Memory: about 650-700 MB with the meaning-level model loaded (measured in the Docker
-# image), more than the Starter plan's 512 MB; with WITTGENSTEIN_NLI=off, 465 MB peak.
-# The meaning-level checks are therefore off on this server for now (users are told so);
-# remove WITTGENSTEIN_NLI on a plan with 1 GB or more to turn them back on.
+# image), more than the Starter plan's 512 MB. So the meaning-level checks run on TypeSafe's
+# hosted Jev model (WITTGENSTEIN_NLI=jev, with TYPESAFE_API_KEY): nothing loaded in memory
+# (465 MB peak), and users are told their passages go to TypeSafe for that check. To run
+# them locally instead, remove WITTGENSTEIN_NLI on a plan with 1 GB or more.
 services:
   - type: web
     name: Wittgenstein
@@ -31,9 +32,11 @@ services:
       # Models downloaded at build time must stay inside the project folder to exist at runtime.
       - key: HF_HOME
         value: /opt/render/project/src/engine/.cache/hf
-      # Temporarily off to fit 512 MB; shown to users in the app and API responses.
+      # Meaning-level checks on TypeSafe's Jev (fits 512 MB); shown to users in the app and API.
       - key: WITTGENSTEIN_NLI
-        value: "off"
+        value: "jev"
+      - key: TYPESAFE_API_KEY
+        sync: false
       # Optional, set in the dashboard: language-model answers, and keys for the public /v1 API.
       - key: OPENAI_API_KEY
         sync: false

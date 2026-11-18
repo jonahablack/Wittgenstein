@@ -74,6 +74,22 @@ curl -X POST http://127.0.0.1:8100/v1/check -H "content-type: application/json" 
 `summary.needs_review` in the response says whether a person should look, and each
 flagged sentence says why. Full documentation is in the running app under **API**.
 
+## Meaning-level checks: local or hosted
+
+Contradiction and paraphrase checks use a small language-inference model that runs on
+your computer (downloaded once, about 280 MB of memory). To use TypeSafe's hosted Jev
+model instead (no model in memory, one request per answer sentence, about $0.04 per
+million input tokens), set:
+
+```bash
+export WITTGENSTEIN_NLI=jev
+export TYPESAFE_API_KEY=...   # from console.typesafe.ai
+```
+
+With Jev, the passages and answer sentences being compared are sent to TypeSafe. On the
+planted-error evaluation it matched the local model (0/240 false alarms, 332/340 errors
+flagged). `WITTGENSTEIN_NLI=off` turns these checks off; every report says so.
+
 ## Limits
 
 Flags mean "a person should look", not "this is wrong". The checks are tuned on drug

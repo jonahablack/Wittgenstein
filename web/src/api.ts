@@ -19,7 +19,7 @@ export interface LiveConfig {
   embedders: string[];
   default_embedder: string;
   /** Meaning-level checks can be turned off on a small server; `note` says so to users. */
-  meaning_checks?: { enabled: boolean; note: string | null };
+  meaning_checks?: { enabled: boolean; note: string | null; backend?: "local" | "jev" | null };
 }
 
 export interface CorpusSummary {

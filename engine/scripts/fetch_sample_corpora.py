@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import json
 import re
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -58,8 +60,20 @@ _CONNECTORS = {"and", "of", "in", "with", "the", "for", "to", "or", "on", "a", "
 
 
 def _get(url: str) -> bytes:
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
-        return r.read()
+    """openFDA sometimes answers 503 or 429 for a while (seen from Render's build servers):
+    retry with growing waits before giving up."""
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 502, 503, 504) or attempt == 4:
+                raise
+        except urllib.error.URLError:
+            if attempt == 4:
+                raise
+        time.sleep(5 * 2**attempt)  # 5, 10, 20, 40 s
+    raise RuntimeError("unreachable")
 
 
 def _clean(text: str) -> str:

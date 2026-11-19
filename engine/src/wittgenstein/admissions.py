@@ -96,6 +96,23 @@ _STOP = {
 }  # fmt: skip
 
 
+_WORDING = [
+    (r"\bAn answer sentence\b", "A summary sentence"),
+    (r"\ban answer sentence\b", "a summary sentence"),
+    (r"\bThe answer\b", "The summary"),
+    (r"\bthe answer\b", "the summary"),
+    (r"\bthis part of the answer\b", "this part of the summary"),
+    (r"\bThis part of the answer\b", "This part of the summary"),
+    (r"\bthe document\b", "the application"),
+]
+
+
+def _as_summary(text: str) -> str:
+    for pattern, repl in _WORDING:
+        text = re.sub(pattern, repl, text)
+    return text
+
+
 def sections(documents: dict[str, str]) -> list[tuple[str, str]]:
     """(ref, text) for every part of the file: "experiences.md#Medical Scribe" for each
     "## " section, or the file name alone for a document without sections."""
@@ -161,6 +178,10 @@ def check_summary(documents: dict[str, str], summary: str, cited: list[str]) -> 
     )
     result = check_external(req)
     result["flags"] = [f for f in result["flags"] if f["kind"] not in {k.value for k in SKIPPED_KINDS}]
+    for f in result["flags"]:  # here the text being checked is a summary, not an answer
+        for key in ("title", "observation", "why_it_matters", "what_to_check"):
+            if f.get(key):
+                f[key] = _as_summary(f[key])
     extra = FlagCollector("admissions")
     sentences = split_answer(summary)
     whole_file = "\n".join(documents.values())
